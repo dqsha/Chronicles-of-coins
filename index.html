@@ -170,7 +170,23 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 .dayin{margin:2px 0 8px 10px;border-left:2px solid var(--gold-d);padding-left:8px}
 .tab .ti{display:block;font-size:19px;line-height:1.1;margin-bottom:2px}
 .tab[aria-current="true"] .ti{color:var(--gold)}
-.card{box-shadow:4px 4px 0 var(--shadow),inset 0 0 0 1px rgba(255,255,255,.04)}
+.card{box-shadow:4px 4px 0 var(--shadow)}
+/* 0.10: рамки из нарисованных ассетов */
+.btn{border:8px solid transparent;border-image:url(assets/btn-gold.png) 12 stretch;background-clip:padding-box;padding:5px 10px;min-height:52px;box-shadow:0 4px 0 var(--shadow)}
+.btn:not(.ghost):not(.danger):not(.exp):not(.inc){background:linear-gradient(180deg,#f0cb68 0,#d9a53f 100%);background-clip:padding-box}
+.btn.exp{border-image-source:url(assets/btn-red.png);background:linear-gradient(180deg,#d4605a 0,#a83c36 100%)!important;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
+.btn.inc{border-image-source:url(assets/btn-green.png);background:linear-gradient(180deg,#6cb67a 0,#3f8450 100%)!important;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
+.btn.ghost{border-image-source:url(assets/btn-gray.png);background:linear-gradient(180deg,#3a3548 0,#2a2538 100%);background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
+.btn.danger{border-image-source:url(assets/btn-red.png);background:#5a2420;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
+.btn:active{filter:brightness(.88)}
+.btn.ghost:active{border-image-source:url(assets/btn-pressed.png)}
+.btn.small{min-height:44px;padding:3px 8px}
+.btn.big{min-height:68px}
+.card{border:14px solid transparent;border-image:url(assets/panel-stone.png) 48 stretch;background-clip:padding-box;padding:8px 6px}
+.qk{border:8px solid transparent;border-image:url(assets/btn-gray.png) 12 stretch;background:linear-gradient(180deg,#3a3548 0,#2a2538 100%);background-clip:padding-box;padding:0 4px;min-height:64px}
+.qk:active{border-image-source:url(assets/btn-pressed.png)}
+.plus{border:8px solid transparent;border-image:url(assets/btn-gold.png) 12 stretch;background:linear-gradient(180deg,#f0cb68 0,#d9a53f 100%);background-clip:padding-box;width:62px;height:62px;margin-top:-26px;box-shadow:0 4px 0 var(--shadow);padding:0}
+
 
 #toast.q{opacity:0!important}
 #fx{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:70;overflow:hidden}
