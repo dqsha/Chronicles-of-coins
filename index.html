@@ -323,7 +323,7 @@ input[type=range]{width:100%;accent-color:var(--gold);min-height:32px}
 /* v0.8.1 диагностика: ошибки и счётчик касаний видны на экране */
 (function(){function box(){var b=document.getElementById('dbg');if(!b){b=document.createElement('div');b.id='dbg';b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9999;background:#7a1f1f;color:#fff;font:12px/1.3 monospace;padding:8px;white-space:pre-wrap;pointer-events:none';document.body.appendChild(b)}return b}
 window.addEventListener('error',function(ev){try{box().textContent+='ERR: '+(ev.message||'')+' @'+(ev.lineno||'')+'\n'}catch(e){}});
-window.addEventListener('unhandledrejection',function(ev){try{box().textContent+='REJ: '+(ev.reason&&ev.reason.message||ev.reason)+'\n'}catch(e){}});
+window.addEventListener('unhandledrejection',function(ev){try{var m=String(ev.reason&&ev.reason.message||ev.reason||'');if(/audio/i.test(m)){ev.preventDefault();return}box().textContent+='REJ: '+(ev.reason&&ev.reason.message||ev.reason)+'\n'}catch(e){}});
 })();
 </script>
 <script>
@@ -355,7 +355,7 @@ const WD=['вс','пн','вт','ср','чт','пт','сб'];
 const CATS_EXP=[['food','Продукты','🛒'],['cafe','Кафе','🍔'],['taxi','Транспорт','🚕'],['home','Дом','🏠'],['health','Здоровье','💊'],
   ['clothes','Одежда','👕'],['fun','Отдых','🎮'],['comm','Связь','📱'],['gift','Подарки','🎁'],['other','Прочее','📦'],['credit','Кредит','💳'],['xfer','Переводы','🤝']];
 const CATS_INC=[['salary','Зарплата','💰'],['side','Подработка','🛠️'],['giftin','Подарок','🎁'],['otherin','Прочее','📥']];
-const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],bank:['Счёт или депозит','🏦'],save:['Накопления','🐷']};
+const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],bank:['Счёт или депозит','🏦'],save:['Накопления','🐷'],deposit:['Депозит','🏛️']};
 
 function defaults(){return{v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
   streak:{count:0,last:null,freezes:1,best:0},noSpend:{},dayRec:{},lastAcc:null,
@@ -419,7 +419,8 @@ const unpaidSum=()=>S.mand.reduce((s,m)=>s+(mandStatus(m).paid?0:m.amount),0);
 const goalSaved=g=>g.contribs.reduce((s,c)=>s+c.amt,0);
 const activeGoals=()=>S.goals.filter(g=>!g.closed);
 const reserved=()=>activeGoals().reduce((s,g)=>s+Math.max(0,goalSaved(g)),0);
-const freeMoney=()=>totalBal()-unpaidSum()-reserved();
+const depBal=()=>S.accounts.filter(a=>a.type==='deposit').reduce((s,a)=>s+accBal(a),0);
+const freeMoney=()=>totalBal()-depBal()-unpaidSum()-reserved();
 
 /* ---------- events, xp, streak ---------- */
 let notes=[];
@@ -769,10 +770,11 @@ function musicStep(c,d,t,step){const ch=PROG[Math.floor(step/8)%PROG.length],i=s
   if(i===0){padTone(c,d,mf(root+12),t,EIGHTH*8,0.04);padTone(c,d,mf(root+12+iv[2]),t,EIGHTH*8,0.03)}
   tone(c,d,mf(root+24+iv[ARP[i]]),t,EIGHTH*0.9,'square',0.025);
   if(i===2||i===6)tone(c,d,mf(root+36+iv[ARP[(i+1)%8]]),t+EIGHTH*0.5,EIGHTH*0.5,'square',0.012)}
+function rz(p){try{if(p&&p.catch)p.catch(function(){})}catch(e){}return p}
 function sndCtx(){if(!SND.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
     const c=new C();SND.ctx=c;SND.master=c.createGain();SND.master.gain.value=(S.sound&&S.sound.vol!=null)?S.sound.vol:0.6;SND.master.connect(c.destination);
     SND.sg=c.createGain();SND.sg.connect(SND.master);SND.mg=c.createGain();SND.mg.gain.value=0;SND.mg.connect(SND.master)}
-  if(SND.ctx.state==='suspended')SND.ctx.resume();return SND.ctx}
+  if(SND.ctx.state==='suspended')rz(SND.ctx.resume());return SND.ctx}
 function playSfx(n){try{if(S.calm||!S.sound||!S.sound.sfx)return;const c=sndCtx();if(!c||!SFX[n])return;SFX[n](c,SND.sg,c.currentTime+0.001)}catch(e){}}
 function musicSync(){try{const want=S.sound&&S.sound.music&&!S.calm;
   if(want){const c=sndCtx();if(!c)return;SND.mg.gain.cancelScheduledValues(c.currentTime);SND.mg.gain.setTargetAtTime(0.5,c.currentTime,0.3);
@@ -847,7 +849,7 @@ function viewHome(){
   const todayExp=todayAll.filter(x=>x.type==='exp'),tsum=todayExp.reduce((s,x)=>s+x.amount,0);
   const hasExp=todayExp.length>0,nsDone=!!S.noSpend[t];
   const up=S.mand.filter(m=>!mandStatus(m).paid).sort((a,b)=>mandStatus(a).dd-mandStatus(b).dd).slice(0,3);
-  const fsub='На счетах '+fmt(totalBal())+(unpaidSum()>0?', минус платежи месяца '+fmt(unpaidSum()):'')+(reserved()>0?', минус отложенное в целях '+fmt(reserved()):'')+'.';
+  const fsub='На счетах '+fmt(totalBal()-depBal())+(depBal()>0?', депозиты '+fmt(depBal())+' не считаются':'')+(unpaidSum()>0?', минус платежи месяца '+fmt(unpaidSum()):'')+(reserved()>0?', минус отложенное в целях '+fmt(reserved()):'')+'.';
   const rl=repeatList('exp');
   const quick=rl.length?'<div class="label" style="margin-top:12px">Быстро, одним касанием</div><div class="qgrid">'+rl.map((r,i)=>{const c=catInfo(r.cat);return '<button class="qk" data-act="quick" data-v="'+i+'"><span class="qi">'+c.icon+'</span><span class="qn">'+esc(r.note||c.name)+'</span><span class="qa">'+fmt(r.amount)+'</span></button>'}).join('')+'</div>'
     :'<p class="sub">Когда накопятся записи, здесь появятся привычные траты: одно касание, и запись готова.</p>';
@@ -980,8 +982,8 @@ function viewWallet(){
     return '<button class="row" data-act="accedit" data-v="'+a.id+'"><span class="tile">'+ty[1]+'</span><span class="mid"><div class="t1">'+esc(a.name)+'</div><div class="t2">'+ty[0]+'</div></span><span class="amt '+(b<0?'neg':'')+'">'+fmt(b)+'</span></button>'}).join('');
   const md=S.mand.map(m=>'<div style="display:flex;gap:8px;align-items:center">'+'<div style="flex:1;min-width:0">'+mandRow(m,true)+'</div></div>').join('');
   return scene('wallet','Кошелёк','Сокровищница',fmt(totalBal()))
-  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'">'+fmt(totalBal())+'</div><p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
-  +'<section class="card" id="t-acc"><h2>Счета</h2><div class="list">'+accs+'</div><button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
+  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'">'+fmt(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'. В «Свободно» они не входят.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
+  +'<section class="card" id="t-acc"><h2>Счета</h2><div class="list">'+accs+'</div>'+(S.accounts.length>1?'<div class="fchips" style="margin-top:10px">'+(S.accounts.some(a=>a.type==='deposit')?'<button class="fc" data-act="trdep" data-v="out">Снять с депозита</button><button class="fc" data-act="trdep" data-v="in">Положить на депозит</button>':'')+'<button class="fc" data-act="trdep" data-v="any">Перевод между счетами</button></div>':'')+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
   +histWalletCard()
   +goalsSection()
   +'<section class="card" id="t-mand"><h2>Обязательные платежи</h2>'+(S.mand.length?'<div class="list">'+S.mand.map(m=>'<div>'+mandRow(m,true)+'<div style="padding:0 0 8px"><button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки, кредит. Приложение посчитает, сколько денег у тебя действительно свободно.</p>')
@@ -996,7 +998,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.14.1';
+const APP_V='0.15.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1079,7 +1081,8 @@ function sheetImp(){const F=UI.form;
     if(top.length)h+='<div class="label">Куда уходят деньги</div>'+top.map(k=>{const ci=catInfo(k);return '<div class="catrow"><span>'+ci.icon+' '+esc(ci.name)+'</span><span class="amt">'+fmt(cats[k].s)+' · '+cats[k].n+'</span></div>'}).join('');
     if(P.unknown.length){h+='<div class="label">Незнакомые места</div><p class="note">Выбери категорию один раз, приложение запомнит. Остальные попадут в «Прочее».</p>';
       P.unknown.slice(0,8).forEach(u=>{h+='<div class="field"><label>'+esc(u.name)+' · '+u.n+' '+plural(u.n,['раз','раза','раз'])+' · '+fmt(u.sum)+'</label><select class="inp" data-mk="'+esc(u.key)+'" aria-label="Категория для '+esc(u.name)+'">'
-        +catsFor('exp').map(c=>'<option value="'+c.id+'"'+((F.map[u.key]||'other')===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'})}
+        +catsFor('exp').map(c=>'<option value="'+c.id+'"'+((F.map[u.key]||'other')===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'<option value="__new">➕ Своя категория…</option></select>'
+        +(F.newFor===u.key?'<div class="two" style="margin-top:8px"><div class="field"><label for="ncI">Значок</label><input id="ncI" class="inp" data-f="ncicon" maxlength="4" value="'+esc(F.ncicon||'')+'" placeholder="☕"></div><div class="field"><label for="ncN">Название</label><input id="ncN" class="inp" data-f="ncname" maxlength="20" value="'+esc(F.ncname||'')+'" placeholder="Кофе"></div></div><button class="btn small" style="margin-top:8px" data-act="impcat" data-v="'+esc(u.key)+'">Добавить категорию</button>':'')+'</div>'})}
     return h+'<button class="btn" data-act="impgo"'+(P.items.length?'':' disabled')+'>Добавить '+P.items.length+'</button><button class="btn ghost" data-act="impback">Назад</button>'}
   return shHead('Загрузить историю')
    +'<p class="note">Файл читается только на этом телефоне и никуда не отправляется. Сохраняются только операции: дата, сумма, место. ИИН и номера счетов не читаются и не хранятся.</p>'
@@ -1313,6 +1316,8 @@ function act(a,el){const v=el.dataset.v;
     case 'ftype':{const F=UI.F;F.type=v;F.cat=null;F.err='';UI.focus=true;renderSheet();break}
     case 'cat':UI.F.cat=v;UI.F.err='';renderSheet();break;
     case 'customtoggle':UI.F.custom=!UI.F.custom;renderSheet();break;
+    case 'impcat':{const F=UI.form;const nm=(F.ncname||'').trim();if(!nm){toast('Введите название категории');break}
+      const c={id:'c'+uid(),name:nm,icon:(F.ncicon||'⭐').trim(),kind:'exp'};S.customCats.push(c);F.map[v]=c.id;F.newFor=null;F.ncname='';F.ncicon='';save();renderSheet();toast('Категория добавлена');break}
     case 'customsave':{const F=UI.F;if(!F.cname.trim()){F.err='Введите название категории';return renderSheet()}
       const c={id:'c'+uid(),name:F.cname.trim(),icon:(F.cicon||'⭐').trim(),kind:F.type};S.customCats.push(c);F.cat=c.id;F.custom=false;F.cname='';F.cicon='';F.err='';save();renderSheet();break}
     case 'dayset':UI.F.date=addDays(today(),-(+v));renderSheet();break;
@@ -1337,6 +1342,9 @@ function act(a,el){const v=el.dataset.v;
       UI.E=null;UI.sheet=null;toast(r.changed>1?'Сохранено. Категория изменена у записей: '+r.changed:'Сохранено');commit();break}
     case 'txdel':if(UI.confirm!==v){UI.confirm=v;renderSheet()}else{delTx(v);UI.sheet=null;UI.confirm=null;commit()}break;
     case 'accnew':openAcc(null);break;
+    case 'trdep':{UI.F=newF('tr');const dep=S.accounts.find(a=>a.type==='deposit'),live=S.accounts.find(a=>a.type!=='deposit'&&a.id!==(dep&&dep.id));
+      if(dep&&live&&v==='out'){UI.F.acc=dep.id;UI.F.to=live.id}else if(dep&&live&&v==='in'){UI.F.acc=live.id;UI.F.to=dep.id}
+      UI.F.more=false;UI.focus=true;openSheet('add');break}
     case 'accedit':openAcc(v);break;
     case 'accsave':saveAcc();break;
     case 'accdel':delAcc();break;
@@ -1401,7 +1409,7 @@ document.addEventListener('click',e=>{
   if(S.sound&&S.sound.music&&!SND.timer)musicSync();
   if(['music','sfxtoggle','musictoggle'].indexOf(el.dataset.act)<0){playSfx('tap');tgHaptic()}
   act(el.dataset.act,el)});
-document.addEventListener('visibilitychange',()=>{try{if(!SND.ctx)return;if(document.hidden)SND.ctx.suspend();else if(S.sound&&(S.sound.music||S.sound.sfx))SND.ctx.resume()}catch(e){}});
+document.addEventListener('visibilitychange',()=>{try{if(!SND.ctx)return;if(document.hidden)rz(SND.ctx.suspend());else if(S.sound&&(S.sound.music||S.sound.sfx))rz(SND.ctx.resume())}catch(e){}});
 try{['gesturestart','gesturechange','gestureend'].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
 let lt=0;document.addEventListener('touchend',e=>{const t=Date.now();if(t-lt<350&&!(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)))e.preventDefault();lt=t},{passive:false})}catch(e){}
 document.addEventListener('input',e=>{const t=e.target;
@@ -1411,7 +1419,7 @@ document.addEventListener('keydown',e=>{try{if(e.key==='Enter'&&UI.sheet&&UI.she
 document.addEventListener('change',e=>{const t=e.target;
   if(t.dataset&&t.dataset.file){readStatementFile(t.files&&t.files[0]);return}
   if(t.dataset&&t.dataset.mon){const keys=monthKeys();UI.mon=t.value===keys[keys.length-1]?null:t.value;UI.day=null;render();return}
-  if(t.dataset&&t.dataset.mk&&UI.form&&UI.form.map){UI.form.map[t.dataset.mk]=t.value;return}
+  if(t.dataset&&t.dataset.mk&&UI.form&&UI.form.map){if(t.value==='__new'){UI.form.newFor=t.dataset.mk;UI.form.ncicon='';UI.form.ncname='';renderSheet();return}UI.form.map[t.dataset.mk]=t.value;return}
   if(t.dataset&&t.dataset.snd==='vol'){playSfx('coin');return}
   if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value});
 
