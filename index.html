@@ -908,7 +908,7 @@ function questCard(){if(S.questAll||S.questHidden)return '';const done=QUEST.fil
    +QUEST.map(q=>{const d=!!S.quest[q[0]];return '<button class="q'+(d?' done':'')+'" data-act="'+go[q[0]]+'"'+(d?' disabled':'')+'><span class="ck">'+(d?'✓':'')+'</span><span class="qt">'+esc(q[1])+'</span><span class="qxp">'+(d?'готово':'+15 XP')+'</span></button>'}).join('')
    +'<div class="chips" style="margin-top:10px"><button class="btn ghost small" data-act="tour">Показать обучение</button><button class="btn ghost small" data-act="questhide">Скрыть</button></div></section>'}
 function backupCard(){if(S.tx.length<5)return '';if(S.lastBackup&&dayDiff(S.lastBackup,today())<14)return '';
-  return '<section class="card"><h2>Копия данных</h2><p class="sub" style="margin-top:0">Данные хранятся только на этом устройстве. '+(S.lastBackup?'Последняя копия была '+fmtDate(S.lastBackup)+'.':'Копии ещё не было.')+' Сохрани её в заметки, чтобы ничего не потерять.</p><button class="btn ghost small" style="margin-top:10px" data-act="data">Сделать копию</button></section>'}
+  return '<section class="card"><h2>Копия данных</h2><p class="sub" style="margin-top:0">'+(tgCloud()?'Данные сохраняются в твоём Telegram, но копия в заметках не помешает. ':'Данные хранятся только на этом устройстве. ')+'(S.lastBackup?'Последняя копия была '+fmtDate(S.lastBackup)+'.':'Копии ещё не было.')+' Сохрани её в заметки, чтобы ничего не потерять.</p><button class="btn ghost small" style="margin-top:10px" data-act="data">Сделать копию</button></section>'}
 function closedRow(g){return '<button class="row" data-act="goalopen" data-v="'+g.id+'"><span class="tile">'+esc(g.icon)+'</span><span class="mid"><div class="t1">'+esc(g.name)+'</div><div class="t2">Куплено '+fmtDate(g.closedOn||today())+'</div></span><span class="amt">'+fmt(g.spent||0)+'</span></button>'}
 function goalsSection(){const a=activeGoals(),c=S.goals.filter(g=>g.closed);
   return '<section class="card" id="t-goals"><h2>Цели и копилки</h2>'+(a.length?'<div class="list">'+a.map(goalRow).join('')+'</div>':'<p class="note">Копилка на телефон, отпуск или подушку безопасности. Отложенные деньги не считаются свободными.</p>')
@@ -996,7 +996,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.14.0';
+const APP_V='0.14.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
