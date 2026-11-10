@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Хроника Монет</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -11,9 +13,9 @@
   --ink:#ece4d2;--mute:#a199b3;
   --gold:#e2b24a;--gold-d:#9c7422;
   --inc:#86b863;--exp:#d0605a;
-  --display:'Classic Console Neue',ui-monospace,'Courier New',monospace;
-  --body:'Classic Console Neue','Segoe UI',system-ui,sans-serif;
-  --num:'Classic Console Neue','Noto Sans','Segoe UI',system-ui,sans-serif;
+  --display:'Pixelify Sans','Classic Console Neue',ui-monospace,'Courier New',monospace;
+  --body:'Pixelify Sans','Classic Console Neue','Segoe UI',system-ui,sans-serif;
+  --num:'Pixelify Sans','Classic Console Neue','Noto Sans','Segoe UI',system-ui,sans-serif;
   --panel-a:rgba(31,27,40,.94);--tint:#201a3a;
   color-scheme:dark;
 }
@@ -154,6 +156,12 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 #toast{position:fixed;left:50%;top:calc(12px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;max-width:min(92vw,440px);
   background:var(--ink);color:#1b1722;padding:10px 14px;font-weight:600;font-size:14px;box-shadow:4px 4px 0 var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
 #toast.show{opacity:1}
+/* 0.12.1: лозы */
+.card::before{content:'';position:absolute;left:10px;right:10px;top:-13px;height:18px;background:url(assets/vine-edge.png) repeat-x left top/auto 18px;pointer-events:none;z-index:2;opacity:.95}
+.card{position:relative}
+.btn.big::after,.btn.exp::after,.btn.inc::after{content:'';position:absolute;left:-12px;top:-12px;width:38px;height:38px;background:url(assets/vine-corner.png) no-repeat center/contain;pointer-events:none;z-index:2}
+.btn.inc::after{left:auto;right:-12px;transform:scaleX(-1)}
+
 .btn{border-radius:0;letter-spacing:.02em;position:relative}
 .btn:not(.ghost):not(.danger){background:linear-gradient(180deg,#f0cb68 0,var(--gold) 55%,#c8952c 100%)}
 .btn.ghost{background:linear-gradient(180deg,#332c44 0,var(--panel2) 100%)}
@@ -191,7 +199,7 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 .btn.ghost:active{border-image-source:url(assets/btn-pressed.png)}
 .btn.small{min-height:44px;padding:3px 8px}
 .btn.big{min-height:68px}
-.card{border:14px solid transparent;border-image:url(assets/panel-stone.png) 48 stretch;background-clip:padding-box;padding:8px 6px}
+.card{border:14px solid transparent;border-image:url(assets/panel-stone.png) 48 stretch;background-clip:padding-box;padding:12px 6px 8px}
 .qk{border:8px solid transparent;border-image:url(assets/btn-gray.png) 12 stretch;background:linear-gradient(180deg,#3a3548 0,#2a2538 100%);background-clip:padding-box;padding:0 4px;min-height:64px}
 .qk:active{border-image-source:url(assets/btn-pressed.png)}
 .plus{border:8px solid transparent;border-image:url(assets/btn-gold.png) 12 stretch;background:linear-gradient(180deg,#f0cb68 0,#d9a53f 100%);background-clip:padding-box;width:62px;height:62px;margin-top:-26px;box-shadow:0 4px 0 var(--shadow);padding:0}
