@@ -155,6 +155,28 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 #toast{position:fixed;left:50%;top:calc(12px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;max-width:min(92vw,440px);
   background:var(--ink);color:#1b1722;padding:10px 14px;font-weight:600;font-size:14px;box-shadow:4px 4px 0 var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
 #toast.show{opacity:1}
+/* 0.13.1 плавность */
+.scrim{top:0;bottom:auto;height:var(--vvh,100%);transition:height .28s cubic-bezier(.2,.8,.2,1)}
+.scrim.fresh{animation:scrimin .22s ease-out both}
+.scrim.fresh .sheet{animation:sheetin .32s cubic-bezier(.2,.9,.25,1) both}
+.scrim.mid.fresh .sheet{animation:midin .3s cubic-bezier(.2,.9,.25,1) both}
+.scrim.closing{animation:scrimout .19s ease-in both;pointer-events:none}
+.scrim.closing .sheet{animation:sheetout .19s ease-in both}
+@keyframes scrimin{from{background:rgba(8,6,12,0)}}
+@keyframes scrimout{to{background:rgba(8,6,12,0)}}
+@keyframes sheetin{from{transform:translateY(36px);opacity:0}}
+@keyframes sheetout{to{transform:translateY(36px);opacity:0}}
+@keyframes midin{from{transform:translateY(14px) scale(.97);opacity:0}}
+#app.swap{animation:viewin .26s ease-out both}
+@keyframes viewin{from{opacity:0;transform:translateY(6px)}}
+.sheet{transition:max-height .28s cubic-bezier(.2,.8,.2,1);scroll-behavior:smooth;scroll-padding-bottom:80px}
+.inp,select.inp,input.inp{height:46px;box-sizing:border-box}
+textarea.inp{height:auto}
+input[type=date].inp{-webkit-appearance:none;appearance:none;display:block;text-align:left;line-height:1.2;padding-block:0;min-width:0}
+input[type=date].inp::-webkit-date-and-time-value{text-align:left;margin:0;min-height:1.2em}
+.two{align-items:start}
+.field label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:18px;min-height:18px}
+
 /* 0.13: мягкие отклики, герой, приветствие */
 .btn,.qk,.plus,.tab{transition:transform .16s cubic-bezier(.3,1.5,.5,1),filter .16s ease-out,box-shadow .16s ease-out}
 .btn:active,.qk:active,.plus:active{transform:translateY(3px) scale(.985)}
@@ -697,8 +719,10 @@ const SCENES={
     [8,86].forEach(x=>{r(x-3,3,8,10,'rgba(224,131,43,.08)');r(x,12,2,5,'#6a4a2a');r(x,9,2,3,'#e0832b');r(x+1,10,1,1,'#f6d25a')})})};
 const sceneCache={};
 const LOCIMG={home:'home',list:'records',stats:'stats',wallet:'wallet'};
+const LOCREADY={};
+function preloadLoc(){try{Object.keys(LOCIMG).forEach(t=>{if(!LOCIMG[t])return;const im=new Image();im.onload=()=>{LOCREADY[t]=1};im.src='assets/loc-'+LOCIMG[t]+'.jpg'})}catch(e){}}
 function scene(tab,title,loc,right,extra){if(!sceneCache[tab])sceneCache[tab]=SCENES[tab]();
-  return '<div class="scene">'+sceneCache[tab]+(LOCIMG[tab]?'<img class="sc-img" src="assets/loc-'+LOCIMG[tab]+'.jpg" alt="" onerror="this.remove()">':'')+'<div class="cap"><div class="loc">'+esc(loc)+'</div><h1>'+esc(title)+'</h1></div>'+(right?'<div class="r">'+esc(right)+'</div>':'')+(extra||'')+'</div>'}
+  return '<div class="scene">'+(LOCREADY[tab]?'':sceneCache[tab])+(LOCIMG[tab]?'<img class="sc-img" decoding="sync" src="assets/loc-'+LOCIMG[tab]+'.jpg" alt="" onerror="this.remove()">':'')+'<div class="cap"><div class="loc">'+esc(loc)+'</div><h1>'+esc(title)+'</h1></div>'+(right?'<div class="r">'+esc(right)+'</div>':'')+(extra||'')+'</div>'}
 
 /* ---------- sound: synthesized chiptune, no audio files ---------- */
 const SND={ctx:null,master:null,sg:null,mg:null,timer:null,nextT:0,step:0};
@@ -953,7 +977,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.13.0';
+const APP_V='0.13.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -965,14 +989,16 @@ function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;con
     d.style.cssText='left:'+Math.round(Math.random()*96)+'%;width:'+sz+'px;height:'+sz+'px;background-image:'+kinds[i%kinds.length]+';animation-duration:'+(16+Math.round(Math.random()*16))+'s;animation-delay:-'+Math.round(Math.random()*30)+'s';el.appendChild(d)}}catch(e){}}
 function render(){
   const v={home:viewHome,list:viewList,stats:viewStats,wallet:viewWallet}[UI.tab]();
-  $('#app').innerHTML=v;document.body.dataset.tab=UI.tab;bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
+  $('#app').innerHTML=v;if(UI.shown&&UI.shown!==UI.tab&&!S.calm){try{const a=document.getElementById('app');a.classList.remove('swap');void a.offsetWidth;a.classList.add('swap')}catch(e){}}UI.shown=UI.tab;document.body.dataset.tab=UI.tab;bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
   const tabs=[['home','Главная','home'],['list','Записи','records'],null,['stats','Анализ','stats'],['wallet','Кошелёк','wallet']];
   $('#tabbar').innerHTML='<div class="tabbar-in">'+tabs.map(t=>t?'<button class="tab" data-act="tab" data-v="'+t[0]+'" aria-current="'+(UI.tab===t[0])+'"><img class="ti" src="assets/tab-'+t[2]+'.png" alt="" onerror="this.remove()">'+t[1]+'</button>':'<button class="plus" data-act="add" aria-label="Новая запись">+</button>').join('')+'</div>'}
 
 /* ---------- sheets ---------- */
 function accOpts(sel,skip){return S.accounts.filter(a=>a.id!==skip).map(a=>'<option value="'+a.id+'"'+(a.id===sel?' selected':'')+'>'+esc(a.name)+'</option>').join('')}
 function openSheet(kind,data){UI.sheet=Object.assign({kind:kind},data||{});UI.confirm=null;renderSheet()}
-function closeSheet(){UI.sheet=null;UI.confirm=null;renderSheet();if(UI.pendingLvl)openSheet('lvl')}
+function closeSheet(){UI.sheet=null;UI.confirm=null;let sc=null;try{sc=!S.calm&&document.querySelector('#layer .scrim')}catch(e){}
+  if(sc&&sc.classList&&sc.classList.add){sc.classList.add('closing');setTimeout(()=>{if(!UI.sheet)renderSheet();if(UI.pendingLvl&&!UI.sheet)openSheet('lvl')},190);try{document.body.classList.remove('lock')}catch(e){}return}
+  renderSheet();if(UI.pendingLvl)openSheet('lvl')}
 function shHead(t,lock){return '<div class="sh-head"><h2>'+t+'</h2>'+(lock?'':'<button class="x" data-act="close" aria-label="Закрыть">×</button>')+'</div>'}
 function sheetAdd(){const F=UI.F;
   const types=[['exp','Расход'],['inc','Доход'],['tr','Перевод']];
@@ -1182,7 +1208,8 @@ function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   if(!sh){L.innerHTML='';return}
   const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard';
-  L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
+  let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
+  L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
   if(sh.kind==='add'&&UI.focus){UI.focus=false;const a=$('#amt');if(a)a.focus()}}
 
 /* ---------- actions ---------- */
@@ -1345,7 +1372,10 @@ document.addEventListener('change',e=>{const t=e.target;
 function start(){cloudSync(boot)}
 function tgInit(){try{const w=window.Telegram&&window.Telegram.WebApp;if(!w||!w.initData)return;w.ready();w.expand();try{w.disableVerticalSwipes()}catch(e){}try{w.requestFullscreen()}catch(e){}try{w.setHeaderColor('#15121b');w.setBackgroundColor('#15121b')}catch(e){}}catch(e){}}
 function checkUpdate(){try{if(!window.fetch)return;fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j&&j.v&&j.v!==APP_V){UI.upd=j.v;if(!UI.sheet&&UI.tab==='home')render()}}).catch(()=>{})}catch(e){}}
-function boot(){tgInit();S=load();setTimeout(checkUpdate,1500);if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
+function vvSync(){try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);document.documentElement.style.setProperty('--vvh',h+'px')}catch(e){}}
+function bootKb(){try{vvSync();if(window.visualViewport)window.visualViewport.addEventListener('resize',vvSync);window.addEventListener('resize',vvSync);
+  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'})}catch(x){}},320)})}catch(e){}}
+function boot(){bootKb();tgInit();preloadLoc();S=load();setTimeout(checkUpdate,1500);if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};openSheet('onboard')}else renderSheet();
   if(S.onboarded){checkAch();if(notes.length)commit()}
   maybeTour();
