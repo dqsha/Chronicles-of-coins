@@ -20,6 +20,9 @@
 *{box-sizing:border-box}
 html,body{min-height:100%}
 html,body{touch-action:manipulation}
+body.lock{overflow:hidden}
+.scrim{overscroll-behavior:contain;touch-action:none}
+.sheet{overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 body{background-color:var(--bg);background-image:linear-gradient(180deg,var(--tint) 0,transparent 440px);background-repeat:no-repeat;color:var(--ink);font:15px/1.45 var(--body);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   padding-block:0;-webkit-text-size-adjust:100%}
@@ -1105,6 +1108,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
   return shHead('Достижения')+'<p class="note">Открыто '+n+' из '+ACH.length+'. За каждое награда: 20 XP.</p><div class="list">'
    +ACH.map(a=>{const d=S.ach[a[0]];return '<div class="row" style="cursor:default;opacity:'+(d?1:.5)+'"><span class="tile">'+(d?a[3]:'🔒')+'</span><span class="mid"><div class="t1">'+esc(a[1])+'</div><div class="t2">'+esc(a[2])+(d?' · '+fmtDate(d):'')+'</div></span></div>'}).join('')+'</div>'}
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
+  try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
   const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard';
