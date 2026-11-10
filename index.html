@@ -3,23 +3,24 @@
 <title>Хроника Монет</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Press+Start+2P&display=swap">
 <style>
+@font-face{font-family:'Classic Console Neue';src:url(assets/font.woff) format('woff');font-weight:100 900;font-style:normal;font-display:swap}
 /* Layout: one narrow column, bottom tab bar, bottom sheets for input. Single dark world by choice. */
 :root{
   --bg:#15121b;--panel:#1f1b28;--panel2:#292337;--line:#3d3552;--shadow:#0b090f;
   --ink:#ece4d2;--mute:#a199b3;
   --gold:#e2b24a;--gold-d:#9c7422;
   --inc:#86b863;--exp:#d0605a;
-  --display:'Press Start 2P',ui-monospace,'Courier New',monospace;
-  --body:'Golos Text','Segoe UI',system-ui,sans-serif;
-  --num:'Golos Text','Noto Sans','Segoe UI',system-ui,sans-serif;
+  --display:'Classic Console Neue',ui-monospace,'Courier New',monospace;
+  --body:'Classic Console Neue','Segoe UI',system-ui,sans-serif;
+  --num:'Classic Console Neue','Noto Sans','Segoe UI',system-ui,sans-serif;
   --panel-a:rgba(31,27,40,.94);--tint:#201a3a;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{min-height:100%}
 html,body{touch-action:manipulation}
+.mbtn,.tab .ti,.plus,.bi{font-family:system-ui,'Segoe UI Symbol',sans-serif}
 body.lock{overflow:hidden}
 .scrim{overscroll-behavior:contain;touch-action:none}
 .sheet{overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
