@@ -155,6 +155,8 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 #toast{position:fixed;left:50%;top:calc(12px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;max-width:min(92vw,440px);
   background:var(--ink);color:#1b1722;padding:10px 14px;font-weight:600;font-size:14px;box-shadow:4px 4px 0 var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
 #toast.show{opacity:1}
+.dadv{font-size:14px;line-height:1.45;margin:6px 0;padding-left:10px;border-left:3px solid var(--gold-d)}
+textarea.inp[readonly]{font-size:12px;line-height:1.4}
 .fch{font:700 16px var(--body);margin:6px 0 10px;line-height:1.35}
 #t-fc .catrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px}
 
@@ -416,7 +418,7 @@ function accBal(a){let b=Number(a.bal0)||0;
     else if(t.type==='tr'){if(t.acc===a.id)b-=t.amount;if(t.to===a.id)b+=t.amount}}return b}
 const totalBal=()=>S.accounts.reduce((s,a)=>s+accBal(a),0);
 function dueDay(m,mk){const p=mk.split('-').map(Number);return Math.min(m.day,dim(p[0],p[1]))}
-function mandStatus(m){const mk=mkey(today());const paid=!!S.paid[m.id+'|'+mk];const dd=dueDay(m,mk);const day=+today().slice(8);
+function mandStatus(m){const mk=mkey(today());const paid=!!m.closed||!!S.paid[m.id+'|'+mk];const dd=dueDay(m,mk);const day=+today().slice(8);
   return{paid:paid,dd:dd,overdue:!paid&&day>dd,left:dd-day}}
 const unpaidSum=()=>S.mand.reduce((s,m)=>s+(mandStatus(m).paid?0:m.amount),0);
 const goalSaved=g=>g.contribs.reduce((s,c)=>s+c.amt,0);
@@ -458,14 +460,17 @@ function repeatList(kind){const lim=Date.now()-90*864e5,m={};
   S.tx.forEach(x=>{if(x.type!==kind||!x.cat||x.mid||x.ts<lim)return;const k=x.cat+'|'+x.amount+'|'+x.acc;
     const g=m[k]||(m[k]={cat:x.cat,amount:x.amount,acc:x.acc,note:'',n:0,ts:0});g.n++;if((x.ts||0)>=g.ts){g.ts=x.ts||0;g.note=x.note||''}});
   return Object.keys(m).map(k=>m[k]).sort((a,b)=>b.n-a.n||b.ts-a.ts).slice(0,4)}
-function delTx(id){const i=S.tx.findIndex(x=>x.id===id);if(i<0)return;S.tx.splice(i,1);
+function delTx(id){const i=S.tx.findIndex(x=>x.id===id);if(i<0)return;const dx=S.tx[i];if(dx.dp&&dx.mid){const dm=S.mand.find(m=>m.id===dx.mid);if(dm){dm.left=Math.round(((dm.left||0)+dx.dp)*100)/100;dm.closed=false}}S.tx.splice(i,1);
   Object.keys(S.paid).forEach(k=>{if(S.paid[k]===id)delete S.paid[k]})}
 function noSpendToday(){const t=today();if(S.noSpend[t])return false;
   if(S.tx.some(x=>x.type==='exp'&&x.date===t)){say('Сегодня уже есть траты');return false}
   S.noSpend[t]=true;const b=markActive();gainXp(10,'Трат не было');petFood(1);if(b)gainXp(b,'Бонус дня');return true}
 function payMand(id){const m=S.mand.find(x=>x.id===id);if(!m)return;const mk=mkey(today());const key=id+'|'+mk;if(S.paid[key])return;
   const onTime=!mandStatus(m).overdue;
-  const tx=addTx({type:'exp',amount:m.amount,cat:m.cat,acc:m.acc,date:today(),note:m.name,mid:id});
+  let amt=m.amount,dp=0,closed=false;
+  if(m.debt&&m.left>0){const intr=m.left*(m.rate||0)/1200;dp=Math.max(0,Math.min(m.left,m.amount-intr));if(m.left-dp<=0.5||m.amount>=m.left+intr){amt=Math.min(m.amount,Math.round(m.left+intr));dp=m.left;closed=true}}
+  const tx=addTx({type:'exp',amount:amt,cat:m.cat,acc:m.acc,date:today(),note:m.name,mid:id});
+  if(m.debt){tx.dp=dp;m.left=closed?0:Math.round((m.left-dp)*100)/100;if(closed){m.closed=true;gainXp(50,'Долг погашен')}}
   S.paid[key]=tx.id;if(onTime)gainXp(5,'Платёж вовремя')}
 
 /* ---------- newcomer quest ---------- */
@@ -684,6 +689,47 @@ function forecast(){const t=today(),h=payHorizon(t),bank=freeMoney(),avg=avgDail
   const need=avg*h.days;r.need=need;r.diff=bank-need;
   if(avg<=0){r.state='ok';r.runOut=null;return r}
   r.runOut=addDays(t,Math.floor(bank/avg));r.state=r.diff>=0?'ok':'short';return r}
+
+/* ---------- долги и рассрочки ---------- */
+function addMonths(t,n){const d=parseD(t),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));return dstr(d)}
+const isDebt=m=>!!m.debt&&!m.closed;
+const debtsAll=()=>S.mand.filter(m=>m.debt);
+const debtsOpen=()=>S.mand.filter(isDebt);
+function debtMonths(left,pay,rate){if(!(left>0))return 0;if(!(pay>0))return Infinity;const r=(rate||0)/1200;
+  if(r===0)return Math.ceil(left/pay-1e-9);if(pay<=r*left)return Infinity;return Math.ceil(-Math.log(1-r*left/pay)/Math.log(1+r)-1e-9)}
+function debtInfo(m,extra){const pay=m.amount+(extra||0);const n=debtMonths(m.left,pay,m.rate);
+  return{months:n,end:isFinite(n)?addMonths(today(),Math.max(0,n-(mandStatus(m).paid?0:1))+(mandStatus(m).paid?0:0)):null,interest:isFinite(n)?Math.max(0,Math.round(pay*n-m.left)):null}}
+const debtMonthly=()=>debtsOpen().reduce((q,m)=>q+m.amount,0);
+const debtLeft=()=>debtsOpen().reduce((q,m)=>q+m.left,0);
+function monthlyIncome(){const t=today(),from=addDays(t,-90);const v=S.tx.filter(x=>x.type==='inc'&&x.date>=from&&x.date<=t).reduce((q,x)=>q+x.amount,0);return v>0?v/3:null}
+function monthlySpend(){const t=today(),from=addDays(t,-90);const v=S.tx.filter(x=>x.type==='exp'&&x.cat!=='credit'&&x.cat!=='xfer'&&x.date>=from&&x.date<=t).reduce((q,x)=>q+x.amount,0);return v>0?v/3:null}
+function debtAdvice(){const out=[],d=debtsOpen();if(!d.length)return out;
+  const inc=monthlyIncome(),mon=debtMonthly();
+  if(inc){const p=mon/inc,pc=Math.round(p*100);
+    if(p>=0.5)out.push('Платежи по долгам съедают '+pc+'% твоего дохода. Это опасная нагрузка: главная цель сейчас не брать новые долги и искать, что можно сократить.');
+    else if(p>=0.35)out.push('Платежи по долгам: '+pc+'% дохода. Это много. Новые рассрочки лучше пока не брать.');
+    else if(p>=0.2)out.push('Платежи по долгам: '+pc+'% дохода. Нормально, но следи, чтобы доля не росла.');
+    else out.push('Платежи по долгам: '+pc+'% дохода. Нагрузка спокойная.')}
+  else out.push('Добавь свои доходы в приложение, и я оценю, какую долю дохода съедают долги.');
+  const bad=d.filter(m=>!isFinite(debtMonths(m.left,m.amount,m.rate)));
+  bad.forEach(m=>out.push('Платёж по «'+m.name+'» не покрывает проценты, долг растёт. Нужно платить больше, иначе он не закроется.'));
+  const paying=d.filter(m=>(m.rate||0)>0&&isFinite(debtMonths(m.left,m.amount,m.rate)));
+  if(paying.length){const top=paying.slice().sort((a,b)=>b.rate-a.rate)[0];const ex=Math.max(1000,Math.round(top.amount*0.25/1000)*1000);
+    const a=debtInfo(top,0),b=debtInfo(top,ex);
+    out.push('Лишние деньги направляй в «'+top.name+'»: у него самая высокая ставка ('+top.rate+'%). Если добавлять по '+fmt(ex)+' в месяц, закроешь на '+(a.months-b.months)+' мес. раньше и сэкономишь около '+fmt(Math.max(0,a.interest-b.interest))+'.')}
+  else if(!bad.length)out.push('У тебя рассрочки без процентов. Гаси их по графику, досрочно спешить незачем. Лишние деньги лучше отложить в подушку безопасности.');
+  if(d.length>1){const sm=d.slice().sort((a,b)=>a.left-b.left)[0];const n=debtMonths(sm.left,sm.amount,sm.rate);
+    if(isFinite(n))out.push('Быстрая победа: «'+sm.name+'» самый маленький долг, при обычном платеже он закроется через '+n+' мес. Платёж освободится.')}
+  return out}
+function aiSummary(){const t=today(),inc=monthlyIncome(),sp=monthlySpend(),d=debtsOpen();
+  let o='Я живу в Казахстане, валюта тенге. Помоги разобраться с деньгами и долгами. Давай практичные идеи, не юридические и не инвестиционные советы.\n\n';
+  o+='Доход в месяц (среднее за 3 мес.): '+(inc?fmt(Math.round(inc)):'не указан')+'\n';
+  o+='Траты в месяц (среднее, без кредитов и переводов): '+(sp?fmt(Math.round(sp)):'нет данных')+'\n';
+  o+='Сейчас на счетах: '+fmt(Math.round(totalBal()))+(depBal()>0?', из них на депозитах '+fmt(Math.round(depBal())):'')+'\n';
+  o+='Платежи месяца, ещё не оплаченные: '+fmt(Math.round(unpaidSum()))+'\n\n';
+  o+=d.length?'Долги и рассрочки:\n'+d.map((m,i)=>{const n=debtMonths(m.left,m.amount,m.rate);return (i+1)+'. '+m.name+': остаток '+fmt(Math.round(m.left))+', платёж '+fmt(Math.round(m.amount))+' в месяц ('+m.day+'-го числа), ставка '+(m.rate||0)+'% годовых, закрою '+(isFinite(n)?'примерно через '+n+' мес.':'не закрою при таком платеже')}).join('\n')+'\n\n':'Долгов и рассрочек нет.\n\n';
+  o+='Вопросы:\n1. Как распределить деньги между платежами, подушкой безопасности и накоплениями?\n2. Какой долг гасить первым и почему?\n3. Где я могу сократить расходы?\n';
+  return o}
 // ==END LOGIC==
 
 /* ================= UI ================= */
@@ -1022,7 +1068,8 @@ function viewWallet(){
   +'<section class="card" id="t-acc"><h2>Счета</h2><div class="list">'+accs+'</div>'+(S.accounts.length>1?'<div class="fchips" style="margin-top:10px">'+(S.accounts.some(a=>a.type==='deposit')?'<button class="fc" data-act="trdep" data-v="out">Снять с депозита</button><button class="fc" data-act="trdep" data-v="in">Положить на депозит</button>':'')+'<button class="fc" data-act="trdep" data-v="any">Перевод между счетами</button></div>':'')+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
   +histWalletCard()
   +goalsSection()
-  +'<section class="card" id="t-mand"><h2>Обязательные платежи</h2>'+(S.mand.length?'<div class="list">'+S.mand.map(m=>'<div>'+mandRow(m,true)+'<div style="padding:0 0 8px"><button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки, кредит. Приложение посчитает, сколько денег у тебя действительно свободно.</p>')
+  +debtCard()
+  +'<section class="card" id="t-mand"><h2>Обязательные платежи</h2>'+(S.mand.filter(m=>!m.debt).length?'<div class="list">'+S.mand.filter(m=>!m.debt).map(m=>'<div>'+mandRow(m,true)+'<div style="padding:0 0 8px"><button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки, кредит. Приложение посчитает, сколько денег у тебя действительно свободно.</p>')
     +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="mandnew">Добавить платёж</button></section>'
   +chronicleCard()
   +'<button class="btn ghost" data-act="data">Данные и настройки</button>'}
@@ -1034,7 +1081,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.16.0';
+const APP_V='0.17.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1163,10 +1210,12 @@ function sheetAcc(){const f=UI.form;const edit=!!UI.sheet.id;
 function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
   return shHead(edit?'Платёж':'Новый платёж')
    +'<div class="field"><label for="mn">Название</label><input id="mn" class="inp" data-f="name" maxlength="30" value="'+esc(f.name)+'" placeholder="Аренда, интернет, кредит"></div>'
-   +'<div class="two"><div class="field"><label for="ma">Сумма, ₸</label><input id="ma" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
+   +'<div class="fchips"><button class="fc'+(f.debt?'':' on')+'" data-act="mdebt" data-v="0">Обычный платёж</button><button class="fc'+(f.debt?' on':'')+'" data-act="mdebt" data-v="1">Долг или рассрочка</button></div>'
+   +'<div class="two"><div class="field"><label for="ma">Платёж в месяц, ₸</label><input id="ma" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
    +'<div class="field"><label for="md">День месяца</label><input id="md" class="inp" data-f="day" inputmode="numeric" maxlength="2" value="'+esc(f.day)+'"></div></div>'
    +'<div class="two"><div class="field"><label for="mc">Категория</label><select id="mc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="mac">Счёт</label><select id="mac" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
+   +(f.debt?'<div class="two"><div class="field"><label for="ml">Остаток долга, ₸</label><input id="ml" class="inp" data-f="left" inputmode="decimal" value="'+esc(f.left)+'"></div><div class="field"><label for="mr">Ставка, % год</label><input id="mr" class="inp" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="0"></div></div><p class="note">Для рассрочки без процентов ставка 0. Остаток уменьшается при каждой оплате.</p>':'')
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="mandsave">Сохранить</button>'
    +(edit?'<button class="btn ghost" data-act="manddel">Удалить платёж</button>':'')}
 function sheetGear(){const L=levelInfo(S.xp).L;
@@ -1184,6 +1233,20 @@ function sheetOnboard(){const f=UI.form;
    +'<div class="two"><div class="field"><label for="oc">Наличные, ₸</label><input id="oc" class="inp" data-f="cash" inputmode="decimal" value="'+esc(f.cash)+'" placeholder="0"></div>'
    +'<div class="field"><label for="ok">На карте, ₸</label><input id="ok" class="inp" data-f="card" inputmode="decimal" value="'+esc(f.card)+'" placeholder="0"></div></div>'
    +'<p class="note">Суммы примерные, потом можно поправить. Другие счета добавишь в Кошельке.</p><button class="btn big" data-act="onboard">Начать путь</button>'}
+function debtRow(m){const s=mandStatus(m);const inf=debtInfo(m,0);
+  const t2=m.closed?'Погашено':'остаток '+fmt(m.left)+' · '+(isFinite(inf.months)?'ещё '+inf.months+' мес.':'не закрывается')+((m.rate||0)>0?' · '+m.rate+'%':' · без процентов');
+  return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'🏦':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'</span></div>'
+   +'<div class="fchips" style="padding:0 0 10px">'+((!m.closed&&!s.paid)?'<button class="btn small" data-act="pay" data-v="'+m.id+'">Оплатил</button>':'')+'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>'}
+function debtCard(){const all=debtsAll(),open=debtsOpen();
+  if(!all.length)return '<section class="card" id="t-debt"><h2>Долги и рассрочки</h2><p class="note">Добавь кредиты и рассрочки: приложение учтёт платежи в «Банке», покажет, когда всё закроется, и подскажет, какой долг гасить первым.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="debtnew">Добавить долг или рассрочку</button></section>';
+  const adv=debtAdvice();
+  return '<section class="card" id="t-debt"><h2>Долги и рассрочки</h2>'
+   +(open.length?'<p class="sub" style="margin-top:0">Осталось выплатить: '+fmt(debtLeft())+'. Платежей в месяц на '+fmt(debtMonthly())+'.</p>':'<p class="sub" style="margin-top:0">Все долги погашены. Это победа.</p>')
+   +'<div class="list">'+all.map(debtRow).join('')+'</div>'
+   +(adv.length?'<div class="label" style="margin-top:12px">Подсказки</div>'+adv.map(a=>'<p class="dadv">'+esc(a)+'</p>').join('')+'<p class="sub">Это расчёт по твоим цифрам, а не финансовая консультация.</p>':'')
+   +'<div class="fchips" style="margin-top:10px"><button class="fc" data-act="debtnew">Добавить долг</button><button class="fc" data-act="aisum">Сводка для ИИ</button></div></section>'}
+function sheetAi(){return shHead('Сводка для ИИ')+'<p class="note">Скопируй текст и вставь в Claude или другой чат с ИИ, потом задай вопрос. Сводка собрана на телефоне и никуда сама не отправляется. Проверь, что тебя устраивает всё, что в ней написано.</p>'
+   +'<textarea id="aix" class="inp" readonly style="min-height:260px">'+esc(aiSummary())+'</textarea><button class="btn" data-act="aicopy">Скопировать</button>'}
 function sheetData(){const f=UI.form;
   return shHead('Данные и настройки')+'<p class="note">Версия приложения: '+APP_V+'</p>'+'<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><div class="field"><label for="dd">День зарплаты (число месяца)</label><input id="dd" class="inp" data-f="payday" inputmode="numeric" maxlength="2" value="'+esc(f.payday||'')+'" placeholder="пусто = конец месяца"></div><button class="btn ghost small" style="align-self:flex-start" data-act="namesave">Сохранить</button>'
    +'<button class="btn ghost" data-act="tour">Показать обучение</button><div class="sep"></div>'
@@ -1287,7 +1350,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp}[sh.kind]();
+  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
@@ -1316,13 +1379,14 @@ function delAcc(){const id=UI.sheet.id;
   if(S.accounts.length<2){UI.form.err='Нельзя удалить последний счёт';UI.confirm=null;return renderSheet()}
   if(S.tx.some(x=>x.acc===id||x.to===id)||S.mand.some(m=>m.acc===id)){UI.form.err='По счёту есть записи или платежи, удалить нельзя';UI.confirm=null;return renderSheet()}
   S.accounts=S.accounts.filter(a=>a.id!==id);UI.sheet=null;commit()}
-function openMand(id){const m=S.mand.find(x=>x.id===id);
-  UI.form=m?{name:m.name,amount:String(m.amount),day:String(m.day),cat:m.cat,acc:m.acc,err:''}:{name:'',amount:'',day:'1',cat:'home',acc:S.accounts[0].id,err:''};openSheet('mand',{id:id||null})}
+function openMand(id,debt){const m=S.mand.find(x=>x.id===id);
+  UI.form=m?{name:m.name,amount:String(m.amount),day:String(m.day),cat:m.cat,acc:m.acc,debt:!!m.debt,left:m.left?String(m.left):'',rate:m.rate?String(m.rate):'',err:''}:{name:'',amount:'',day:'1',cat:debt?'credit':'home',acc:S.accounts[0].id,debt:!!debt,left:'',rate:'',err:''};openSheet('mand',{id:id||null})}
 function saveMand(){const f=UI.form,id=UI.sheet.id;const amount=num(f.amount),day=Math.round(num(f.day));
   if(!f.name.trim()){f.err='Введите название';return renderSheet()}
   if(!(amount>0)){f.err='Введите сумму';return renderSheet()}
   if(day<1||day>31){f.err='День месяца от 1 до 31';return renderSheet()}
   const o={name:f.name.trim(),amount:amount,day:day,cat:f.cat,acc:f.acc};
+  if(f.debt){const left=num(f.left),rate=num(f.rate);if(!(left>0)){f.err='Укажите, сколько ещё осталось выплатить';return renderSheet()}if(rate<0||rate>200){f.err='Ставка от 0 до 200 процентов годовых';return renderSheet()}o.debt=true;o.left=left;o.rate=rate;o.closed=false}else{o.debt=false;o.closed=false}
   if(id)Object.assign(S.mand.find(x=>x.id===id),o);else{S.mand.push(Object.assign({id:uid()},o));questDone('mand')}
   UI.sheet=null;commit()}
 function act(a,el){const v=el.dataset.v;
@@ -1387,6 +1451,10 @@ function act(a,el){const v=el.dataset.v;
     case 'mandnew':openMand(null);break;
     case 'mandedit':openMand(v);break;
     case 'mandsave':saveMand();break;
+    case 'mdebt':UI.form.debt=v==='1';if(UI.form.debt&&UI.form.cat==='home')UI.form.cat='credit';renderSheet();break;
+    case 'debtnew':openMand(null,true);break;
+    case 'aisum':openSheet('ai');break;
+    case 'aicopy':{const ta=document.getElementById('aix');const txt=aiSummary();let ok=false;try{navigator.clipboard.writeText(txt).then(()=>toast('Сводка скопирована')).catch(()=>{if(ta){ta.focus();ta.select()}toast('Выдели текст и скопируй')});ok=true}catch(e){}if(!ok&&ta){ta.focus();ta.select();toast('Выдели текст и скопируй')}break}
     case 'manddel':{const id=UI.sheet.id;S.mand=S.mand.filter(m=>m.id!==id);Object.keys(S.paid).forEach(k=>{if(k.indexOf(id+'|')===0)delete S.paid[k]});UI.sheet=null;commit();break}
     case 'tour':startTour();break;
     case 'feed':if(feedPet()){playSfx('feed');commit()}break;
