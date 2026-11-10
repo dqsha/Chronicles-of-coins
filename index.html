@@ -21,7 +21,14 @@
 html,body{min-height:100%}
 html,body{touch-action:manipulation}
 .mbtn,.tab .ti,.plus,.bi{font-family:system-ui,'Segoe UI Symbol',sans-serif}
+body{padding-top:calc(max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px) + 8px)!important}
 body.lock{overflow:hidden}
+#bgfx{position:fixed;left:0;top:0;right:0;bottom:0;z-index:0;pointer-events:none;overflow:hidden}
+#app{position:relative;z-index:1}
+.bgp{position:absolute;top:0;image-rendering:pixelated;background-size:100% 100%;opacity:.38;will-change:transform;animation:bgfall linear infinite}
+@keyframes bgfall{0%{transform:translate3d(0,-10vh,0) rotate(0deg)}50%{transform:translate3d(28px,55vh,0) rotate(180deg)}100%{transform:translate3d(-14px,112vh,0) rotate(360deg)}}
+body.calm #bgfx{display:none}
+@media (prefers-reduced-motion:reduce){#bgfx{display:none}}
 .scrim{overscroll-behavior:contain;touch-action:none}
 .sheet{overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 body{background-color:var(--bg);background-image:linear-gradient(180deg,var(--tint) 0,transparent 440px);background-repeat:no-repeat;color:var(--ink);font:15px/1.45 var(--body);
@@ -144,7 +151,7 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 .slot{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-top:8px}
 .herobig{display:flex;justify-content:center;background:var(--panel2);border:2px solid var(--line);padding:10px}
 .herobig svg{width:150px;height:auto}
-#toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;max-width:min(92vw,440px);
+#toast{position:fixed;left:50%;top:calc(12px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;max-width:min(92vw,440px);
   background:var(--ink);color:#1b1722;padding:10px 14px;font-weight:600;font-size:14px;box-shadow:4px 4px 0 var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
 #toast.show{opacity:1}
 .btn{border-radius:0;letter-spacing:.02em;position:relative}
@@ -215,7 +222,7 @@ input[type=range]{width:100%;accent-color:var(--gold);min-height:32px}
 .tv-dim{position:fixed;inset:0;z-index:70;background:rgba(8,6,12,.45);pointer-events:none}
 .tv-spot{position:fixed;z-index:71;border:2px solid var(--gold);box-shadow:0 0 0 9999px rgba(8,6,12,.8);pointer-events:none;animation:tvp 1s steps(2) infinite}
 @keyframes tvp{50%{border-color:var(--gold-d)}}
-.tv-box{position:fixed;z-index:72;left:0;right:0;bottom:0;height:46vh;min-height:300px;max-width:480px;margin:0 auto;background:var(--panel);border:2px solid var(--gold-d);border-bottom:0;box-shadow:0 -4px 0 var(--shadow);padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:10px}
+.tv-box{position:fixed;z-index:72;left:0;right:0;bottom:0;height:52vh;min-height:330px;max-width:480px;margin:0 auto;background:var(--panel);border:2px solid var(--gold-d);border-bottom:0;box-shadow:0 -4px 0 var(--shadow);padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:10px}
 .tv-box .tv-mage{width:84px}
 .tv-p{font-size:20px;line-height:1.4;flex:1;display:flex;align-items:center}
 .tv-box .tv-bar{width:100%}
@@ -236,6 +243,7 @@ input[type=range]{width:100%;accent-color:var(--gold);min-height:32px}
 @media (prefers-reduced-motion:reduce){.f1,.f2{animation:none}.f2{display:none}.pet-art svg,.hero-art svg,.tv-mage svg,.tv-spot{animation:none}.btn,.plus{transition:none}}
 </style>
 
+<div id="bgfx" aria-hidden="true"></div>
 <div id="app"></div>
 <nav class="tabbar" id="tabbar" aria-label="Разделы"></nav>
 <div id="layer"></div>
@@ -913,9 +921,20 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
    +k('Записей',st.recs)+k('Дней без трат',st.ns)+k('Лучший стрик',st.best+' '+plural(st.best,['день','дня','дней']))+k('В целях и покупках',fmt(st.saved))+'</div>'
    +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="ach">Достижения: '+n+' из '+ACH.length+'</button></section>'}
 
+function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
+  return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
+let bgMode=null;
+function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
+  if(m==='off')return;
+  const leaf=pixURI(['..gg....','.gGGg...','gGGGGg..','gGdGGGg.','.gGGdGg.','..gGGg..','...gg...','........'],{g:'#3f6b3a',G:'#5c8f4a',d:'#2a4a2a'});
+  const leaf2=pixURI(['..oo....','.oOOo...','oOOOOo..','oOdOOOo.','.oOOdOo.','..oOOo..','...oo...','........'],{o:'#8a4a1e',O:'#b8692a',d:'#5a2e12'});
+  const coin=pixURI(['..yyyy..','.yYYYYy.','yYlYYYYy','yYlYYYYy','yYYYYdYy','yYYYYdYy','.yYYYYy.','..yyyy..'],{y:'#8a6416',Y:'#e2b24a',l:'#f0d27a',d:'#c8952c'});
+  const kinds=[leaf,leaf,leaf2,coin],n=m==='full'?14:7;
+  for(let i=0;i<n;i++){const d=document.createElement('div');d.className='bgp';const sz=10+Math.round(Math.random()*8);
+    d.style.cssText='left:'+Math.round(Math.random()*96)+'%;width:'+sz+'px;height:'+sz+'px;background-image:'+kinds[i%kinds.length]+';animation-duration:'+(16+Math.round(Math.random()*16))+'s;animation-delay:-'+Math.round(Math.random()*30)+'s';el.appendChild(d)}}catch(e){}}
 function render(){
   const v={home:viewHome,list:viewList,stats:viewStats,wallet:viewWallet}[UI.tab]();
-  $('#app').innerHTML=v;document.body.dataset.tab=UI.tab;if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
+  $('#app').innerHTML=v;document.body.dataset.tab=UI.tab;bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
   const tabs=[['home','Главная','home'],['list','Записи','records'],null,['stats','Анализ','stats'],['wallet','Кошелёк','wallet']];
   $('#tabbar').innerHTML='<div class="tabbar-in">'+tabs.map(t=>t?'<button class="tab" data-act="tab" data-v="'+t[0]+'" aria-current="'+(UI.tab===t[0])+'"><img class="ti" src="assets/tab-'+t[2]+'.png" alt="" onerror="this.remove()">'+t[1]+'</button>':'<button class="plus" data-act="add" aria-label="Новая запись">+</button>').join('')+'</div>'}
 
@@ -1078,7 +1097,7 @@ const TOURS=[
  {tab:'home',t:'Сверху «Свободно»: сколько денег можно тратить.'},
  {tab:'home',t:'Кнопки «Трата» и «Доход» (или «+» внизу): запиши деньги. Привычные траты повторяются одним касанием.'},
  {tab:'home',t:'За записи ты получаешь опыт. Герой, питомец и задания живут в «Лагере»: нажми на карточку героя.'},
- {tab:'wallet',t:'В «Кошельке» твои счета, цели и обязательные платежи.'},
+ {tab:'wallet',t:'В «Кошельке» твои счета, цели и платежи. Загрузи выписку Kaspi (PDF): я сам разберу твои траты и покажу, куда уходят деньги.',btn:'Загрузить выписку'},
  {tab:'home',t:'Если игры станет много, включи «Спокойный режим» в настройках. Удачи!'}];
 function maybeTour(){if(S.onboarded&&!S.tourSeen&&UI.tour==null&&!UI.sheet&&!UI.pendingLvl)startTour()}
 function startTour(){UI.sheet=null;UI.confirm=null;renderSheet();UI.tour=0;tourGo()}
@@ -1090,7 +1109,7 @@ function endTour(){UI.tour=null;S.tourSeen=true;save();$('#tourlayer').innerHTML
 function drawTour(){const L=$('#tourlayer');if(UI.tour==null){L.innerHTML='';return}
   const i=UI.tour,st=TOURS[i],last=i===TOURS.length-1;
   L.innerHTML='<div class="tv-block"></div><div class="tv-dim"></div>'
-   +'<div class="tv-box" role="dialog" aria-label="Обучение"><div class="tv-mage">'+mageSVG()+'</div><div class="tv-name">Маг Орвин</div><p class="tv-p">'+esc(st.t)+'</p>'
+   +'<div class="tv-box" role="dialog" aria-label="Обучение"><div class="tv-mage">'+mageSVG()+'</div><div class="tv-name">Маг Орвин</div><p class="tv-p">'+esc(st.t)+'</p>'+(st.btn?'<button class="btn" data-act="tourimp">'+esc(st.btn)+'</button>':'')
    +'<div class="tv-bar"><button class="tv-skip" data-act="tourend">Пропустить</button><span class="tv-n">'+(i+1)+' / '+TOURS.length+'</span>'
    +(i>0?'<button class="btn ghost small" data-act="tourprev">Назад</button>':'')+'<button class="btn small" data-act="tournext">'+(last?'В путь':'Дальше')+'</button></div></div>'}
 function sheetGoal(){const f=UI.form,edit=!!UI.sheet.id;
@@ -1234,6 +1253,7 @@ function act(a,el){const v=el.dataset.v;
     case 'tournext':if(UI.tour>=TOURS.length-1)endTour();else{UI.tour++;tourGo()}break;
     case 'tourprev':if(UI.tour>0){UI.tour--;tourGo(-1)}break;
     case 'tourend':endTour();break;
+    case 'tourimp':endTour();act('imp',el);break;
     case 'goalnew':UI.form={name:'',icon:'',target:'',deadline:'',err:''};openSheet('goal',{id:null});break;
     case 'goalopen':UI.form={err:''};openSheet('gdet',{id:v});break;
     case 'goaledit':{const g=S.goals.find(x=>x.id===v);if(!g)break;UI.form={name:g.name,icon:g.icon,target:String(g.target),deadline:g.deadline||'',err:''};openSheet('goal',{id:v});break}
