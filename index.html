@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Хроника Монет</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -19,6 +19,7 @@
 }
 *{box-sizing:border-box}
 html,body{min-height:100%}
+html,body{touch-action:manipulation}
 body{background-color:var(--bg);background-image:linear-gradient(180deg,var(--tint) 0,transparent 440px);background-repeat:no-repeat;color:var(--ink);font:15px/1.45 var(--body);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   padding-block:0;-webkit-text-size-adjust:100%}
@@ -164,10 +165,13 @@ input[type=range]{width:100%;accent-color:var(--gold);min-height:32px}
 .q.done .qt{color:var(--mute);text-decoration:line-through}
 .q:disabled{cursor:default}
 .tv-block{position:fixed;inset:0;z-index:70;touch-action:none}
-.tv-dim{position:fixed;inset:0;z-index:70;background:rgba(8,6,12,.8);pointer-events:none}
+.tv-dim{position:fixed;inset:0;z-index:70;background:rgba(8,6,12,.45);pointer-events:none}
 .tv-spot{position:fixed;z-index:71;border:2px solid var(--gold);box-shadow:0 0 0 9999px rgba(8,6,12,.8);pointer-events:none;animation:tvp 1s steps(2) infinite}
 @keyframes tvp{50%{border-color:var(--gold-d)}}
-.tv-box{position:fixed;z-index:72;left:12px;right:12px;max-width:456px;margin:0 auto;background:var(--panel);border:2px solid var(--gold-d);box-shadow:4px 4px 0 var(--shadow);padding:12px;display:flex;flex-direction:column;gap:10px}
+.tv-box{position:fixed;z-index:72;left:0;right:0;bottom:0;height:46vh;min-height:300px;max-width:480px;margin:0 auto;background:var(--panel);border:2px solid var(--gold-d);border-bottom:0;box-shadow:0 -4px 0 var(--shadow);padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:10px}
+.tv-box .tv-mage{width:84px}
+.tv-p{font-size:20px;line-height:1.4;flex:1;display:flex;align-items:center}
+.tv-box .tv-bar{width:100%}
 .tv-box.top{top:calc(12px + env(safe-area-inset-top,0px))}
 .tv-box.bot{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .tv-top{display:flex;gap:12px;align-items:flex-start}
@@ -197,8 +201,8 @@ input[type=range]{width:100%;accent-color:var(--gold);min-height:32px}
 (function(){var n=0,lab;function box(){var b=document.getElementById('dbg');if(!b){b=document.createElement('div');b.id='dbg';b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:9999;background:#7a1f1f;color:#fff;font:12px/1.3 monospace;padding:8px;white-space:pre-wrap;pointer-events:none';document.body.appendChild(b)}return b}
 window.addEventListener('error',function(ev){try{box().textContent+='ERR: '+(ev.message||'')+' @'+(ev.lineno||'')+'\n'}catch(e){}});
 window.addEventListener('unhandledrejection',function(ev){try{box().textContent+='REJ: '+(ev.reason&&ev.reason.message||ev.reason)+'\n'}catch(e){}});
-lab=document.createElement('div');lab.style.cssText='position:fixed;left:4px;bottom:4px;z-index:9999;background:#000a;color:#9f9;font:10px monospace;padding:2px 4px;pointer-events:none';lab.textContent='v0.8.1 тапы:0';document.body.appendChild(lab);
-document.addEventListener('click',function(){n++;lab.textContent='v0.8.1 тапы:'+n},true)})();
+lab=document.createElement('div');lab.style.cssText='position:fixed;left:4px;bottom:4px;z-index:9999;background:#000a;color:#9f9;font:10px monospace;padding:2px 4px;pointer-events:none';lab.textContent='v0.8.3 тапы:0';document.body.appendChild(lab);
+document.addEventListener('click',function(){n++;lab.textContent='v0.8.3 тапы:'+n},true)})();
 </script>
 <script>
 // ==LOGIC==
@@ -839,10 +843,10 @@ function render(){
 function accOpts(sel,skip){return S.accounts.filter(a=>a.id!==skip).map(a=>'<option value="'+a.id+'"'+(a.id===sel?' selected':'')+'>'+esc(a.name)+'</option>').join('')}
 function openSheet(kind,data){UI.sheet=Object.assign({kind:kind},data||{});UI.confirm=null;renderSheet()}
 function closeSheet(){UI.sheet=null;UI.confirm=null;renderSheet();if(UI.pendingLvl)openSheet('lvl')}
-function head(t,lock){return '<div class="sh-head"><h2>'+t+'</h2>'+(lock?'':'<button class="x" data-act="close" aria-label="Закрыть">×</button>')+'</div>'}
+function shHead(t,lock){return '<div class="sh-head"><h2>'+t+'</h2>'+(lock?'':'<button class="x" data-act="close" aria-label="Закрыть">×</button>')+'</div>'}
 function sheetAdd(){const F=UI.F;
   const types=[['exp','Расход'],['inc','Доход'],['tr','Перевод']];
-  let h=head('Новая запись')+'<div class="seg">'+types.map(t=>'<button class="'+(F.type===t[0]?'on':'')+'" data-act="ftype" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'
+  let h=shHead('Новая запись')+'<div class="seg">'+types.map(t=>'<button class="'+(F.type===t[0]?'on':'')+'" data-act="ftype" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'
    +'<div class="amtwrap"><input id="amt" class="amount" data-f="amount" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0" aria-label="Сумма в тенге" value="'+esc(F.amount)+'"><span>₸</span></div>';
   UI.rep=F.type==='tr'?[]:repeatList(F.type);
   if(UI.rep.length)h+='<div class="label">Повторить</div><div class="fchips">'+UI.rep.map((r,i)=>{const c=catInfo(r.cat);return '<button class="fc" data-act="rep" data-v="'+i+'">'+c.icon+' '+esc(c.name)+' · '+fmt(r.amount)+'</button>'}).join('')+'</div>';
@@ -893,7 +897,7 @@ function sheetImp(){const F=UI.form;
     const sum=a=>a.reduce((q,i)=>q+i.amount,0);const sk=P.skip;const skN=(sk.internal||0)+(sk.cash||0)+(sk.other||0);
     const cats={};ex.forEach(i=>{if(i.cat){const c=cats[i.cat]||(cats[i.cat]={n:0,s:0});c.n++;c.s+=i.amount}});
     const top=Object.keys(cats).sort((a,b)=>cats[b].s-cats[a].s).slice(0,6);
-    let h=head('Проверь список')+'<p class="sub">Найдено в выписке: '+F.rows.length+'. Добавим '+P.items.length+': расходов '+ex.length+' на '+fmt(sum(ex))+', доходов '+inc.length+' на '+fmt(sum(inc))+'.</p>';
+    let h=shHead('Проверь список')+'<p class="sub">Найдено в выписке: '+F.rows.length+'. Добавим '+P.items.length+': расходов '+ex.length+' на '+fmt(sum(ex))+', доходов '+inc.length+' на '+fmt(sum(inc))+'.</p>';
     if(skN)h+='<p class="note">Пропущено '+skN+': переводы между своими счетами и пополнения наличными. Это не траты и не доходы.</p>';
     if(P.dups)h+='<p class="note">Уже были добавлены раньше: '+P.dups+'.</p>';
     h+='<div class="fchips"><button class="fc'+(F.tx?' on':'')+'" data-act="imptoggle" data-v="tx">Переводы людям: '+(F.tx?'считать расходом':'не считать')+'</button><button class="fc'+(F.inc?' on':'')+'" data-act="imptoggle" data-v="inc">Пополнения от людей: '+(F.inc?'считать доходом':'не считать')+'</button></div>';
@@ -902,7 +906,7 @@ function sheetImp(){const F=UI.form;
       P.unknown.slice(0,8).forEach(u=>{h+='<div class="field"><label>'+esc(u.name)+' · '+u.n+' '+plural(u.n,['раз','раза','раз'])+' · '+fmt(u.sum)+'</label><select class="inp" data-mk="'+esc(u.key)+'" aria-label="Категория для '+esc(u.name)+'">'
         +catsFor('exp').map(c=>'<option value="'+c.id+'"'+((F.map[u.key]||'other')===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'})}
     return h+'<button class="btn" data-act="impgo"'+(P.items.length?'':' disabled')+'>Добавить '+P.items.length+'</button><button class="btn ghost" data-act="impback">Назад</button>'}
-  return head('Загрузить историю')
+  return shHead('Загрузить историю')
    +'<p class="note">Файл читается только на этом телефоне и никуда не отправляется. Сохраняются только операции: дата, сумма, место. ИИН и номера счетов не читаются и не хранятся.</p>'
    +'<p class="sub">В приложении Kaspi скачай выписку по карте в PDF, потом нажми кнопку и выбери этот файл.</p>'
    +'<div class="field"><label for="ixa">К какому счёту относится выписка</label><select id="ixa" class="inp" data-f="acc">'+accOpts(F.acc)+'</select></div>'
@@ -912,15 +916,15 @@ function sheetImp(){const F=UI.form;
    +'<button class="fc" style="align-self:flex-start" data-act="imppaste">'+(F.paste?'Скрыть ввод текста':'Или вставить текст')+'</button>'
    +(F.paste?'<div class="field"><label for="ixt">Текст выписки</label><textarea id="ixt" class="inp" style="min-height:120px" data-f="text" placeholder="Вставь сюда текст выписки">'+esc(F.text)+'</textarea></div><button class="btn ghost" data-act="impparse">Разобрать текст</button>':'')}
 function curF(){const k=UI.sheet&&UI.sheet.kind;return k==='add'?UI.F:(k==='tx'&&UI.E)?UI.E:UI.form}
-function sheetTx(){const x=S.tx.find(t=>t.id===UI.sheet.id);if(!x)return head('Запись')+'<p>Запись не найдена.</p>';
+function sheetTx(){const x=S.tx.find(t=>t.id===UI.sheet.id);if(!x)return shHead('Запись')+'<p>Запись не найдена.</p>';
   const del=(UI.confirm===x.id?'<p class="err">Удалить запись? Баланс счёта пересчитается. XP останется.</p><div class="two"><button class="btn ghost" data-act="close">Оставить</button><button class="btn danger" data-act="txdel" data-v="'+x.id+'">Да, удалить</button></div>'
      :'<button class="btn danger" data-act="txdel" data-v="'+x.id+'">Удалить запись</button>');
   if(x.type==='tr'){const c={icon:'⇄',name:'Перевод'};
-    return head('Запись')+'<div class="row" style="cursor:default"><span class="tile">'+c.icon+'</span><span class="mid"><div class="t1">'+esc(x.note||c.name)+'</div><div class="t2">'+esc(c.name)+' · '+fmtDate(x.date)+'</div></span><span class="amt">'+fmt(x.amount)+'</span></div>'
+    return shHead('Запись')+'<div class="row" style="cursor:default"><span class="tile">'+c.icon+'</span><span class="mid"><div class="t1">'+esc(x.note||c.name)+'</div><div class="t2">'+esc(c.name)+' · '+fmtDate(x.date)+'</div></span><span class="amt">'+fmt(x.amount)+'</span></div>'
      +'<p class="note">'+esc(accName(x.acc))+' → '+esc(accName(x.to))+'</p>'+del}
   const E=UI.E&&UI.E.id===x.id?UI.E:(UI.E=newE(x));
   const sim=similarTx(x).length;
-  let h=head('Запись')+(x.hist?'<p class="note">Из архива (выписка). Баланс счёта от правок не меняется.</p>':'')
+  let h=shHead('Запись')+(x.hist?'<p class="note">Из архива (выписка). Баланс счёта от правок не меняется.</p>':'')
    +'<div class="amtwrap"><input id="eamt" class="amount" data-f="amount" inputmode="decimal" autocomplete="off" aria-label="Сумма в тенге" value="'+esc(E.amount)+'"><span>₸</span></div>'
    +'<div class="label">Категория</div><div class="cats">'+catsFor(x.type).map(c=>'<button class="cat '+(E.cat===c.id?'on':'')+'" data-act="ecat" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')
    +'<button class="cat dashed" data-act="ecustomtoggle"><span class="ci">+</span><span>Своя</span></button></div>';
@@ -935,7 +939,7 @@ function sheetTx(){const x=S.tx.find(t=>t.id===UI.sheet.id);if(!x)return head('�
   return h+'<button class="btn" data-act="txsave">Сохранить</button>'+del}
 function newE(x){return{id:x.id,amount:String(x.amount),cat:x.cat,date:x.date,acc:x.acc,note:x.note||'',more:false,custom:false,cname:'',cicon:'',all:false,err:''}}
 function sheetAcc(){const f=UI.form;const edit=!!UI.sheet.id;
-  return head(edit?'Счёт':'Новый счёт')
+  return shHead(edit?'Счёт':'Новый счёт')
    +'<div class="field"><label for="an">Название</label><input id="an" class="inp" data-f="name" maxlength="24" value="'+esc(f.name)+'" placeholder="Например, Kaspi Gold"></div>'
    +'<div class="field"><label for="at">Тип</label><select id="at" class="inp" data-f="type">'+Object.keys(ACC_TYPES).map(k=>'<option value="'+k+'"'+(f.type===k?' selected':'')+'>'+ACC_TYPES[k][0]+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="ab">'+(edit?'Сколько сейчас на счёте':'Сколько сейчас на счёте')+'</label><input id="ab" class="inp" data-f="bal" inputmode="decimal" value="'+esc(f.bal)+'" placeholder="0"></div>'
@@ -943,7 +947,7 @@ function sheetAcc(){const f=UI.form;const edit=!!UI.sheet.id;
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="accsave">Сохранить</button>'
    +(edit?(UI.confirm==='acc'?'<p class="err">Удалить счёт? Это возможно, только если по нему нет записей.</p><button class="btn danger" data-act="accdel">Да, удалить</button>':'<button class="btn ghost" data-act="accdel">Удалить счёт</button>'):'')}
 function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
-  return head(edit?'Платёж':'Новый платёж')
+  return shHead(edit?'Платёж':'Новый платёж')
    +'<div class="field"><label for="mn">Название</label><input id="mn" class="inp" data-f="name" maxlength="30" value="'+esc(f.name)+'" placeholder="Аренда, интернет, кредит"></div>'
    +'<div class="two"><div class="field"><label for="ma">Сумма, ₸</label><input id="ma" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
    +'<div class="field"><label for="md">День месяца</label><input id="md" class="inp" data-f="day" inputmode="numeric" maxlength="2" value="'+esc(f.day)+'"></div></div>'
@@ -952,21 +956,21 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="mandsave">Сохранить</button>'
    +(edit?'<button class="btn ghost" data-act="manddel">Удалить платёж</button>':'')}
 function sheetGear(){const L=levelInfo(S.xp).L;
-  let h=head('Экипировка')+'<div class="herobig">'+heroSVG(L)+'</div><p class="note">Вещи открываются с уровнем. Нажми на открытую вещь, чтобы надеть её. Прежнюю можно вернуть в любой момент.</p>';
+  let h=shHead('Экипировка')+'<div class="herobig">'+heroSVG(L)+'</div><p class="note">Вещи открываются с уровнем. Нажми на открытую вещь, чтобы надеть её. Прежнюю можно вернуть в любой момент.</p>';
   Object.keys(GEAR).forEach(s=>{const cur=equippedTier(s,L);h+='<div class="slot">'+SLOTN[s]+'</div><div class="gear">'+GEAR[s].map((g,i)=>'<button class="g '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span>'+esc(g.n)+'</span><span>'+(i===cur?'надето':g.l>L?'с '+g.l+' ур.':'надеть')+'</span></button>').join('')+'</div>'});
   return h}
 function sheetLvl(){const p=UI.pendingLvl;const un=unlockedBetween(p.from,p.to);
-  return head('Новый уровень!',true)+'<div class="herobig">'+heroSVG(p.to)+'</div><p class="lvbig">Уровень <span class="n">'+p.to+'</span></p>'
+  return shHead('Новый уровень!',true)+'<div class="herobig">'+heroSVG(p.to)+'</div><p class="lvbig">Уровень <span class="n">'+p.to+'</span></p>'
    +(un.length?'<div><div class="label">Открыто</div>'+un.map(u=>'<p>'+esc(u)+'</p>').join('')+'</div>':'<p class="note" style="text-align:center">Новые вещи ждут на следующих уровнях.</p>')
    +(p.fz?'<p class="ic">'+snow(3)+'<span>Получена заморозка стрика</span></p>':'')+'<button class="btn" data-act="lvlok">Продолжить</button>'}
 function sheetOnboard(){const f=UI.form;
-  return head('Добро пожаловать',true)+'<p>Записывай траты, чтобы прокачивать героя. Данные хранятся на этом устройстве.</p>'
+  return shHead('Добро пожаловать',true)+'<p>Записывай траты, чтобы прокачивать героя. Данные хранятся на этом устройстве.</p>'
    +'<div class="field"><label for="on">Как зовут героя</label><input id="on" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div>'
    +'<div class="two"><div class="field"><label for="oc">Наличных сейчас, ₸</label><input id="oc" class="inp" data-f="cash" inputmode="decimal" value="'+esc(f.cash)+'" placeholder="0"></div>'
    +'<div class="field"><label for="ok">На карте сейчас, ₸</label><input id="ok" class="inp" data-f="card" inputmode="decimal" value="'+esc(f.card)+'" placeholder="0"></div></div>'
    +'<p class="note">Суммы примерные, потом можно поправить. Другие счета добавишь в Кошельке.</p><button class="btn" data-act="onboard">Начать</button>'}
 function sheetData(){const f=UI.form;
-  return head('Данные и настройки')+'<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><button class="btn ghost small" style="align-self:flex-start" data-act="namesave">Сохранить имена</button>'
+  return shHead('Данные и настройки')+'<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><button class="btn ghost small" style="align-self:flex-start" data-act="namesave">Сохранить имена</button>'
    +'<button class="btn ghost" data-act="tour">Показать обучение</button><div class="sep"></div>'
    +'<div class="label">Режим</div><div class="fchips"><button class="fc'+(S.calm?' on':'')+'" data-act="calmtoggle">Спокойный режим: '+(S.calm?'вкл':'выкл')+'</button></div><p class="note">Без анимаций, звуков, окон уровней, компаньона и заданий. Деньги, цели и платежи остаются.</p><div class="sep"></div>'
    +'<div class="label">Эффекты при записи</div><div class="fchips">'+[['full','Полные'],['soft','Мягкие'],['off','Выкл']].map(k=>'<button class="fc'+((S.fx||'full')===k[0]?' on':'')+'" data-act="fx" data-v="'+k[0]+'">'+k[1]+'</button>').join('')+'</div><p class="note">Вылетающие искры и прыжок героя. Одинаковы для любой суммы. Если в телефоне включено «уменьшение движения», эффекты выключены сами.</p><div class="sep"></div>'
@@ -990,71 +994,57 @@ function mageSVG(){let o='';const r=(x,y,w,h,c)=>{o+='<rect x="'+x+'" y="'+y+'" 
   r(6,0,2,1,hat);r(5,1,4,1,hat);r(4,2,6,1,hat);r(6,2,1,1,'#e2b24a');r(3,3,8,1,hatd);r(2,4,10,1,hat);
   return '<svg viewBox="0 0 14 16" shape-rendering="crispEdges" aria-hidden="true">'+o+'</svg>'}
 const TOURS=[
- {tab:'home',sel:null,t:'Привет! Я Орвин, хранитель лагеря. Покажу, что тут к чему. Это быстро.'},
- {tab:'home',sel:'#t-free',t:'«Свободно» — деньги, которые можно тратить. Обязательные платежи и отложенное на цели уже вычтены.'},
- {tab:'home',sel:'.plus',t:'Этой кнопкой записываешь трату или доход: сумма, категория, готово. Опыт дают первые пять записей в день.'},
- {tab:'home',sel:'.actions',t:'Не тратил сегодня? Нажми «Сегодня трат не было». Это тоже даёт опыт.'},
- {tab:'home',sel:'.hero',t:'Это твой герой. Записывай деньги, получай опыт и уровни. Новые вещи меняются в «Экипировке», а награды лежат в «Достижениях».'},
- {tab:'home',sel:'.streak',t:'Огонь — это серия: сколько дней подряд ты что-то записывал. Снежинки — заморозки: они спасают серию, если пропустил день.'},
- {tab:'home',sel:'#t-pet',game:true,t:'Это твой компаньон. Корм он получает, когда ты откладываешь на цели, не тратишь день или берёшь новый уровень. Корми его, и он вырастет.'},
- {tab:'list',sel:'.scene',t:'Архив. Тут все твои записи. Нажми на запись, если нужно её удалить.'},
- {tab:'stats',sel:'.scene',t:'Башня. Тут графики: сколько пришло, сколько ушло и на что.'},
- {tab:'wallet',sel:'#t-acc',t:'Сокровищница. Тут твои счета: наличные, карта и другие. Если остаток не сходится, нажми на счёт и поправь.'},
- {tab:'wallet',sel:'#t-goals',t:'Цели и копилки. Назови, на что копишь, сумму и срок, а я скажу, успеваешь ли. Отложенные деньги уходят из «Свободно».'},
- {tab:'wallet',sel:'#t-mand',t:'Обязательные платежи: аренда, связь, кредиты. Внеси их, и я напомню о сроке.'},
- {tab:'home',sel:'#t-quest',t:'Тут «Путь новичка»: простые задания за опыт. Если игры станет много, включи «Спокойный режим» в настройках: он уберёт анимации, звуки и лишние карточки. Удачи!',alt:'Если игры будет много, включи «Спокойный режим» в настройках: он уберёт анимации, звуки и лишние карточки. Удачи в пути!'}];
+ {tab:'home',t:'Привет! Я Орвин. Покажу главное за минуту.'},
+ {tab:'home',t:'Сверху «Свободно»: сколько денег можно тратить.'},
+ {tab:'home',t:'Кнопка «Записать трату» (или «+» внизу): внеси трату или доход. Это главное, что нужно делать.'},
+ {tab:'home',t:'За записи ты получаешь опыт, растёт уровень, а огонь считает дни подряд.'},
+ {tab:'wallet',t:'В «Кошельке» твои счета, цели и обязательные платежи.'},
+ {tab:'home',t:'Если игры станет много, включи «Спокойный режим» в настройках. Удачи!'}];
 function maybeTour(){if(S.onboarded&&!S.tourSeen&&UI.tour==null&&!UI.sheet&&!UI.pendingLvl)startTour()}
 function startTour(){UI.sheet=null;UI.confirm=null;renderSheet();UI.tour=0;tourGo()}
-function tourGo(dir){dir=dir||1;while(TOURS[UI.tour]&&S.calm&&TOURS[UI.tour].game)UI.tour+=dir;if(UI.tour<0)UI.tour=0;const st=TOURS[UI.tour];if(!st)return endTour();
+function tourGo(dir){dir=dir||1;if(UI.tour<0)UI.tour=0;const st=TOURS[UI.tour];if(!st)return endTour();
   if(UI.tab!==st.tab){UI.tab=st.tab;render();window.scrollTo(0,0)}
   drawTour()}
 function endTour(){UI.tour=null;S.tourSeen=true;save();$('#tourlayer').innerHTML='';
   if(UI.tab!=='home'){UI.tab='home';render()}window.scrollTo(0,0)}
 function drawTour(){const L=$('#tourlayer');if(UI.tour==null){L.innerHTML='';return}
-  const i=UI.tour,st=TOURS[i];let el=st.sel?document.querySelector(st.sel):null;
-  if(el&&typeof el.getBoundingClientRect!=='function')el=null;
-  let rect=null,pos='bot';
-  if(el){const fixed=!!el.closest('.tabbar');
-    if(!fixed){const r0=el.getBoundingClientRect();window.scrollTo(0,Math.max(0,(window.scrollY||0)+r0.top-12))}
-    rect=el.getBoundingClientRect();pos=(fixed||rect.top>(window.innerHeight||800)*0.5)?'top':'bot'}
-  const text=(el||!st.alt)?st.t:st.alt,last=i===TOURS.length-1;
-  L.innerHTML='<div class="tv-block"></div>'
-   +(rect?'<div class="tv-spot" style="left:'+Math.round(rect.left-4)+'px;top:'+Math.round(rect.top-4)+'px;width:'+Math.round(rect.width+8)+'px;height:'+Math.round(rect.height+8)+'px"></div>':'<div class="tv-dim"></div>')
-   +'<div class="tv-box '+pos+'" role="dialog" aria-label="Обучение"><div class="tv-top"><div class="tv-mage">'+mageSVG()+'</div><div class="tv-txt"><div class="tv-name">Маг Орвин</div><p>'+esc(text)+'</p></div></div>'
+  const i=UI.tour,st=TOURS[i],last=i===TOURS.length-1;
+  L.innerHTML='<div class="tv-block"></div><div class="tv-dim"></div>'
+   +'<div class="tv-box" role="dialog" aria-label="Обучение"><div class="tv-mage">'+mageSVG()+'</div><div class="tv-name">Маг Орвин</div><p class="tv-p">'+esc(st.t)+'</p>'
    +'<div class="tv-bar"><button class="tv-skip" data-act="tourend">Пропустить</button><span class="tv-n">'+(i+1)+' / '+TOURS.length+'</span>'
    +(i>0?'<button class="btn ghost small" data-act="tourprev">Назад</button>':'')+'<button class="btn small" data-act="tournext">'+(last?'В путь':'Дальше')+'</button></div></div>'}
 function sheetGoal(){const f=UI.form,edit=!!UI.sheet.id;
-  return head(edit?'Цель':'Новая цель')
+  return shHead(edit?'Цель':'Новая цель')
    +'<div class="two"><div class="field"><label for="gi">Значок</label><input id="gi" class="inp" data-f="icon" maxlength="4" value="'+esc(f.icon)+'" placeholder="📱"></div>'
    +'<div class="field"><label for="gn">Название</label><input id="gn" class="inp" data-f="name" maxlength="30" value="'+esc(f.name)+'" placeholder="Новый телефон"></div></div>'
    +'<div class="field"><label for="gt">Сколько нужно, ₸</label><input id="gt" class="inp" data-f="target" inputmode="decimal" value="'+esc(f.target)+'" placeholder="0"></div>'
    +'<div class="field"><label for="gd">Срок (по желанию)</label><input id="gd" class="inp" type="date" data-f="deadline" min="'+today()+'" value="'+esc(f.deadline)+'"></div>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="goalsave">Сохранить</button>'}
-function sheetGdet(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return head('Цель')+'<p>Цель не найдена.</p>';
-  if(g.closed)return head('Куплено')+'<div class="list">'+closedRow(g)+'</div><p class="note">Цель закрыта, расход записан в Архив.</p>'+(UI.confirm==='goal'?'<p class="err">Убрать цель из списка? Расход в Архиве останется.</p>':'')+'<button class="btn danger" data-act="goaldel" data-v="'+g.id+'">'+(UI.confirm==='goal'?'Да, убрать':'Убрать из списка')+'</button>';
+function sheetGdet(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Цель')+'<p>Цель не найдена.</p>';
+  if(g.closed)return shHead('Куплено')+'<div class="list">'+closedRow(g)+'</div><p class="note">Цель закрыта, расход записан в Архив.</p>'+(UI.confirm==='goal'?'<p class="err">Убрать цель из списка? Расход в Архиве останется.</p>':'')+'<button class="btn danger" data-act="goaldel" data-v="'+g.id+'">'+(UI.confirm==='goal'?'Да, убрать':'Убрать из списка')+'</button>';
   const i=goalInfo(g);
   const cs=g.contribs.slice(-6).reverse().map(c=>'<div class="row" style="cursor:default;padding:6px 0"><span class="mid"><div class="t1">'+(c.amt>0?'Отложено':'Взято обратно')+'</div><div class="t2">'+fmtDate(c.date)+'</div></span>'
     +'<span class="amt '+(c.amt>0?'pos':'neg')+'">'+(c.amt>0?'+':'−')+fmt(Math.abs(c.amt))+'</span><button class="x" style="width:32px;height:32px;font-size:16px" data-act="cdel" data-g="'+g.id+'" data-v="'+c.id+'" aria-label="Удалить взнос">×</button></div>').join('');
-  return head('Цель')+'<div class="list">'+goalRow(g)+'</div><p class="note">'+esc(goalNote(g,i))+'</p>'
+  return shHead('Цель')+'<div class="list">'+goalRow(g)+'</div><p class="note">'+esc(goalNote(g,i))+'</p>'
    +'<div class="two"><button class="btn" data-act="contribopen" data-v="'+g.id+'">Пополнить</button><button class="btn ghost" data-act="buyopen" data-v="'+g.id+'">Купил</button></div>'
    +(cs?'<div class="label">Последние взносы</div><div class="list">'+cs+'</div>':'')
    +(UI.form.err?'<p class="err">'+esc(UI.form.err)+'</p>':'')
    +'<div class="two"><button class="btn ghost small" data-act="goaledit" data-v="'+g.id+'">Изменить</button>'
    +(UI.confirm==='goal'?'<button class="btn danger small" data-act="goaldel" data-v="'+g.id+'">Да, удалить</button>':'<button class="btn ghost small" data-act="goaldel" data-v="'+g.id+'">Удалить цель</button>')+'</div>'
    +(UI.confirm==='goal'?'<p class="err">Удалить цель? Отложенные деньги снова станут свободными.</p>':'')}
-function sheetContrib(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return head('Взнос')+'<p>Цель не найдена.</p>';const f=UI.form,i=goalInfo(g);
-  return head('Взнос')+'<p class="note">'+esc(g.icon+' '+g.name)+': отложено '+fmt(i.saved)+' из '+fmt(g.target)+'. Деньги остаются на твоих счетах, но считаются отложенными и не входят в «Свободно».</p>'
+function sheetContrib(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Взнос')+'<p>Цель не найдена.</p>';const f=UI.form,i=goalInfo(g);
+  return shHead('Взнос')+'<p class="note">'+esc(g.icon+' '+g.name)+': отложено '+fmt(i.saved)+' из '+fmt(g.target)+'. Деньги остаются на твоих счетах, но считаются отложенными и не входят в «Свободно».</p>'
    +'<div class="seg" style="grid-template-columns:1fr 1fr"><button class="'+(f.mode==='in'?'on':'')+'" data-act="cmode" data-v="in">Отложить</button><button class="'+(f.mode==='out'?'on':'')+'" data-act="cmode" data-v="out">Забрать</button></div>'
    +'<div class="amtwrap"><input id="camt" class="amount" data-f="amount" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Сумма в тенге" value="'+esc(f.amount)+'"><span>₸</span></div>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="contribsave">'+(f.mode==='out'?'Забрать из цели':'Отложить')+'</button>'}
-function sheetBuy(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return head('Покупка')+'<p>Цель не найдена.</p>';const f=UI.form;
-  return head('Купил!')+'<p class="note">'+esc(g.icon+' '+g.name)+'. Отложенные деньги перестанут быть отложенными, а со счёта спишется сумма покупки. Опыт за это не начисляется.</p>'
+function sheetBuy(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Покупка')+'<p>Цель не найдена.</p>';const f=UI.form;
+  return shHead('Купил!')+'<p class="note">'+esc(g.icon+' '+g.name)+'. Отложенные деньги перестанут быть отложенными, а со счёта спишется сумма покупки. Опыт за это не начисляется.</p>'
    +'<div class="field"><label for="ba">Сколько заплатил, ₸</label><input id="ba" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
    +'<div class="two"><div class="field"><label for="bc">Категория</label><select id="bc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="bk">Со счёта</label><select id="bk" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="buysave">Списать и закрыть цель</button>'}
 function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
-  return head('Достижения')+'<p class="note">Открыто '+n+' из '+ACH.length+'. За каждое награда: 20 XP.</p><div class="list">'
+  return shHead('Достижения')+'<p class="note">Открыто '+n+' из '+ACH.length+'. За каждое награда: 20 XP.</p><div class="list">'
    +ACH.map(a=>{const d=S.ach[a[0]];return '<div class="row" style="cursor:default;opacity:'+(d?1:.5)+'"><span class="tile">'+(d?a[3]:'🔒')+'</span><span class="mid"><div class="t1">'+esc(a[1])+'</div><div class="t2">'+esc(a[2])+(d?' · '+fmtDate(d):'')+'</div></span></div>'}).join('')+'</div>'}
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   if(!sh){L.innerHTML='';return}
@@ -1198,7 +1188,8 @@ document.addEventListener('click',e=>{
   if(['music','sfxtoggle','musictoggle'].indexOf(el.dataset.act)<0)playSfx('tap');
   act(el.dataset.act,el)});
 document.addEventListener('visibilitychange',()=>{try{if(!SND.ctx)return;if(document.hidden)SND.ctx.suspend();else if(S.sound&&(S.sound.music||S.sound.sfx))SND.ctx.resume()}catch(e){}});
-window.addEventListener('resize',()=>{if(UI.tour!=null)drawTour()});
+try{['gesturestart','gesturechange','gestureend'].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
+let lt=0;document.addEventListener('touchend',e=>{const t=Date.now();if(t-lt<350&&!(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)))e.preventDefault();lt=t},{passive:false})}catch(e){}
 document.addEventListener('input',e=>{const t=e.target;
   if(t.dataset&&t.dataset.snd==='vol'){S.sound.vol=t.value/100;if(SND.master)SND.master.gain.value=S.sound.vol;save();return}
   if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value});
@@ -1210,7 +1201,7 @@ document.addEventListener('change',e=>{const t=e.target;
   if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value});
 
 function start(){cloudSync(boot)}
-function tgInit(){try{const w=window.Telegram&&window.Telegram.WebApp;if(!w||!w.initData)return;w.ready();w.expand();try{w.setHeaderColor('#15121b');w.setBackgroundColor('#15121b')}catch(e){}}catch(e){}}
+function tgInit(){try{const w=window.Telegram&&window.Telegram.WebApp;if(!w||!w.initData)return;w.ready();w.expand();try{w.disableVerticalSwipes()}catch(e){}try{w.requestFullscreen()}catch(e){}try{w.setHeaderColor('#15121b');w.setBackgroundColor('#15121b')}catch(e){}}catch(e){}}
 function boot(){tgInit();S=load();if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};openSheet('onboard')}else renderSheet();
   if(S.onboarded){checkAch();if(notes.length)commit()}
