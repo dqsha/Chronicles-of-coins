@@ -1,21 +1,20 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Хроника Монет</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-@font-face{font-family:'Classic Console Neue';src:url(assets/font.woff) format('woff');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Monocraft';src:url(assets/font-regular.woff) format('woff');font-weight:100 500;font-style:normal;font-display:swap}
+@font-face{font-family:'Monocraft';src:url(assets/font-bold.woff) format('woff');font-weight:600 900;font-style:normal;font-display:swap}
 /* Layout: one narrow column, bottom tab bar, bottom sheets for input. Single dark world by choice. */
 :root{
   --bg:#15121b;--panel:#1f1b28;--panel2:#292337;--line:#3d3552;--shadow:#0b090f;
   --ink:#ece4d2;--mute:#a199b3;
   --gold:#e2b24a;--gold-d:#9c7422;
   --inc:#86b863;--exp:#d0605a;
-  --display:'Pixelify Sans','Classic Console Neue',ui-monospace,'Courier New',monospace;
-  --body:'Pixelify Sans','Classic Console Neue','Segoe UI',system-ui,sans-serif;
-  --num:'Pixelify Sans','Classic Console Neue','Noto Sans','Segoe UI',system-ui,sans-serif;
+  --display:'Monocraft',ui-monospace,'Courier New',monospace;
+  --body:'Monocraft',ui-monospace,'Courier New',monospace;
+  --num:'Monocraft',ui-monospace,'Courier New',monospace;
   --panel-a:rgba(31,27,40,.94);--tint:#201a3a;
   color-scheme:dark;
 }
@@ -156,6 +155,26 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 #toast{position:fixed;left:50%;top:calc(12px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;max-width:min(92vw,440px);
   background:var(--ink);color:#1b1722;padding:10px 14px;font-weight:600;font-size:14px;box-shadow:4px 4px 0 var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
 #toast.show{opacity:1}
+/* 0.13: мягкие отклики, герой, приветствие */
+.btn,.qk,.plus,.tab{transition:transform .16s cubic-bezier(.3,1.5,.5,1),filter .16s ease-out,box-shadow .16s ease-out}
+.btn:active,.qk:active,.plus:active{transform:translateY(3px) scale(.985)}
+@keyframes heroidle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.hero-art svg{animation:heroidle 3.4s ease-in-out infinite!important}
+.hero-art{position:relative}
+.hero-art::after{content:'';position:absolute;left:22%;right:22%;bottom:4px;height:6px;background:rgba(0,0,0,.35);border-radius:50%;filter:blur(2px);animation:heroshadow 3.4s ease-in-out infinite;z-index:0}
+.hero-art svg{position:relative;z-index:1}
+@keyframes heroshadow{0%,100%{transform:scaleX(1);opacity:.35}50%{transform:scaleX(.85);opacity:.22}}
+.q .qxp{margin-left:auto;font-size:12px;color:var(--gold);white-space:nowrap;padding-left:8px}
+.q.done .qxp{color:var(--mute)}
+.updc{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.scrim.mid .sheet.fancy,.sheet.fancy{border:14px solid transparent;border-image:url(assets/panel-stone.png) 48 stretch;background-clip:padding-box;box-shadow:none;max-height:94%;padding:0 6px 8px}
+.sheet.fancy::before{content:"";display:block;height:18px;margin:-6px 4px -4px;background:url(assets/vine-edge.png) repeat-x left top/auto 18px;pointer-events:none}
+.obanner{position:relative;height:96px;margin:0 0 10px;border:2px solid var(--line);overflow:hidden;background:var(--panel2)}
+.obanner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.obt{position:absolute;left:0;bottom:0;padding:6px 12px;background:rgba(21,18,27,.88);border-top:2px solid var(--line);border-right:2px solid var(--line);font:400 15px var(--display);color:var(--gold)}
+.otitle{font-size:17px;text-align:center;margin:4px 0 2px;color:var(--gold)}
+.otext{text-align:center;color:var(--mute);font-size:14px}
+
 /* 0.12.1: лозы */
 .card::before{content:'';position:absolute;left:10px;right:10px;top:-13px;height:18px;background:url(assets/vine-edge.png) repeat-x left top/auto 18px;pointer-events:none;z-index:2;opacity:.95}
 .card{position:relative}
@@ -605,7 +624,7 @@ function quickAdd(i){const r=repeatList('exp')[i];if(!r)return null;const acc=S.
 
 /* ================= UI ================= */
 const $=s=>document.querySelector(s);
-const UI={tab:'home',period:'month',filter:'all',limit:60,sheet:null,F:null,form:{},confirm:null,focus:false,pendingLvl:null,fxJob:null,fxOrg:null,pct:null,rep:[],E:null,mon:null,day:null,undo:null,undoT:null};
+const UI={tab:'home',period:'month',filter:'all',limit:60,sheet:null,F:null,form:{},confirm:null,focus:false,pendingLvl:null,fxJob:null,fxOrg:null,pct:null,rep:[],E:null,upd:null,mon:null,day:null,undo:null,undoT:null};
 const FLAME=['...o...','..ooo..','..ooo..','.ooyoo.','.ooyyo.','ooyyyoo','ooyyyoo','.oyyyo.','..ooo..'];
 const SNOW=['...c...','.c.c.c.','..ccc..','ccccccc','..ccc..','.c.c.c.','...c...'];
 function pix(rows,pal,px){const h=rows.length,w=rows[0].length;let o='<svg viewBox="0 0 '+w+' '+h+'" width="'+w*px+'" height="'+h*px+'" shape-rendering="crispEdges" aria-hidden="true">';
@@ -684,6 +703,7 @@ function scene(tab,title,loc,right,extra){if(!sceneCache[tab])sceneCache[tab]=SC
 /* ---------- sound: synthesized chiptune, no audio files ---------- */
 const SND={ctx:null,master:null,sg:null,mg:null,timer:null,nextT:0,step:0};
 const mf=m=>440*Math.pow(2,(m-69)/12);
+function tgHaptic(){try{if(S.calm||(S.sound&&!S.sound.sfx))return;const h=window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.HapticFeedback;if(h&&h.impactOccurred)h.impactOccurred('soft')}catch(e){}}
 function tone(c,d,f,t,dur,type,vol,f2){const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
   if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
   g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
@@ -692,13 +712,13 @@ function padTone(c,d,f,t,dur,vol){const o=c.createOscillator(),g=c.createGain();
   g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+0.6);g.gain.linearRampToValueAtTime(0.0001,t+dur);
   o.connect(g);g.connect(d);o.start(t);o.stop(t+dur+0.05)}
 const SFX={
-  tap:(c,d,t)=>tone(c,d,700,t,0.05,'square',0.05),
-  save:(c,d,t)=>{tone(c,d,660,t,0.07,'square',0.07);tone(c,d,990,t+0.07,0.12,'square',0.07)},
-  coin:(c,d,t)=>{tone(c,d,988,t,0.07,'square',0.07);tone(c,d,1319,t+0.07,0.18,'square',0.07)},
-  up:(c,d,t)=>{[523,659,784,1047,1319].forEach((f,i)=>tone(c,d,f,t+i*0.09,0.16,'square',0.08));tone(c,d,262,t,0.6,'triangle',0.12)},
-  ach:(c,d,t)=>{[784,988,1175,1568].forEach((f,i)=>tone(c,d,f,t+i*0.07,0.14,'triangle',0.1))},
-  feed:(c,d,t)=>{tone(c,d,330,t,0.08,'square',0.06,220);tone(c,d,300,t+0.12,0.08,'square',0.06,200);tone(c,d,880,t+0.26,0.14,'triangle',0.08)},
-  err:(c,d,t)=>tone(c,d,160,t,0.18,'sawtooth',0.06,110)};
+  tap:(c,d,t)=>tone(c,d,540,t,0.1,'sine',0.07,330),
+  save:(c,d,t)=>{tone(c,d,523,t,0.14,'sine',0.06,500);tone(c,d,784,t+0.09,0.2,'sine',0.06,760)},
+  coin:(c,d,t)=>{tone(c,d,880,t,0.12,'sine',0.06,840);tone(c,d,1175,t+0.08,0.24,'sine',0.055,1120)},
+  up:(c,d,t)=>{[523,659,784,1047,1319].forEach((f,i)=>tone(c,d,f,t+i*0.1,0.22,'sine',0.07));tone(c,d,262,t,0.7,'triangle',0.09)},
+  ach:(c,d,t)=>{[784,988,1175,1568].forEach((f,i)=>tone(c,d,f,t+i*0.08,0.2,'sine',0.07))},
+  feed:(c,d,t)=>{tone(c,d,360,t,0.1,'sine',0.06,260);tone(c,d,330,t+0.13,0.1,'sine',0.06,240);tone(c,d,880,t+0.27,0.18,'sine',0.06)},
+  err:(c,d,t)=>tone(c,d,220,t,0.2,'sine',0.05,160)};
 const PROG=[[45,[0,3,7]],[41,[0,4,7]],[48,[0,4,7]],[40,[0,4,7]],[45,[0,3,7]],[38,[0,3,7]],[43,[0,4,7]],[40,[0,4,7]]];
 const ARP=[0,1,2,1,0,2,1,2],EIGHTH=0.375;
 function musicStep(c,d,t,step){const ch=PROG[Math.floor(step/8)%PROG.length],i=step%8,root=ch[0],iv=ch[1];
@@ -773,7 +793,7 @@ function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
   return '<section class="card hero'+(full?'':' herom')+'"'+(full?'':' data-act="camp" role="button" tabindex="0" aria-label="Открыть лагерь героя"')+'><div class="hero-art">'+heroSVG(lv.L)+'</div><div class="hero-info">'
     +'<div class="lvl">Уровень <span class="n">'+lv.L+'</span></div><div class="name">'+esc(S.name)+'</div>'
     +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div>'
-    +'<div class="xpline">'+lv.cur+' / '+lv.need+' XP</div>'
+    +'<div class="xpline">'+(full?lv.cur+' / '+lv.need+' XP · ':'')+'До уровня '+(lv.L+1)+': ещё '+(lv.need-lv.cur)+' XP</div>'
     +'<div class="streak"><span class="ic">'+flame(3)+'<span>'+esc(full?stTxt:(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь')+'</span></span>'+(full?'<span class="ic">'+snow(3)+'<span>Заморозки: '+S.streak.freezes+' из 3</span></span>':'')+'</div>'
     +(full?'<div class="chips"><button class="btn ghost small" data-act="gear">Экипировка</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
 function sheetCamp(){const lv=levelInfo(S.xp),nx=nextUnlock(lv.L);
@@ -791,13 +811,15 @@ function viewHome(){
   const undo=UI.undo?'<div class="undo"><span>Записано: '+esc(UI.undo.txt)+'</span><button class="btn small" data-act="undo">Отменить</button></div>':'';
   const today_=todayAll.length?'<div class="list">'+todayAll.slice(0,3).map(txRow).join('')+'</div>'+(todayAll.length>3?'<p class="sub">И ещё '+(todayAll.length-3)+'. Все записи во вкладке «Записи».</p>':'')
     :'<p>'+(nsDone?'Трат нет. Отличный день.':'Пока ничего не записано.')+'</p>';
-  return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn())
+  const upd=UI.upd?'<section class="card updc"><p>Вышла новая версия '+esc(UI.upd)+'.</p><button class="btn small" data-act="reload">Обновить</button></section>':'';
+  return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn())+upd
   +'<section class="card" id="t-free"><div class="label">Свободно сейчас</div><div class="big '+(fm<0?'neg':'')+'">'+fmt(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
     +quick+undo
     +'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button></section>'
   +'<section class="card"><h2>Сегодня'+(hasExp?': '+fmt(tsum):'')+'</h2>'+today_+'</section>'
   +heroCard(false)
+  +(calm?'':questCard())
   +histCard()
   +(up.length?'<section class="card"><h2>Обязательные платежи</h2><div class="list">'+up.map(m=>mandRow(m,true)).join('')+'</div></section>':'')
   +goalCard()
@@ -839,8 +861,8 @@ function goalCard(){const g=mainGoal();if(!g)return '';const i=goalInfo(g);
   return '<section class="card"><h2>Ближайшая цель</h2><div class="list">'+goalRow(g)+'</div><p class="sub">'+esc(goalNote(g,i))+'</p><button class="btn small" style="margin-top:10px" data-act="contribopen" data-v="'+g.id+'">Пополнить</button></section>'}
 function questCard(){if(S.questAll||S.questHidden)return '';const done=QUEST.filter(q=>S.quest[q[0]]).length;
   const go={tx:'add',mand:'mandnew',goal:'goalnew',contrib:'qcontrib',gear:'gear'};
-  return '<section class="card" id="t-quest"><h2>Путь новичка</h2><p class="sub" style="margin:-4px 0 8px">Пройдено '+done+' из '+QUEST.length+'. За каждый шаг +15 XP, за все вместе ещё +30 XP.</p>'
-   +QUEST.map(q=>{const d=!!S.quest[q[0]];return '<button class="q'+(d?' done':'')+'" data-act="'+go[q[0]]+'"'+(d?' disabled':'')+'><span class="ck">'+(d?'✓':'')+'</span><span class="qt">'+esc(q[1])+'</span></button>'}).join('')
+  return '<section class="card" id="t-quest"><h2>Путь новичка: задания</h2><p class="sub" style="margin:-4px 0 8px">Пройдено '+done+' из '+QUEST.length+'. Каждое задание учит пользоваться приложением и даёт опыт: +15 XP за шаг, +30 XP за все вместе.</p>'
+   +QUEST.map(q=>{const d=!!S.quest[q[0]];return '<button class="q'+(d?' done':'')+'" data-act="'+go[q[0]]+'"'+(d?' disabled':'')+'><span class="ck">'+(d?'✓':'')+'</span><span class="qt">'+esc(q[1])+'</span><span class="qxp">'+(d?'готово':'+15 XP')+'</span></button>'}).join('')
    +'<div class="chips" style="margin-top:10px"><button class="btn ghost small" data-act="tour">Показать обучение</button><button class="btn ghost small" data-act="questhide">Скрыть</button></div></section>'}
 function backupCard(){if(S.tx.length<5)return '';if(S.lastBackup&&dayDiff(S.lastBackup,today())<14)return '';
   return '<section class="card"><h2>Копия данных</h2><p class="sub" style="margin-top:0">Данные хранятся только на этом устройстве. '+(S.lastBackup?'Последняя копия была '+fmtDate(S.lastBackup)+'.':'Копии ещё не было.')+' Сохрани её в заметки, чтобы ничего не потерять.</p><button class="btn ghost small" style="margin-top:10px" data-act="data">Сделать копию</button></section>'}
@@ -931,6 +953,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
+const APP_V='0.13.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1071,13 +1094,14 @@ function sheetLvl(){const p=UI.pendingLvl;const un=unlockedBetween(p.from,p.to);
    +(un.length?'<div><div class="label">Открыто</div>'+un.map(u=>'<p>'+esc(u)+'</p>').join('')+'</div>':'<p class="note" style="text-align:center">Новые вещи ждут на следующих уровнях.</p>')
    +(p.fz?'<p class="ic">'+snow(3)+'<span>Получена заморозка стрика</span></p>':'')+'<button class="btn" data-act="lvlok">Продолжить</button>'}
 function sheetOnboard(){const f=UI.form;
-  return shHead('Добро пожаловать',true)+'<p>Записывай траты, чтобы прокачивать героя. Данные хранятся на этом устройстве.</p>'
+  return '<div class="obanner"><img src="assets/loc-home.jpg" alt="" onerror="this.remove()"><div class="obt">Хроника Монет</div></div>'
+   +'<h2 class="otitle">Добро пожаловать, путник</h2><p class="otext">Записывай траты, и твой герой будет расти. Данные сохраняются в твоём аккаунте Telegram.</p>'
    +'<div class="field"><label for="on">Как зовут героя</label><input id="on" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div>'
    +'<div class="two"><div class="field"><label for="oc">Наличных сейчас, ₸</label><input id="oc" class="inp" data-f="cash" inputmode="decimal" value="'+esc(f.cash)+'" placeholder="0"></div>'
    +'<div class="field"><label for="ok">На карте сейчас, ₸</label><input id="ok" class="inp" data-f="card" inputmode="decimal" value="'+esc(f.card)+'" placeholder="0"></div></div>'
-   +'<p class="note">Суммы примерные, потом можно поправить. Другие счета добавишь в Кошельке.</p><button class="btn" data-act="onboard">Начать</button>'}
+   +'<p class="note">Суммы примерные, потом можно поправить. Другие счета добавишь в Кошельке.</p><button class="btn big" data-act="onboard">Начать путь</button>'}
 function sheetData(){const f=UI.form;
-  return shHead('Данные и настройки')+'<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><button class="btn ghost small" style="align-self:flex-start" data-act="namesave">Сохранить имена</button>'
+  return shHead('Данные и настройки')+'<p class="note">Версия приложения: '+APP_V+'</p>'+'<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><button class="btn ghost small" style="align-self:flex-start" data-act="namesave">Сохранить имена</button>'
    +'<button class="btn ghost" data-act="tour">Показать обучение</button><div class="sep"></div>'
    +'<div class="label">Режим</div><div class="fchips"><button class="fc'+(S.calm?' on':'')+'" data-act="calmtoggle">Спокойный режим: '+(S.calm?'вкл':'выкл')+'</button></div><p class="note">Без анимаций, звуков, окон уровней, компаньона и заданий. Деньги, цели и платежи остаются.</p><div class="sep"></div>'
    +'<div class="label">Эффекты при записи</div><div class="fchips">'+[['full','Полные'],['soft','Мягкие'],['off','Выкл']].map(k=>'<button class="fc'+((S.fx||'full')===k[0]?' on':'')+'" data-act="fx" data-v="'+k[0]+'">'+k[1]+'</button>').join('')+'</div><p class="note">Вылетающие искры и прыжок героя. Одинаковы для любой суммы. Если в телефоне включено «уменьшение движения», эффекты выключены сами.</p><div class="sep"></div>'
@@ -1158,7 +1182,7 @@ function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   if(!sh){L.innerHTML='';return}
   const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard';
-  L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet" role="dialog" aria-modal="true">'+body+'</div></div>';
+  L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
   if(sh.kind==='add'&&UI.focus){UI.focus=false;const a=$('#amt');if(a)a.focus()}}
 
 /* ---------- actions ---------- */
@@ -1209,6 +1233,7 @@ function act(a,el){const v=el.dataset.v;
     case 'tab':UI.tab=v;render();window.scrollTo(0,0);break;
     case 'add':UI.F=newF(v==='inc'?'inc':'exp');UI.focus=true;openSheet('add');break;
     case 'camp':openSheet('camp');break;
+    case 'reload':try{location.href=location.pathname+'?v='+encodeURIComponent(UI.upd||'')+'&t='+Date.now()}catch(e){}break;
     case 'quick':{const tx=quickAdd(+v);if(tx){const c=catInfo(tx.cat);UI.undo={id:tx.id,txt:(tx.note||c.name)+' · '+fmt(tx.amount)};
       clearTimeout(UI.undoT);UI.undoT=setTimeout(()=>{UI.undo=null;if(!UI.sheet&&UI.tab==='home')render()},9000);commit()}break}
     case 'undo':if(UI.undo){delTx(UI.undo.id);UI.undo=null;clearTimeout(UI.undoT);toast('Запись отменена');commit()}break;
@@ -1301,7 +1326,7 @@ document.addEventListener('click',e=>{
   const sc=e.target;if(sc.classList&&sc.classList.contains('scrim')&&sc.dataset.lock!=='1'){closeSheet();return}
   const el=e.target.closest('[data-act]');if(!el||el.disabled)return;
   if(S.sound&&S.sound.music&&!SND.timer)musicSync();
-  if(['music','sfxtoggle','musictoggle'].indexOf(el.dataset.act)<0)playSfx('tap');
+  if(['music','sfxtoggle','musictoggle'].indexOf(el.dataset.act)<0){playSfx('tap');tgHaptic()}
   act(el.dataset.act,el)});
 document.addEventListener('visibilitychange',()=>{try{if(!SND.ctx)return;if(document.hidden)SND.ctx.suspend();else if(S.sound&&(S.sound.music||S.sound.sfx))SND.ctx.resume()}catch(e){}});
 try{['gesturestart','gesturechange','gestureend'].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
@@ -1319,7 +1344,8 @@ document.addEventListener('change',e=>{const t=e.target;
 
 function start(){cloudSync(boot)}
 function tgInit(){try{const w=window.Telegram&&window.Telegram.WebApp;if(!w||!w.initData)return;w.ready();w.expand();try{w.disableVerticalSwipes()}catch(e){}try{w.requestFullscreen()}catch(e){}try{w.setHeaderColor('#15121b');w.setBackgroundColor('#15121b')}catch(e){}}catch(e){}}
-function boot(){tgInit();S=load();if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
+function checkUpdate(){try{if(!window.fetch)return;fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j&&j.v&&j.v!==APP_V){UI.upd=j.v;if(!UI.sheet&&UI.tab==='home')render()}}).catch(()=>{})}catch(e){}}
+function boot(){tgInit();S=load();setTimeout(checkUpdate,1500);if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};openSheet('onboard')}else renderSheet();
   if(S.onboarded){checkAch();if(notes.length)commit()}
   maybeTour();
