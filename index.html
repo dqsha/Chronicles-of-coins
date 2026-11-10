@@ -420,7 +420,7 @@ const goalSaved=g=>g.contribs.reduce((s,c)=>s+c.amt,0);
 const activeGoals=()=>S.goals.filter(g=>!g.closed);
 const reserved=()=>activeGoals().reduce((s,g)=>s+Math.max(0,goalSaved(g)),0);
 const depBal=()=>S.accounts.filter(a=>a.type==='deposit').reduce((s,a)=>s+accBal(a),0);
-const freeMoney=()=>totalBal()-depBal()-unpaidSum()-reserved();
+const freeMoney=()=>totalBal()-unpaidSum()-reserved();
 
 /* ---------- events, xp, streak ---------- */
 let notes=[];
@@ -849,7 +849,7 @@ function viewHome(){
   const todayExp=todayAll.filter(x=>x.type==='exp'),tsum=todayExp.reduce((s,x)=>s+x.amount,0);
   const hasExp=todayExp.length>0,nsDone=!!S.noSpend[t];
   const up=S.mand.filter(m=>!mandStatus(m).paid).sort((a,b)=>mandStatus(a).dd-mandStatus(b).dd).slice(0,3);
-  const fsub='На счетах '+fmt(totalBal()-depBal())+(depBal()>0?', депозиты '+fmt(depBal())+' не считаются':'')+(unpaidSum()>0?', минус платежи месяца '+fmt(unpaidSum()):'')+(reserved()>0?', минус отложенное в целях '+fmt(reserved()):'')+'.';
+  const fsub='На счетах '+fmt(totalBal())+(depBal()>0?' (из них на депозитах '+fmt(depBal())+')':'')+(unpaidSum()>0?', минус платежи месяца '+fmt(unpaidSum()):'')+(reserved()>0?', минус отложенное в целях '+fmt(reserved()):'')+'.';
   const rl=repeatList('exp');
   const quick=rl.length?'<div class="label" style="margin-top:12px">Быстро, одним касанием</div><div class="qgrid">'+rl.map((r,i)=>{const c=catInfo(r.cat);return '<button class="qk" data-act="quick" data-v="'+i+'"><span class="qi">'+c.icon+'</span><span class="qn">'+esc(r.note||c.name)+'</span><span class="qa">'+fmt(r.amount)+'</span></button>'}).join('')+'</div>'
     :'<p class="sub">Когда накопятся записи, здесь появятся привычные траты: одно касание, и запись готова.</p>';
@@ -858,7 +858,7 @@ function viewHome(){
     :'<p>'+(nsDone?'Трат нет. Отличный день.':'Пока ничего не записано.')+'</p>';
   const upd=UI.upd?'<section class="card updc"><p>Вышла новая версия '+esc(UI.upd)+'.</p><button class="btn small" data-act="reload">Обновить</button></section>':'';
   return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn())+upd
-  +'<section class="card" id="t-free"><div class="label">Свободно сейчас</div><div class="big '+(fm<0?'neg':'')+'">'+fmt(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'
+  +'<section class="card" id="t-free"><div class="label">Банк сейчас</div><div class="big '+(fm<0?'neg':'')+'">'+fmt(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
     +quick+undo
     +'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button></section>'
@@ -982,7 +982,7 @@ function viewWallet(){
     return '<button class="row" data-act="accedit" data-v="'+a.id+'"><span class="tile">'+ty[1]+'</span><span class="mid"><div class="t1">'+esc(a.name)+'</div><div class="t2">'+ty[0]+'</div></span><span class="amt '+(b<0?'neg':'')+'">'+fmt(b)+'</span></button>'}).join('');
   const md=S.mand.map(m=>'<div style="display:flex;gap:8px;align-items:center">'+'<div style="flex:1;min-width:0">'+mandRow(m,true)+'</div></div>').join('');
   return scene('wallet','Кошелёк','Сокровищница',fmt(totalBal()))
-  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'">'+fmt(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'. В «Свободно» они не входят.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
+  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'">'+fmt(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
   +'<section class="card" id="t-acc"><h2>Счета</h2><div class="list">'+accs+'</div>'+(S.accounts.length>1?'<div class="fchips" style="margin-top:10px">'+(S.accounts.some(a=>a.type==='deposit')?'<button class="fc" data-act="trdep" data-v="out">Снять с депозита</button><button class="fc" data-act="trdep" data-v="in">Положить на депозит</button>':'')+'<button class="fc" data-act="trdep" data-v="any">Перевод между счетами</button></div>':'')+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
   +histWalletCard()
   +goalsSection()
@@ -998,7 +998,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.15.0';
+const APP_V='0.15.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1185,7 +1185,7 @@ const INTRO=[
  'За записи герой получает {y опыт} и растёт, а привычка копится сама. Назови своё имя и скажи, сколько у тебя монет.'];
 const TOURS=[
  {tab:'home',t:'Отлично, {y %n}! Покажу лагерь за минуту.'},
- {tab:'home',t:'Сверху {g Свободно}: столько денег можно тратить. Это главное число.'},
+ {tab:'home',t:'Сверху твой {g Банк}: сколько денег у тебя сейчас, за вычетом платежей месяца и копилок. Это главное число.'},
  {tab:'home',t:'Потратил? Жми {r Трата}. Получил? Жми {g Доход}. Привычное повторяется одним касанием.'},
  {tab:'home',t:'За записи ты получаешь {y опыт}. Нажми на героя, и откроется {y Лагерь}: питомец, экипировка и {y задания}.'},
  {tab:'wallet',t:'В {y Кошельке} живут счета, цели и платежи. Загрузи выписку Kaspi в PDF, и я сам разберу твои траты.',btn:'Загрузить выписку'},
@@ -1235,7 +1235,7 @@ function sheetGdet(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return sh
    +(UI.confirm==='goal'?'<button class="btn danger small" data-act="goaldel" data-v="'+g.id+'">Да, удалить</button>':'<button class="btn ghost small" data-act="goaldel" data-v="'+g.id+'">Удалить цель</button>')+'</div>'
    +(UI.confirm==='goal'?'<p class="err">Удалить цель? Отложенные деньги снова станут свободными.</p>':'')}
 function sheetContrib(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Взнос')+'<p>Цель не найдена.</p>';const f=UI.form,i=goalInfo(g);
-  return shHead('Взнос')+'<p class="note">'+esc(g.icon+' '+g.name)+': отложено '+fmt(i.saved)+' из '+fmt(g.target)+'. Деньги остаются на твоих счетах, но считаются отложенными и не входят в «Свободно».</p>'
+  return shHead('Взнос')+'<p class="note">'+esc(g.icon+' '+g.name)+': отложено '+fmt(i.saved)+' из '+fmt(g.target)+'. Деньги остаются на твоих счетах, но считаются отложенными и не входят в «Банк».</p>'
    +'<div class="seg" style="grid-template-columns:1fr 1fr"><button class="'+(f.mode==='in'?'on':'')+'" data-act="cmode" data-v="in">Отложить</button><button class="'+(f.mode==='out'?'on':'')+'" data-act="cmode" data-v="out">Забрать</button></div>'
    +'<div class="amtwrap"><input id="camt" class="amount" data-f="amount" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Сумма в тенге" value="'+esc(f.amount)+'"><span>₸</span></div>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="contribsave">'+(f.mode==='out'?'Забрать из цели':'Отложить')+'</button>'}
