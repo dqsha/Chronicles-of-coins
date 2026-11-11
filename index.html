@@ -407,6 +407,12 @@ body.lefty .hidebtn{left:8px}
 .dlg{border-radius:22px}
 .row{border-radius:12px}
 .undo{border-radius:16px}
+.fxgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fxrow{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+.fxrow .fxc{font-size:12px;color:var(--mute)}.fxrow b{font:700 17px var(--num);white-space:nowrap}
+.fxsrc{font-size:11px;margin-top:8px}.fxsrc a{color:var(--mute)}
+.convsel{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:10px}.convsel .inp{min-width:0;font-size:13px}
+.convres{text-align:center;margin:14px 0 4px;min-height:44px;color:var(--mute)}.convres b{font:700 30px var(--num);color:#f1ebf8;overflow-wrap:anywhere}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -507,6 +513,25 @@ function catsFor(kind){const base=(kind==='inc'?CATS_INC:CATS_EXP).map(c=>({id:c
   return base.concat(S.customCats.filter(c=>c.kind===kind))}
 function catInfo(id){const all=catsFor('exp').concat(catsFor('inc'));return all.find(c=>c.id===id)||{id:id,name:'Без категории',icon:'❔'}}
 
+/* ---------- валюты: курсы к тенге (ExchangeRate-API, раз в сутки, без сети — последний сохранённый) ---------- */
+const CUR=[['KZT','₸','Тенге','🇰🇿'],['USD','$','Доллар США','🇺🇸'],['EUR','€','Евро','🇪🇺'],['RUB','₽','Рубль','🇷🇺'],['CNY','¥','Юань','🇨🇳'],['KGS','с','Сом','🇰🇬'],['UZS','сум','Сум','🇺🇿'],['TRY','₺','Лира','🇹🇷'],['AED','AED','Дирхам','🇦🇪'],['GBP','£','Фунт','🇬🇧']];
+const RATES_SRC=['https://open.er-api.com/v6/latest/KZT','https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/kzt.min.json','https://latest.currency-api.pages.dev/v1/currencies/kzt.min.json'];
+const curInfo=c=>{const x=CUR.find(k=>k[0]===c)||[c,c,c,'💱'];return{code:x[0],sym:x[1],name:x[2],flag:x[3]}};
+/* r[c] = сколько единиц валюты c за 1 тенге */
+function rateOf(c){if(c==='KZT')return 1;const R=S.rates&&S.rates.r;return R&&R[c]>0?R[c]:null}
+function convert(amount,from,to){const a=rateOf(from),b=rateOf(to);if(a==null||b==null)return null;return amount/a*b}
+const tengePer=c=>{const r=rateOf(c);return r?1/r:null};
+function fmtCur(n,c){if(c==='KZT')return fmt(n);const i=curInfo(c);const v=Math.round(n*100)/100;
+  const s=Math.abs(v).toLocaleString('ru-RU',{minimumFractionDigits:Math.abs(v)<100&&!Number.isInteger(v)?2:0,maximumFractionDigits:2});
+  return (v<0?'−':'')+(i.sym.length===1&&i.sym!=='с'?i.sym+s:s+' '+i.sym)}
+function applyRates(j){if(!j)return false;let src=null,via='er';
+  if(j.result==='success'&&j.rates)src=j.rates;else if(j.kzt){via='fa';src={};Object.keys(j.kzt).forEach(k=>{src[k.toUpperCase()]=j.kzt[k]})}
+  if(!src)return false;const r={};CUR.forEach(c=>{if(c[0]!=='KZT'&&src[c[0]]>0)r[c[0]]=src[c[0]]});
+  if(!Object.keys(r).length)return false;S.rates={r:r,at:today(),via:via};return true}
+function ratesStale(){return !S.rates||!S.rates.at||S.rates.at!==today()}
+function fetchRates(force){try{if(!window.fetch||(!force&&!ratesStale()))return Promise.resolve(false);
+  const tryAt=i=>i>=RATES_SRC.length?Promise.resolve(false):fetch(RATES_SRC[i],{cache:'no-store'}).then(r=>r.json()).then(j=>applyRates(j)?true:tryAt(i+1)).catch(()=>tryAt(i+1));
+  return tryAt(0).then(ok=>{if(ok){save();if(UI.tab==='wallet'&&!UI.sheet)render();if(UI.sheet&&UI.sheet.kind==='conv')renderSheet()}return ok})}catch(e){return Promise.resolve(false)}}
 /* ---------- level, gear ---------- */
 const req=L=>40+15*(L-1);
 function xpAtLevel(L){let s=0;for(let k=1;k<L;k++)s+=req(k);return s}
@@ -1040,7 +1065,7 @@ function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const
 /* Скрываемые блоки главной: выбор хранится в S.hide, вернуть можно в «Данные и настройки» */
 const HIDEABLE={forecast:'Главная: прогноз «хватит ли»',today:'Главная: сегодня',hero:'Главная: герой',quest:'Главная: задания',mand:'Главная: платежи',goal:'Главная: ближайшая цель',
   s_kpi:'Анализ: итоги периода',s_chart:'Анализ: доходы и расходы',s_cats:'Анализ: куда уходят деньги',s_days:'Анализ: по дням',s_hab:'Анализ: привычки',s_best:'Анализ: рекорды',
-  w_hist:'Кошелёк: история трат',w_goals:'Кошелёк: цели и копилки',w_debt:'Кошелёк: долги',w_mand:'Кошелёк: платежи',w_chr:'Кошелёк: сокровищница героя'};
+  w_fx:'Кошелёк: курсы валют',w_hist:'Кошелёк: история трат',w_goals:'Кошелёк: цели и копилки',w_debt:'Кошелёк: долги',w_mand:'Кошелёк: платежи',w_chr:'Кошелёк: сокровищница героя'};
 function hb(key,html){if(!html)return '';const nm=(HIDEABLE[key]||'').replace(/^[^:]+: /,'');
   if(S.hide&&S.hide[key])return '<button class="hbar glass" data-act="unhide" data-v="'+key+'" aria-label="Показать блок «'+nm+'»"><span class="hbn">'+nm[0].toUpperCase()+nm.slice(1)+'</span><span class="hbs">показать</span></button>';
   const i=html.indexOf('<section');if(i<0)return html;const j=html.indexOf('>',i)+1;
@@ -1192,6 +1217,7 @@ function viewWallet(){
   return scene('wallet','Кошелёк','Сокровищница',fmtCt(totalBal(),1e6))
   +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'" title="'+fmt(totalBal())+'">'+fmtC(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
   +'<section class="card" id="t-acc"><h2>Счета</h2><div class="list">'+accs+'</div>'+(S.accounts.length>1?'<div class="fchips" style="margin-top:10px">'+(S.accounts.some(a=>a.type==='deposit')?'<button class="fc" data-act="trdep" data-v="out">Снять с депозита</button><button class="fc" data-act="trdep" data-v="in">Положить на депозит</button>':'')+'<button class="fc" data-act="trdep" data-v="any">Перевод между счетами</button></div>':'')+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
+  +hb('w_fx',fxCard())
   +hb('w_hist',histWalletCard())
   +hb('w_goals',goalsSection())
   +hb('w_debt',debtCard())
@@ -1199,6 +1225,20 @@ function viewWallet(){
     +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="mandnew">Добавить платёж</button></section>')
   +hb('w_chr',chronicleCard())
   +'<button class="btn ghost" data-act="data">Данные и настройки</button>'}
+function fxCard(){const has=S.rates&&S.rates.r;const top=['USD','EUR','RUB','CNY'];
+  const rows=has?top.filter(c=>rateOf(c)).map(c=>{const i=curInfo(c),t=tengePer(c);return '<div class="fxrow"><span class="fxc">'+i.flag+' '+i.code+'</span><b>'+fmt(t>=100?Math.round(t*10)/10:t)+'</b></div>'}).join(''):'<p class="sub">Курсы загрузятся, когда будет интернет.</p>';
+  return '<section class="card" id="t-fx"><h2>Курсы валют</h2><div class="fxgrid">'+rows+'</div>'
+   +(has?'<p class="sub fxsrc">За 1 единицу валюты · обновлено '+(S.rates.at===today()?'сегодня':dayLabel(S.rates.at).toLowerCase())+' · '+(S.rates.via==='fa'?'источник: currency-api (fawazahmed0)':'<a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates By Exchange Rate API</a>')+'</p>':'')
+   +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="conv">Конвертер валют</button></section>'}
+function sheetConv(){const f=UI.form,amt=num(f.amount);const res=amt>0?convert(amt,f.from,f.to):null;
+  const opt=sel=>CUR.map(c=>'<option value="'+c[0]+'"'+(c[0]===sel?' selected':'')+'>'+c[3]+' '+c[0]+'</option>').join('');
+  const rate=convert(1,f.from,f.to);
+  return shHead('Конвертер валют')
+   +'<div class="amtwrap"><input id="camt" class="amount" data-f="amount" data-live="conv" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Сумма" value="'+esc(f.amount)+'"><span>'+curInfo(f.from).sym+'</span></div>'
+   +'<div class="convsel"><select class="inp" data-f="from" data-live="conv" aria-label="Из валюты">'+opt(f.from)+'</select><button class="x" data-act="convswap" aria-label="Поменять местами">⇄</button><select class="inp" data-f="to" data-live="conv" aria-label="В валюту">'+opt(f.to)+'</select></div>'
+   +'<div class="convres" id="convres">'+(res==null?(rate==null?'Нет курса. Подключись к интернету.':'Введи сумму'):'<b>'+fmtCur(res,f.to)+'</b>')+'</div>'
+   +(rate!=null?'<p class="sub" style="text-align:center">1 '+f.from+' = '+fmtCur(rate,f.to)+(S.rates&&S.rates.at?' · курс на '+dayLabel(S.rates.at).toLowerCase():'')+'</p>':'')
+   +'<button class="btn ghost small" data-act="ratesupd">Обновить курсы</button>'}
 function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).length;
   const k=(l,v,c)=>'<div class="kpi"><span class="label">'+l+'</span><b'+(c?' class="'+c+'"':'')+'>'+v+'</b></div>';
   return '<section class="card"><h2>Сокровищница героя</h2><div class="kpis">'+k('Получено за всё время',fmtC(st.inc,1e6),'pos')+k('Потрачено за всё время',fmtC(st.exp,1e6),'neg')
@@ -1207,7 +1247,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.24.1';
+const APP_V='0.25.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1482,7 +1522,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
@@ -1597,6 +1637,9 @@ function act(a,el){const v=el.dataset.v;
     case 'feed':if(feedPet()){playSfx('feed');commit()}break;
     case 'music':S.sound.music=!S.sound.music;save();musicSync();render();if(S.sound.music)toast('Музыка включена. Если не слышно, проверь беззвучный режим телефона');break;
     case 'fullnum':toast('Точно: '+v);break;
+    case 'conv':UI.form={amount:'',from:'USD',to:'KZT'};openSheet('conv');fetchRates();break;
+    case 'convswap':{const f=UI.form;const t=f.from;f.from=f.to;f.to=t;renderSheet();break}
+    case 'ratesupd':toast('Обновляю курсы…');fetchRates(true).then(ok=>toast(ok?'Курсы обновлены':'Не удалось: нет интернета'));break;
     case 'lefty':S.lefty=!S.lefty;save();render();renderSheet();break;
     case 'calmtoggle':S.calm=!S.calm;save();musicSync();render();renderSheet();break;
     case 'sfxtoggle':S.sound.sfx=!S.sound.sfx;save();renderSheet();break;
@@ -1657,15 +1700,17 @@ try{['gesturestart','gesturechange','gestureend'].forEach(n=>document.addEventLi
 let lt=0;document.addEventListener('touchend',e=>{const t=Date.now();if(t-lt<350&&!(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)))e.preventDefault();lt=t},{passive:false})}catch(e){}
 document.addEventListener('input',e=>{const t=e.target;
   if(t.dataset&&t.dataset.snd==='vol'){S.sound.vol=t.value/100;if(SND.master)SND.master.gain.value=S.sound.vol;save();return}
-  if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value});
+  if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value;if(t.dataset.live==='conv')convLive()});
 document.addEventListener('keydown',e=>{try{if(e.key==='Enter'&&UI.sheet&&UI.sheet.kind==='add'&&e.target&&e.target.id==='amt'){e.preventDefault();saveTxForm()}}catch(x){}});
 document.addEventListener('change',e=>{const t=e.target;
   if(t.dataset&&t.dataset.file){readStatementFile(t.files&&t.files[0]);return}
   if(t.dataset&&t.dataset.mon){const keys=monthKeys();UI.mon=t.value===keys[keys.length-1]?null:t.value;UI.day=null;render();return}
   if(t.dataset&&t.dataset.mk&&UI.form&&UI.form.map){if(t.value==='__new'){UI.form.newFor=t.dataset.mk;UI.form.ncicon='';UI.form.ncname='';renderSheet();return}UI.form.map[t.dataset.mk]=t.value;return}
   if(t.dataset&&t.dataset.snd==='vol'){playSfx('coin');return}
-  if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value});
+  if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value;if(t.dataset.live==='conv'&&t.tagName==='SELECT')renderSheet()});
 
+function convLive(){try{const f=UI.form,el=document.getElementById('convres');if(!el)return;const a=num(f.amount),r=a>0?convert(a,f.from,f.to):null;
+  el.innerHTML=r==null?(convert(1,f.from,f.to)==null?'Нет курса. Подключись к интернету.':'Введи сумму'):'<b>'+fmtCur(r,f.to)+'</b>'}catch(e){}}
 function start(){cloudSync(boot)}
 function tgInit(){try{const w=window.Telegram&&window.Telegram.WebApp;if(!w||!w.initData)return;w.ready();w.expand();try{w.disableVerticalSwipes()}catch(e){}try{w.requestFullscreen()}catch(e){}try{w.setHeaderColor('#15121b');w.setBackgroundColor('#15121b')}catch(e){}}catch(e){}}
 function errCard(){const l=(window.__errlog&&window.__errlog())||[];if(!l.length)return '';
@@ -1700,7 +1745,7 @@ function bootDots(){let on=false,rect=null;
   document.addEventListener('pointerdown',e=>{const d=e.target.closest&&e.target.closest('.tdots');if(!d)return;on=true;rect=d.getBoundingClientRect();},{passive:true});
   document.addEventListener('pointermove',e=>{if(on)pick(e.clientX)},{passive:true});
   const end=()=>{if(on){on=false;try{window.scrollTo(0,0)}catch(e){}}};document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end)}
-function boot(){bootKb();try{bootSwipe();bootDots()}catch(e){}tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);try{swipeHint()}catch(e){}if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
+function boot(){bootKb();try{bootSwipe();bootDots()}catch(e){}tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);setTimeout(()=>fetchRates(),2500);try{swipeHint()}catch(e){}if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};startIntro()}else renderSheet();
   if(S.onboarded){checkAch();if(notes.length)commit()}
   maybeTour();
