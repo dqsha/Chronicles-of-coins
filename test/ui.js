@@ -74,8 +74,8 @@ run(`S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Нал',type:'cash'
 chk('music button on home scene',els['#app'].innerHTML.includes('data-act="music"'));
 act('music');chk('music toggles on',run('S.sound.music')===true&&els['#app'].innerHTML.includes('mbtn on'));
 act('music');chk('music toggles off',run('S.sound.music')===false);
-act('data');chk('sound block in settings',els['#layer'].innerHTML.includes('Громкость')&&els['#layer'].innerHTML.includes('Звуки: вкл'));
-act('sfxtoggle');chk('sfx toggle',run('S.sound.sfx')===false&&els['#layer'].innerHTML.includes('Звуки: выкл'));
+act('data');chk('sound block in settings',els['#layer'].innerHTML.includes('Громкость')&&/data-act="sfxtoggle" role="switch" aria-checked="true"/.test(els['#layer'].innerHTML));
+act('sfxtoggle');chk('sfx toggle',run('S.sound.sfx')===false&&/data-act="sfxtoggle" role="switch" aria-checked="false"/.test(els['#layer'].innerHTML));
 
 // ---- calm mode + home order ----
 run(`S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Нал',type:'cash',bal0:5000}];S.tourSeen=true;UI.tab='home';render()`);
@@ -85,7 +85,7 @@ chk('free money first',h.indexOf('id="t-free"')<h.indexOf('data-act="add"'));
 run("openSheet('camp')");chk('pet and quest visible normally in camp',els['#layer'].innerHTML.includes('id="t-pet"')&&els['#layer'].innerHTML.includes('id="t-quest"'));run('closeSheet()');
 act('data');act('calmtoggle');h=els['#app'].innerHTML;
 chk('calm hides pet quest and next item',!h.includes('id="t-pet"')&&!h.includes('id="t-quest"')&&!h.includes('Следующая вещь')&&!h.includes('mbtn'));
-chk('calm toggle in settings',els['#layer'].innerHTML.includes('Спокойный режим: вкл'));
+chk('calm toggle in settings',/data-act="calmtoggle" role="switch" aria-checked="true"/.test(els['#layer'].innerHTML));
 run(`UI.sheet=null;addTx({type:'exp',amount:10,cat:'food',acc:'a'});S.xp=xpAtLevel(5);gainXp(1,'t');`);run('commit()');
 chk('calm swallows level-up window',run('UI.pendingLvl')===null&&run('UI.sheet')===null);
 act('calmtoggle');chk('calm toggles off',run('S.calm')===false);
