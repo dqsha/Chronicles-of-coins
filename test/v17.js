@@ -19,7 +19,7 @@ run("UI.tab='stats';UI.period='month';UI.mon='2026-11';render()");
 chk('stats hide buttons',['s_kpi','s_chart','s_cats','s_days'].every(k=>app().includes('data-v="'+k+'"')));
 act('hide','s_chart');chk('stats chart hidden',!app().includes('<h2>Доходы и расходы'));
 run("UI.tab='wallet';render()");
-chk('wallet hide buttons',['w_hist','w_goals','w_mand','w_chr'].every(k=>app().includes('data-v="'+k+'"')));
+chk('wallet hide button (history)',app().includes('data-v="w_hist"'));run("UI.tab='plan';render()");chk('plan hide buttons',['w_goals','w_mand'].every(k=>app().includes('data-v="'+k+'"')));run("UI.tab='hero';render()");chk('hero hide button',app().includes('data-v="w_chr"'));run("UI.tab='wallet';render()");
 chk('accounts never hideable',app().includes('id="t-acc"')&&!app().includes('data-v="w_acc"'));
 chk('button has visible text',app().includes('>скрыть</button>'));
 // свайп
@@ -27,7 +27,7 @@ run("UI.tab='home';S.lefty=false");chk('right-hand: left swipe -> next',run("swi
 chk('right swipe -> back',run("swipeTab(100)")&&run("UI.tab")==='home');
 chk('no wrap past first',run("swipeTab(100)")===false&&run("UI.tab")==='home');
 run("S.lefty=true");chk('lefty mirrored',run("swipeTab(100)")&&run("UI.tab")==='list');
-run("UI.tab='wallet'");chk('lefty no wrap past last',run("swipeTab(100)")===false);
+run("UI.tab='hero'");chk('lefty no wrap past last',run("swipeTab(100)")===false);
 run("UI.form={name:'x',import:'',err:''};openSheet('data')");chk('lefty toggle in settings',/data-act="lefty" role="switch" aria-checked="true"/.test(els['#layer'].innerHTML));
 chk('compact is tappable',run("fmtC(5e9)").includes('data-act=\"fullnum\"'));
 run("UI.tab='wallet';render()");chk('scene shows plain text',!/<div class="r">[^<]*&lt;span/.test(app()));

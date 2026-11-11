@@ -32,7 +32,7 @@ chk('best uses mae spread',near(sc.best,base-1200*(1-mae)));
 run("S.pro.push({id:'w2',type:'inc',cat:catsFor('inc')[0].id,acc:'a',amount:1000,date:'2026-11-21',note:'',rec:'none',st:'wait',fact:null,c:'2026-11-01',u:1})");
 const sc2=run("proScen('2026-11-30')");chk('income spread 10% worst',near(sc2.worst,sc.worst+900)&&near(sc2.exp,sc.exp+1000));
 // карточка и отчёт
-run("render()");chk('card shows accuracy and rank',/Меткость 17%/.test(els['#app'].innerHTML||'')||/Меткость 17%/.test(app()));
+run("UI.tab='plan';render()");chk('card shows accuracy and rank',/Меткость 17%/.test(els['#app'].innerHTML||'')||/Меткость 17%/.test(app()));
 act('prorep');chk('report renders',/Меткость пророка/.test(lay())&&/17%/.test(lay())&&/Еда|Продукты/.test(lay()));
 chk('report shows leak',/мимо плана/.test(lay()));
 chk('report shows worst category',/недооцениваешь/.test(lay()));

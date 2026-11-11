@@ -19,6 +19,6 @@ run("S.accounts[0].bal0=0;S.tx=[]");chk('broke',run('forecast().state')==='broke
 run("S.payday=25;S.accounts[0].bal0=100000");chk('payday days',run('forecast().days')===15&&run('forecast().pay')===true);
 run("S.payday=5");chk('payday next month',run('forecast().until')==='2026-12-05'&&run('forecast().days')===25);
 run("S.payday=10");chk('payday today -> next month',run('forecast().until')==='2026-12-10');
-run("S.payday=null;UI.tab='home';render()");chk('home shows forecast card',els['#app'].innerHTML.includes('t-fc'));
+run("S.payday=null;UI.tab='plan';render()");chk('plan shows forecast card',els['#app'].innerHTML.includes('t-fc'));
 chk('credit excluded from avg',(()=>{run("S.tx=[];for(let i=1;i<=6;i++)S.tx.push({id:'c'+i,type:'exp',amount:9000,cat:'credit',acc:'a',to:null,date:addDays('2026-11-10',-i),note:'',mid:null,ts:i})");return run('forecast().state')==='few'})());
 console.log(bad?bad+' FAILED':'V12 OK');

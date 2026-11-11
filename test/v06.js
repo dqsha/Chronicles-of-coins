@@ -95,7 +95,7 @@ chk('history reward given once for 60 days span (2 months)',run('S.histM')===2&&
 run(`applyImport({rows:parseKaspi(__b),acc:'b',tx:true,inc:true,map:{}})`);chk('no double reward',run('S.xp')===xp0+60);
 chk('gainXp noted for history',true);
 // ui
-run(`UI.tab='home';S.tx=[];S.histHide=false;render()`);chk('home shows history card when few records and no history',els['#app'].innerHTML.includes('data-act="imp"'));
+run(`UI.tab='home';S.tx=[];S.histHide=false;render()`);chk('home stays clean for a newcomer (no history card)',!els['#app'].innerHTML.includes('data-act="imp"'));
 run(`S.histHide=true;render()`);chk('hide works',!els['#app'].innerHTML.includes('data-act="imphide"'));
 run(`UI.tab='wallet';render()`);chk('wallet always has import button',els['#app'].innerHTML.includes('data-act="imp"'));
 act('imp');chk('import sheet step 1',els['#layer'].innerHTML.includes('Выбрать файл выписки')&&els['#layer'].innerHTML.includes('никуда не отправляется'));

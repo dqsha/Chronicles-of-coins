@@ -25,7 +25,7 @@ chk('advice exists',run('debtAdvice().length')>=2);
 run("S.tx.push({id:'i1',type:'inc',amount:300000,cat:'salary',acc:'a',to:null,date:'2026-11-01',note:'',mid:null,ts:1})");
 chk('advice mentions income share',run('debtAdvice()[0]').includes('%'));
 chk('summary has debt and questions',run('aiSummary()').includes('Кредит')&&run('aiSummary()').includes('Вопросы'));
-run("UI.tab='wallet';render()");chk('wallet renders debt card',els['#app'].innerHTML.includes('t-debt')&&els['#app'].innerHTML.includes('Сводка для ИИ'));
+run("UI.tab='plan';render()");chk('plan renders debt card',els['#app'].innerHTML.includes('t-debt')&&els['#app'].innerHTML.includes('Сводка для ИИ'));
 run("openSheet('ai')");chk('ai sheet renders',els['#layer'].innerHTML.includes('aix'));
 run("openMand(null,true)");chk('debt form has left+rate',(()=>{run("renderSheet()");return els['#layer'].innerHTML.includes('Ставка')})());
 console.log(bad?bad+' FAILED':'V13 OK');

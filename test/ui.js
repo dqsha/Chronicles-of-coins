@@ -7,12 +7,12 @@ vm.runInContext(code,ctx);
 const run=c=>vm.runInContext(c,ctx);
 let bad=0;const chk=(n,c)=>{if(!c){bad++;console.log('FAIL',n)}else console.log('ok  ',n)};
 run(`S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Нал',type:'cash',bal0:5000},{id:'b',name:'Карта',type:'card',bal0:90000}];S.tourSeen=true;NOW='2026-11-01';`);
-['home','list','stats','wallet'].forEach(t=>{run(`UI.tab='${t}';render()`);chk('tab '+t,els['#app'].innerHTML.length>200)});
+['home','list','stats','wallet','plan','hero'].forEach(t=>{run(`UI.tab='${t}';render()`);chk('tab '+t,els['#app'].innerHTML.length>200)});
 run(`UI.tab='home';render()`);run("openSheet('camp')");chk('quest card in camp',els['#layer'].innerHTML.includes('Путь новичка'));chk('home has quick log buttons',els['#app'].innerHTML.includes('data-act="add" data-v="exp"')&&els['#app'].innerHTML.includes('data-act="add" data-v="inc"'));
 run(`addGoal({name:'Телефон',icon:'📱',target:60000,deadline:'2027-01-01'});addContrib(S.goals[0].id,15000);render()`);
-chk('goal card on home',els['#app'].innerHTML.includes('Ближайшая цель')&&els['#app'].innerHTML.includes('Телефон'));
+run(`UI.tab='plan';render()`);chk('goal on plan',els['#app'].innerHTML.includes('Телефон'));run(`UI.tab='home';render()`);
 chk('free money subtitle mentions reserve',els['#app'].innerHTML.includes('отложенное в целях'));
-run(`UI.tab='wallet';render()`);chk('wallet goals',els['#app'].innerHTML.includes('Цели и копилки')&&els['#app'].innerHTML.includes('Телефон'));
+run(`UI.tab='plan';render()`);chk('plan goals',els['#app'].innerHTML.includes('Цели и копилки')&&els['#app'].innerHTML.includes('Телефон'));
 const gid=run('S.goals[0].id');
 for(const [k,pre] of [['goal',`UI.form={name:'',icon:'',target:'',deadline:'',err:''};`],['gdet',`UI.form={err:''};`],['contrib',`UI.form={amount:'',mode:'in',err:''};`],['buy',`UI.form={amount:'15000',acc:'a',cat:'other',err:''};`],['data',`UI.form={name:'x',import:'',err:''};`],['gear','']]){
   run(`${pre}UI.tourStep=0;openSheet('${k}',{id:'${gid}'})`);chk('sheet '+k,els['#layer'].innerHTML.includes('sheet'))}
@@ -21,10 +21,10 @@ const L=()=>els['#tourlayer'].innerHTML;
 run(`startTour()`);chk('tour step 1 card + mage',L().includes('class="dlg')&&L().includes('Маг Орвин')&&L().includes('<i>п</i>'));
 const goTo=n=>{while(run('UI.tour')<n)act('tournext')};
 chk('no spotlight, no bullet list',!L().includes('tv-spot')&&!L().includes('<li'));
-goTo(8);chk('tour switches to wallet tab',run('UI.tab')==='wallet');chk('spotlight on target, dialog on top',L().includes('tv-spot')&&L().includes('dlg top'));
-act('tourprev');chk('prev works',run('UI.tour')<8&&run('UI.tour')>=0);
-goTo(9);chk('last step: calm mode word',run('UI.tour')===9&&L().includes('<b class="kb">'));
-chk('calm hint on last step',L().replace(/<[^>]+>/g,'').includes('Спокойный режим'));
+goTo(8);chk('hero step: calm mode word',run('UI.tour')===8&&run('UI.tab')==='hero'&&L().includes('<b class="kb">'));chk('calm hint on hero step',L().replace(/<[^>]+>/g,'').includes('Спокойный режим'));
+goTo(9);chk('tour switches to wallet tab',run('UI.tab')==='wallet');chk('spotlight on target, dialog on top',L().includes('tv-spot')&&L().includes('dlg top'));
+act('tourprev');chk('prev works',run('UI.tour')===8);
+goTo(10);chk('last step reached',run('UI.tour')===10);
 act('tournext');chk('tour finished',run('UI.tour')===null&&L()===''&&run('S.tourSeen')===true&&run('UI.tab')==='home');
 run(`UI.tab='home';render()`);
 run(`UI.tab='home';render()`);
@@ -44,18 +44,18 @@ chk('quest card has hide',els['#layer'].innerHTML.includes('questhide'));
 act('questhide');chk('quest hidden',run('S.questHidden')===true&&!els['#app'].innerHTML.includes('Путь новичка'));
 chk('no backup card with few records',!els['#app'].innerHTML.includes('Копия данных'));
 run(`for(let i=0;i<6;i++)S.tx.push({id:'x'+i,type:'exp',amount:1,cat:'food',acc:'a',date:'2026-11-01',ts:i});render()`);
-chk('backup card appears',els['#app'].innerHTML.includes('Копия данных'));
+run(`UI.tab='hero';render()`);chk('backup card appears',els['#app'].innerHTML.includes('Копия данных'));run(`UI.tab='home';render()`);
 act('copy');chk('copy sets lastBackup',run('S.lastBackup')==='2026-11-01');run('render()');
 chk('backup card gone after copy',!els['#app'].innerHTML.includes('Копия данных'));
 act('ach');chk('ach sheet',els['#layer'].innerHTML.includes('Открыто'));
-run(`UI.tab='wallet';render()`);chk('chronicle card',els['#app'].innerHTML.includes('Сокровищница героя')&&els['#app'].innerHTML.includes('Достижения:'));
+run(`UI.tab='hero';render()`);chk('chronicle card',els['#app'].innerHTML.includes('Сокровищница героя')&&els['#app'].innerHTML.includes('Достижения:'));
 // buy warning on insufficient funds + closed goal row
 run(`S.goals=[];const g=addGoal({name:'Мопед',icon:'🛵',target:500000});addContrib(g.id,1500);`);
 const gid2=run('S.goals[0].id');
 act('buyopen',gid2);run(`UI.form.amount='400000'`);act('buysave');
 chk('buy warns first',run('S.goals[0].closed')===false&&run('UI.form.err').includes('не хватит'));
 act('buysave');chk('buy goes through on second click',run('S.goals[0].closed')===true);
-run('render()');chk('closed goal listed under Куплено',els['#app'].innerHTML.includes('Куплено')&&els['#app'].innerHTML.includes('Мопед'));
+run("UI.tab='plan';render()");chk('closed goal listed under Куплено',els['#app'].innerHTML.includes('Куплено')&&els['#app'].innerHTML.includes('Мопед'));
 act('goalopen',gid2);chk('closed goal sheet',els['#layer'].innerHTML.includes('Убрать из списка'));
 act('goaldel',gid2);act('goaldel',gid2);chk('closed goal removed',run('S.goals.length')===0);
 chk('home scene has two flame frames',run('SCENES.home()').includes('class="f1"')&&run('SCENES.home()').includes('class="f2"'));
@@ -79,8 +79,8 @@ act('sfxtoggle');chk('sfx toggle',run('S.sound.sfx')===false&&/data-act="sfxtogg
 
 // ---- calm mode + home order ----
 run(`S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Нал',type:'cash',bal0:5000}];S.tourSeen=true;UI.tab='home';render()`);
-let h=els['#app'].innerHTML;
-chk('record buttons come before hero',h.indexOf('data-act="add"')<h.indexOf('class="card hero herom"'));
+run(`S.tx.push({id:'z1',type:'exp',amount:1,cat:'food',acc:'a',date:today(),ts:1});render()`);let h=els['#app'].innerHTML;
+chk('record buttons come before hero',h.indexOf('data-act="add"')<h.indexOf('class="card herostrip"'));chk('home is lean: no forecast, quest, goal, history',!/t-fc|Путь новичка|Ближайшая цель|data-act="imp"/.test(h));
 chk('free money first',h.indexOf('id="t-free"')<h.indexOf('data-act="add"'));
 run("openSheet('camp')");chk('pet and quest visible normally in camp',els['#layer'].innerHTML.includes('id="t-pet"')&&els['#layer'].innerHTML.includes('id="t-quest"'));run('closeSheet()');
 act('data');act('calmtoggle');h=els['#app'].innerHTML;

@@ -9,7 +9,7 @@ const run=c=>vm.runInContext(c,ctx);const app=()=>els['#app'].innerHTML;
 run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:5e22}];NOW='2026-11-10'");
 for(let i=0;i<5;i++)run(`S.tx.push({id:'t${i}',type:'exp',amount:1000,cat:'food',acc:'a',to:null,date:'2026-11-0${i+1}',note:'',mid:null,ts:${i}})`);
 chk('absurd number capped',run("fmtCt(5e22)")==='999+ трлн ₸');
-['home','list','stats','wallet'].forEach(t=>{run(`UI.tab='${t}';render()`);const txt=app().replace(/<[^>]+>/g,'');
+['home','list','stats','wallet','plan','hero'].forEach(t=>{run(`UI.tab='${t}';render()`);const txt=app().replace(/<[^>]+>/g,'');
   chk(t+': no html code in text',!/data-act|class=|&lt;span/.test(txt));chk(t+': no 15+ digit numbers',!/\d{1,3}( \d{3}){5,}/.test(txt))});
 run("UI.F={type:'exp',amount:'2000000000000',cat:'food',acc:'a',date:'2026-11-10',note:'',err:''};UI.sheet={k:'tx'}");
 run("try{saveTxForm()}catch(e){}");chk('input over limit rejected',String(run("UI.F.err")).includes('Слишком большая'));

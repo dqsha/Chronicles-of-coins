@@ -21,7 +21,7 @@ chk('two prophecies',run("S.pro.length")===2);
 chk('balance at 20th',near(run("proBalanceAt('2026-11-20')"),350000));
 // разрыв: 100000 - 150000 < 0 с 13-го, дно -50000
 const g=run("proGap(60)");chk('gap found on 13th, deficit 50000',g&&g.date==='2026-11-13'&&g.deficit===50000);
-chk('home shows card and gap',/Пророчества/.test(app())&&/Кассовый разрыв/.test(app()));
+chk('home warns about gap',/t-attn/.test(app())&&/Кассовый разрыв/.test(app()));run("UI.tab='plan';render()");chk('plan shows prophecies and gap',/Пророчества/.test(app())&&/Кассовый разрыв/.test(app()));run("UI.tab='home';render()");
 // срок наступил: 13-го ремонт «сбылся иначе» на 180000
 run("NOW='2026-11-13'");
 const id2=run("S.pro.find(p=>p.note==='Ремонт').id");
@@ -48,7 +48,7 @@ chk('deleted prophecy gone, tombstone set',run("S.pro.every(p=>p.id!=='"+idn+"')
 const mg=run("(()=>{const a=defaults(),b=defaults();a.savedAt=2;b.savedAt=1;a.pro=[{id:'x',st:'wait',u:1}];b.pro=[{id:'x',st:'done',u:5},{id:'y',st:'wait',u:1}];const o=mergeStates(a,b);return o.pro.map(p=>p.id+':'+p.st).sort().join(',')})()");
 chk('merge: newer wins, union',mg==='x:done,y:wait');
 // скрытие блока
-run("S.hide.pro=1;render()");chk('hide works',!/id="t-pro"/.test(app()));
+run("UI.tab='plan';S.hide.pro=1;render()");chk('hide works',!/id="t-pro"/.test(app()));
 // огромная сумма отклоняется
 run("S.hide={};UI.form=null;openPro(null);UI.form.amount='99999999999999';UI.form.date='2026-12-01'");act('prosave');
 chk('huge amount rejected',/максимум/.test(lay())||run("UI.form.err")!=='');
