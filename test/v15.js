@@ -12,7 +12,7 @@ chk('bank and log never hideable',!app().includes('data-v="free"')&&app().includ
 const act=(a,v)=>{ctx.__el={dataset:{v},disabled:false};run(`act('${a}',__el)`)};
 act('hide','today');chk('today hidden',!app().includes('<h2>Сегодня')&&run('S.hide.today')===1);
 act('hide','forecast');chk('forecast hidden',!app().includes('data-v="forecast"'));
-run("UI.form={name:'x',import:'',err:''};openSheet('data')");chk('settings lists hidden',els['#layer'].innerHTML.includes('↺ Сегодня')&&els['#layer'].innerHTML.includes('Вернуть все'));
+run("UI.form={name:'x',import:'',err:''};openSheet('data')");chk('settings lists hidden',els['#layer'].innerHTML.includes('↺ Главная: сегодня')&&els['#layer'].innerHTML.includes('Вернуть все'));
 act('unhide','today');chk('today back',app().includes('<h2>Сегодня')&&!run('S.hide.today'));
 act('unhide','*');chk('all back',run('Object.keys(S.hide).length')===0&&app().includes('data-v="forecast"'));
 run("delete S.hide;render()");chk('works without S.hide',app().includes('data-v="today"'));act('hide','goal');chk('hide recreates S.hide',run('S.hide.goal')===1);

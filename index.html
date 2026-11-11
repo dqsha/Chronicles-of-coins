@@ -314,7 +314,15 @@ input[type=range]{width:100%;accent-color:var(--gold);min-height:32px}
 .f1{animation:ff1 .9s steps(1) infinite}
 .f2{opacity:0;animation:ff2 .9s steps(1) infinite}
 @media (prefers-reduced-motion:reduce){.f1,.f2{animation:none}.f2{display:none}.pet-art svg,.hero-art svg,.tv-mage svg,.tv-spot{animation:none}.btn,.plus{transition:none}}
-.hidebtn{position:absolute;top:2px;right:2px;z-index:2;width:30px;height:30px;padding:0;border:0;background:transparent;color:var(--mute);font:14px var(--num);opacity:.55;cursor:pointer}.hidebtn:hover,.hidebtn:focus{opacity:1;color:var(--ink,#fff)}
+.hidebtn{position:absolute;top:4px;right:4px;z-index:2;min-height:30px;padding:2px 8px;border:2px solid var(--line);background:var(--panel2);color:var(--mute);font:12px var(--num);letter-spacing:.02em;cursor:pointer;opacity:.9}
+.hidebtn:hover,.hidebtn:focus{opacity:1;color:#fff;border-color:var(--gold-d,#a07a2a)}
+.hidebtn~h2,.hidebtn~.label{padding-right:92px}
+body.lefty .hidebtn{right:auto;left:4px}body.lefty .hidebtn~h2,body.lefty .hidebtn~.label{padding-right:0;padding-left:92px}
+#app.swl{animation:swl .24s ease-out both}#app.swr{animation:swr .24s ease-out both}
+@keyframes swl{from{opacity:0;transform:translateX(28px)}}@keyframes swr{from{opacity:0;transform:translateX(-28px)}}
+.big{overflow-wrap:anywhere}
+.hidebtn+.kpis{margin-top:34px}
+html,body{overscroll-behavior-x:none}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -354,6 +362,11 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 function fmt(n){const v=Math.round(n*100)/100;const a=Math.abs(v);
   const s=a.toLocaleString('ru-RU',{minimumFractionDigits:Number.isInteger(a)?0:2,maximumFractionDigits:2});
   return (v<0?'−':'')+s+' ₸'}
+/* Большие суммы сокращаем, чтобы не вылезали за экран: 12,5 млн ₸, 1,2 млрд ₸ */
+function fmtC(n,lim){const a=Math.abs(n);if(a<(lim||1e7))return fmt(n);
+  const u=a>=1e12?[1e12,'трлн']:a>=1e9?[1e9,'млрд']:[1e6,'млн'];const x=a/u[0];
+  const s=(x>=100?Math.round(x):x>=10?Math.round(x*10)/10:Math.round(x*100)/100).toLocaleString('ru-RU');
+  return (n<0?'−':'')+s+' '+u[1]+' ₸'}
 const short=v=>{const f=x=>String(Math.round(x*10)/10).replace('.',',');
   return v>=1e6?f(v/1e6)+' млн':v>=1e3?f(v/1e3)+' тыс':String(Math.round(v))};
 const MN=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
@@ -928,20 +941,22 @@ function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const
   let head,cls='';
   if(f.state==='broke'){head='Денег до '+(f.pay?'зарплаты':'конца месяца')+' не остаётся';cls='neg'}
   else if(f.state==='few')head='Пока мало данных для прогноза';
-  else if(f.state==='ok'){head='Хватит '+wh+', запас '+fmt(Math.max(0,f.diff));cls='pos'}
-  else{head='Не хватит '+wh+': не хватает '+fmt(-f.diff);cls='neg'}
+  else if(f.state==='ok'){head='Хватит '+wh+', запас '+fmtC(Math.max(0,f.diff));cls='pos'}
+  else{head='Не хватит '+wh+': не хватает '+fmtC(-f.diff);cls='neg'}
   let rows='<div class="catrow"><span>Осталось дней ('+fmtDate(f.until)+')</span><span class="amt">'+f.days+'</span></div>'
-   +'<div class="catrow"><span>Можно тратить в день</span><span class="amt">'+fmt(f.perDay)+'</span></div>';
-  if(f.avg!=null)rows+='<div class="catrow"><span>Обычно тратишь в день</span><span class="amt">'+fmt(Math.round(f.avg))+'</span></div>';
+   +'<div class="catrow"><span>Можно тратить в день</span><span class="amt">'+fmtC(f.perDay)+'</span></div>';
+  if(f.avg!=null)rows+='<div class="catrow"><span>Обычно тратишь в день</span><span class="amt">'+fmtC(Math.round(f.avg))+'</span></div>';
   let note='';
   if(f.state==='few')note='<p class="sub">Запиши траты хотя бы за 3 дня, и я посчитаю, на сколько тебя хватит.</p>';
-  else if(f.state==='short'&&f.runOut)note='<p class="sub">При обычных тратах денег хватит до '+fmtDate(f.runOut)+'. Чтобы дотянуть, держись в '+fmt(f.perDay)+' в день.</p>';
+  else if(f.state==='short'&&f.runOut)note='<p class="sub">При обычных тратах денег хватит до '+fmtDate(f.runOut)+'. Чтобы дотянуть, держись в '+fmtC(f.perDay)+' в день.</p>';
   else if(f.state==='ok')note='<p class="sub">Прогноз по твоим тратам за последний месяц, без кредитов и переводов людям.</p>';
   return '<section class="card" id="t-fc"><div class="label">Хватит ли '+wh+'?</div><div class="fch '+cls+'">'+esc(head)+'</div>'+rows+note+(f.pay?'':'<p class="sub"><button class="fc" data-act="data">Указать день зарплаты</button></p>')+'</section>'}
 /* Скрываемые блоки главной: выбор хранится в S.hide, вернуть можно в «Данные и настройки» */
-const HIDEABLE={forecast:'Прогноз «хватит ли»',today:'Сегодня',hero:'Герой',quest:'Задания',mand:'Обязательные платежи',goal:'Ближайшая цель'};
+const HIDEABLE={forecast:'Главная: прогноз «хватит ли»',today:'Главная: сегодня',hero:'Главная: герой',quest:'Главная: задания',mand:'Главная: платежи',goal:'Главная: ближайшая цель',
+  s_kpi:'Анализ: итоги периода',s_chart:'Анализ: доходы и расходы',s_cats:'Анализ: куда уходят деньги',s_days:'Анализ: по дням',s_hab:'Анализ: привычки',s_best:'Анализ: рекорды',
+  w_hist:'Кошелёк: история трат',w_goals:'Кошелёк: цели и копилки',w_debt:'Кошелёк: долги',w_mand:'Кошелёк: платежи',w_chr:'Кошелёк: сокровищница героя'};
 function hb(key,html){if(!html||(S.hide&&S.hide[key]))return '';const i=html.indexOf('<section');if(i<0)return html;const j=html.indexOf('>',i)+1;
-  return html.slice(0,j)+'<button class="hidebtn" data-act="hide" data-v="'+key+'" aria-label="Скрыть блок «'+HIDEABLE[key]+'»" title="Скрыть">✕</button>'+html.slice(j)}
+  return html.slice(0,j)+'<button class="hidebtn" data-act="hide" data-v="'+key+'" aria-label="Скрыть блок «'+HIDEABLE[key]+'»">скрыть ✕</button>'+html.slice(j)}
 function hiddenCard(){const k=Object.keys(S.hide||{}).filter(x=>S.hide[x]&&HIDEABLE[x]);if(!k.length)return '';
   return '<div class="field"><label>Скрытые блоки главной</label><div class="fchips">'+k.map(x=>'<button class="fc" data-act="unhide" data-v="'+x+'">↺ '+HIDEABLE[x]+'</button>').join('')+(k.length>1?'<button class="fc" data-act="unhide" data-v="*">Вернуть все</button>':'')+'</div></div>'}
 function viewHome(){
@@ -959,7 +974,7 @@ function viewHome(){
     :'<p>'+(nsDone?'Трат нет. Отличный день.':'Пока ничего не записано.')+'</p>';
   const upd=UI.upd?'<section class="card updc"><p>Вышла новая версия '+esc(UI.upd)+'.</p><button class="btn small" data-act="reload">Обновить</button></section>':'';
   return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn())+upd
-  +'<section class="card" id="t-free"><div class="label">Банк сейчас</div><div class="big '+(fm<0?'neg':'')+'">'+fmt(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'+hb('forecast',forecastCard())
+  +'<section class="card" id="t-free"><div class="label">Банк сейчас</div><div class="big '+(fm<0?'neg':'')+'" title="'+fmt(fm)+'">'+fmtC(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'+hb('forecast',forecastCard())
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
     +quick+undo
     +'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button></section>'
@@ -1078,33 +1093,33 @@ function viewStats(){
   return scene('stats','Анализ','Башня звездочёта','')
   +'<div class="fchips">'+pr.map(p=>'<button class="fc '+(UI.period===p[0]?'on':'')+'" data-act="period" data-v="'+p[0]+'">'+p[1]+'</button>').join('')+'</div>'
   +mnav
-  +'<section class="card"><div class="kpis"><div class="kpi"><span class="label">Доходы</span><b class="pos">'+fmt(st.inc)+'</b></div><div class="kpi"><span class="label">Расходы</span><b class="neg">'+fmt(st.exp)+'</b>'+coreExpSub(st)+'</div>'
-    +'<div class="kpi"><span class="label">Накоплено</span><b class="'+(net<0?'neg':'pos')+'">'+fmt(net)+'</b></div><div class="kpi"><span class="label">Дней без трат</span><b>'+st.ns+'</b></div></div></section>'
-  +'<section class="card"><h2>Доходы и расходы</h2>'+chartPart+'</section>'
-  +'<section class="card"><h2>Куда уходят деньги</h2>'+(cats.length?catHtml:'<p class="empty">Расходов за период нет.</p>')+'</section>'+days+habitsCard()+best}
+  +hb('s_kpi','<section class="card"><div class="kpis"><div class="kpi"><span class="label">Доходы</span><b class="pos">'+fmtC(st.inc,1e6)+'</b></div><div class="kpi"><span class="label">Расходы</span><b class="neg">'+fmtC(st.exp,1e6)+'</b>'+coreExpSub(st)+'</div>'
+    +'<div class="kpi"><span class="label">Накоплено</span><b class="'+(net<0?'neg':'pos')+'">'+fmtC(net,1e6)+'</b></div><div class="kpi"><span class="label">Дней без трат</span><b>'+st.ns+'</b></div></div></section>')
+  +hb('s_chart','<section class="card"><h2>Доходы и расходы</h2>'+chartPart+'</section>')
+  +hb('s_cats','<section class="card"><h2>Куда уходят деньги</h2>'+(cats.length?catHtml:'<p class="empty">Расходов за период нет.</p>')+'</section>')+hb('s_days',days)+hb('s_hab',habitsCard())+hb('s_best',best)}
 function viewWallet(){
   const accs=S.accounts.map(a=>{const ty=ACC_TYPES[a.type]||ACC_TYPES.card;const b=accBal(a);
-    return '<button class="row" data-act="accedit" data-v="'+a.id+'"><span class="tile">'+ty[1]+'</span><span class="mid"><div class="t1">'+esc(a.name)+'</div><div class="t2">'+ty[0]+'</div></span><span class="amt '+(b<0?'neg':'')+'">'+fmt(b)+'</span></button>'}).join('');
+    return '<button class="row" data-act="accedit" data-v="'+a.id+'"><span class="tile">'+ty[1]+'</span><span class="mid"><div class="t1">'+esc(a.name)+'</div><div class="t2">'+ty[0]+'</div></span><span class="amt '+(b<0?'neg':'')+'">'+fmtC(b)+'</span></button>'}).join('');
   const md=S.mand.map(m=>'<div style="display:flex;gap:8px;align-items:center">'+'<div style="flex:1;min-width:0">'+mandRow(m,true)+'</div></div>').join('');
-  return scene('wallet','Кошелёк','Сокровищница',fmt(totalBal()))
-  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'">'+fmt(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
+  return scene('wallet','Кошелёк','Сокровищница',fmtC(totalBal(),1e6))
+  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'" title="'+fmt(totalBal())+'">'+fmtC(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
   +'<section class="card" id="t-acc"><h2>Счета</h2><div class="list">'+accs+'</div>'+(S.accounts.length>1?'<div class="fchips" style="margin-top:10px">'+(S.accounts.some(a=>a.type==='deposit')?'<button class="fc" data-act="trdep" data-v="out">Снять с депозита</button><button class="fc" data-act="trdep" data-v="in">Положить на депозит</button>':'')+'<button class="fc" data-act="trdep" data-v="any">Перевод между счетами</button></div>':'')+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
-  +histWalletCard()
-  +goalsSection()
-  +debtCard()
-  +'<section class="card" id="t-mand"><h2>Обязательные платежи</h2>'+(S.mand.filter(m=>!m.debt).length?'<div class="list">'+S.mand.filter(m=>!m.debt).map(m=>'<div>'+mandRow(m,true)+'<div style="padding:0 0 8px"><button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки, кредит. Приложение посчитает, сколько денег у тебя действительно свободно.</p>')
-    +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="mandnew">Добавить платёж</button></section>'
-  +chronicleCard()
+  +hb('w_hist',histWalletCard())
+  +hb('w_goals',goalsSection())
+  +hb('w_debt',debtCard())
+  +hb('w_mand','<section class="card" id="t-mand"><h2>Обязательные платежи</h2>'+(S.mand.filter(m=>!m.debt).length?'<div class="list">'+S.mand.filter(m=>!m.debt).map(m=>'<div>'+mandRow(m,true)+'<div style="padding:0 0 8px"><button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки, кредит. Приложение посчитает, сколько денег у тебя действительно свободно.</p>')
+    +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="mandnew">Добавить платёж</button></section>')
+  +hb('w_chr',chronicleCard())
   +'<button class="btn ghost" data-act="data">Данные и настройки</button>'}
 function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).length;
   const k=(l,v,c)=>'<div class="kpi"><span class="label">'+l+'</span><b'+(c?' class="'+c+'"':'')+'>'+v+'</b></div>';
-  return '<section class="card"><h2>Сокровищница героя</h2><div class="kpis">'+k('Получено за всё время',fmt(st.inc),'pos')+k('Потрачено за всё время',fmt(st.exp),'neg')
-   +k('Записей',st.recs)+k('Дней без трат',st.ns)+k('Лучший стрик',st.best+' '+plural(st.best,['день','дня','дней']))+k('В целях и покупках',fmt(st.saved))+'</div>'
+  return '<section class="card"><h2>Сокровищница героя</h2><div class="kpis">'+k('Получено за всё время',fmtC(st.inc,1e6),'pos')+k('Потрачено за всё время',fmtC(st.exp,1e6),'neg')
+   +k('Записей',st.recs)+k('Дней без трат',st.ns)+k('Лучший стрик',st.best+' '+plural(st.best,['день','дня','дней']))+k('В целях и покупках',fmtC(st.saved,1e6))+'</div>'
    +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="ach">Достижения: '+n+' из '+ACH.length+'</button></section>'}
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.20.0';
+const APP_V='0.21.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1116,7 +1131,7 @@ function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;con
     d.style.cssText='left:'+Math.round(Math.random()*96)+'%;width:'+sz+'px;height:'+sz+'px;background-image:'+kinds[i%kinds.length]+';animation-duration:'+(16+Math.round(Math.random()*16))+'s;animation-delay:-'+Math.round(Math.random()*30)+'s';el.appendChild(d)}}catch(e){}}
 function render(){
   const v={home:viewHome,list:viewList,stats:viewStats,wallet:viewWallet}[UI.tab]();
-  $('#app').innerHTML=v;if(UI.shown&&UI.shown!==UI.tab&&!S.calm){try{const a=document.getElementById('app');a.classList.remove('swap');void a.offsetWidth;a.classList.add('swap')}catch(e){}}UI.shown=UI.tab;document.body.dataset.tab=UI.tab;bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
+  $('#app').innerHTML=v;if(UI.shown&&UI.shown!==UI.tab&&!S.calm){try{const a=document.getElementById('app');a.classList.remove('swap','swl','swr');void a.offsetWidth;a.classList.add(UI.swipeDir>0?'swl':UI.swipeDir<0?'swr':'swap');UI.swipeDir=0}catch(e){}}UI.shown=UI.tab;document.body.dataset.tab=UI.tab;document.body.classList.toggle('lefty',!!S.lefty);bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
   const tabs=[['home','Главная','home'],['list','Записи','records'],null,['stats','Анализ','stats'],['wallet','Кошелёк','wallet']];
   $('#tabbar').innerHTML='<div class="tabbar-in">'+tabs.map(t=>t?'<button class="tab" data-act="tab" data-v="'+t[0]+'" aria-current="'+(UI.tab===t[0])+'"><img class="ti" src="assets/tab-'+t[2]+'.webp" alt="" onerror="this.remove()">'+t[1]+'</button>':'<button class="plus" data-act="add" aria-label="Новая запись">+</button>').join('')+'</div>'}
 
@@ -1276,7 +1291,7 @@ function sheetAi(){return shHead('Сводка для ИИ')+'<p class="note">С
 function sheetData(){const f=UI.form;
   return shHead('Данные и настройки')+'<p class="note">Версия приложения: '+APP_V+'</p>'+errCard()+hiddenCard()+'<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><div class="field"><label for="dd">День зарплаты (число месяца)</label><input id="dd" class="inp" data-f="payday" inputmode="numeric" maxlength="2" value="'+esc(f.payday||'')+'" placeholder="пусто = конец месяца"></div><button class="btn ghost small" style="align-self:flex-start" data-act="namesave">Сохранить</button>'
    +'<button class="btn ghost" data-act="tour">Показать обучение</button><div class="sep"></div>'
-   +'<div class="label">Режим</div><div class="fchips"><button class="fc'+(S.calm?' on':'')+'" data-act="calmtoggle">Спокойный режим: '+(S.calm?'вкл':'выкл')+'</button></div><p class="note">Без анимаций, звуков, окон уровней, компаньона и заданий. Деньги, цели и платежи остаются.</p><div class="sep"></div>'
+   +'<div class="label">Режим</div><div class="fchips"><button class="fc'+(S.calm?' on':'')+'" data-act="calmtoggle">Спокойный режим: '+(S.calm?'вкл':'выкл')+'</button><button class="fc'+(S.lefty?' on':'')+'" data-act="lefty">Я левша: '+(S.lefty?'да':'нет')+'</button></div><p class="note">Вкладки листаются свайпом. Правша: свайп влево открывает следующую вкладку. Левша: наоборот, свайп вправо. У левши кнопки «скрыть» стоят слева.</p><p class="note">Без анимаций, звуков, окон уровней, компаньона и заданий. Деньги, цели и платежи остаются.</p><div class="sep"></div>'
    +'<div class="label">Эффекты при записи</div><div class="fchips">'+[['full','Полные'],['soft','Мягкие'],['off','Выкл']].map(k=>'<button class="fc'+((S.fx||'full')===k[0]?' on':'')+'" data-act="fx" data-v="'+k[0]+'">'+k[1]+'</button>').join('')+'</div><p class="note">Вылетающие искры и прыжок героя. Одинаковы для любой суммы. Если в телефоне включено «уменьшение движения», эффекты выключены сами.</p><div class="sep"></div>'
    +'<div class="label">Звук</div><div class="fchips"><button class="fc'+(S.sound.sfx?' on':'')+'" data-act="sfxtoggle">Звуки: '+(S.sound.sfx?'вкл':'выкл')+'</button><button class="fc'+(S.sound.music?' on':'')+'" data-act="musictoggle">Музыка: '+(S.sound.music?'вкл':'выкл')+'</button></div>'
    +'<div class="field"><label for="dv">Громкость</label><input id="dv" type="range" min="0" max="100" value="'+Math.round((S.sound.vol==null?0.6:S.sound.vol)*100)+'" data-snd="vol"></div><div class="sep"></div><div class="field"><label for="dx">Резервная копия (текст)</label><textarea id="dx" class="inp" readonly>'+esc(JSON.stringify(S))+'</textarea></div>'
@@ -1489,6 +1504,7 @@ function act(a,el){const v=el.dataset.v;
     case 'tour':startTour();break;
     case 'feed':if(feedPet()){playSfx('feed');commit()}break;
     case 'music':S.sound.music=!S.sound.music;save();musicSync();render();if(S.sound.music)toast('Музыка включена. Если не слышно, проверь беззвучный режим телефона');break;
+    case 'lefty':S.lefty=!S.lefty;save();render();renderSheet();break;
     case 'calmtoggle':S.calm=!S.calm;save();musicSync();render();renderSheet();break;
     case 'sfxtoggle':S.sound.sfx=!S.sound.sfx;save();renderSheet();break;
     case 'musictoggle':S.sound.music=!S.sound.music;save();musicSync();render();renderSheet();break;
@@ -1565,7 +1581,16 @@ function checkUpdate(){try{if(!window.fetch)return;fetch('version.json?t='+Date.
 function vvSync(){try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);document.documentElement.style.setProperty('--vvh',h+'px')}catch(e){}}
 function bootKb(){try{vvSync();if(window.visualViewport)window.visualViewport.addEventListener('resize',vvSync);window.addEventListener('resize',vvSync);
   document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'})}catch(x){}},320)})}catch(e){}}
-function boot(){bootKb();tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
+/* Свайп между вкладками. Правша: влево = следующая; левша: зеркально. Допускаем дугу большого пальца (до ~35°). */
+const TAB_ORDER=['home','list','stats','wallet'];
+function swipeTab(dx){const i=TAB_ORDER.indexOf(UI.tab);let dir=dx<0?1:-1;if(S.lefty)dir=-dir;const j=i+dir;
+  if(i<0||j<0||j>=TAB_ORDER.length)return false;UI.swipeDir=dir;UI.tab=TAB_ORDER[j];UI.day=null;render();try{window.scrollTo(0,0)}catch(e){}tgHaptic();return true}
+function bootSwipe(){let x0=null,y0=0,t0=0;
+  const skip=el=>{try{return UI.sheet||UI.tour!=null||UI.intro!=null||(el&&el.closest&&el.closest('input,select,textarea,.fchips,.qgrid,[style*="overflow-x"],.noswipe,#layer,#tourlayer,#tabbar'))}catch(e){return true}};
+  document.addEventListener('touchstart',e=>{if(e.touches.length!==1||skip(e.target)){x0=null;return}x0=e.touches[0].clientX;y0=e.touches[0].clientY;t0=Date.now();const W=window.innerWidth||400;if(x0<20||x0>W-20)x0=null},{passive:true});
+  document.addEventListener('touchend',e=>{if(x0==null)return;const t=e.changedTouches[0];const dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+    if(Date.now()-t0>800||Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.4)return;swipeTab(dx)},{passive:true})}
+function boot(){bootKb();try{bootSwipe()}catch(e){}tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};startIntro()}else renderSheet();
   if(S.onboarded){checkAch();if(notes.length)commit()}
   maybeTour();
