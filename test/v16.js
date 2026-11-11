@@ -4,7 +4,7 @@ const m=h.match(/<script>([\s\S]*?)<\/script>/);let bad=0;const chk=(n,c)=>{if(!
 const src=m[1].replace(/try\{start\(\)\}catch\(e\)\{showFatal\(e\)\}\s*$/,'');
 const vm=require('vm');const els={};const mk=()=>({focus(){},innerHTML:'',classList:{add(){},remove(){},toggle(){}},dataset:{},style:{setProperty(){}},querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}});
 const store={};const cloud={};
-const CS={getItem(k,cb){cb(null,cloud[k])},getItems(ks,cb){const o={};ks.forEach(k=>o[k]=cloud[k]);cb(null,o)},setItems(o,cb){Object.assign(cloud,o);cb&&cb()},removeItems(ks,cb){ks.forEach(k=>delete cloud[k]);cb&&cb()}};
+const CS={getItem(k,cb){cb(null,cloud[k])},getItems(ks,cb){const o={};ks.forEach(k=>o[k]=cloud[k]);cb(null,o)},setItem(k,v,cb){cloud[k]=String(v);cb&&cb(null,true)},removeItems(ks,cb){ks.forEach(k=>delete cloud[k]);cb&&cb()}};
 const ctx={console,setTimeout,clearTimeout,clearInterval,setInterval:()=>1,localStorage:{getItem(k){return k in store?store[k]:null},setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:{body:mk(),documentElement:mk(),getElementById:i=>els[i]||(els[i]=mk()),querySelector:s=>els[s]||(els[s]=mk()),querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk()},window:{addEventListener(){},scrollTo(){},matchMedia:()=>({matches:false}),Telegram:{WebApp:{CloudStorage:CS,initData:'x'}}},Date,Math,JSON,Intl,Image:function(){},navigator:{},performance:{now:()=>0},requestAnimationFrame(){},fetch:undefined};
 ctx.window.document=ctx.document;ctx.self=ctx.window;vm.createContext(ctx);vm.runInContext(src,ctx);
 const run=c=>vm.runInContext(c,ctx);
@@ -23,7 +23,7 @@ const reset=Object.assign({},pc,{epoch:'new1',tx:[]});ctx.__b=reset;
 chk('after reset newer copy wins whole',run('mergeStates(__a,__b)').tx.length===0);
 // через cloudSync: облако = компьютер, локально = телефон
 run("cloudPush=function(){}");
-const str=JSON.stringify(pc);cloud.hm_n='1';cloud.hm_0=str;store['hronika-monet-v1']=JSON.stringify(phone);
+const str=JSON.stringify(pc);cloud.hm_n='1';cloud.hm_0=str;store['hronika-monet-v1']=JSON.stringify(phone);store['hronika-synced']='1';
 let done=false;ctx.__done=()=>{done=true};run('cloudSync(__done)');
 const loc=JSON.parse(store['hronika-monet-v1']);
 chk('cloudSync merges into local',done&&loc.tx.length===3);

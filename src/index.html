@@ -523,11 +523,23 @@ function save(){try{S.savedAt=Date.now();localStorage.setItem(KEY,JSON.stringify
 /* Облако Telegram: данные привязаны к аккаунту Telegram. Режем JSON на куски по 3000 символов (лимит значения 4096). */
 const CCH=3000;let cloudTimer=null,cloudN=0;
 function tgCloud(){try{const w=window.Telegram&&window.Telegram.WebApp;return(w&&w.CloudStorage&&w.initData)?w.CloudStorage:null}catch(e){return null}}
-function cloudWrite(){const cs=tgCloud();if(!cs)return;try{const str=JSON.stringify(S),n=Math.ceil(str.length/CCH),o={};
-    for(let i=0;i<n;i++)o['hm_'+i]=str.slice(i*CCH,(i+1)*CCH);o.hm_n=String(n);
-    cs.setItems(o,()=>{});
-    if(cloudN>n){const old=[];for(let i=n;i<cloudN;i++)old.push('hm_'+i);cs.removeItems(old,()=>{})}
-    cloudN=n;cloudAt=Date.now()}catch(e){}}
+function cloudWrite(){const cs=tgCloud();if(!cs)return;if(cloudWriting){cloudAgain=true;return}
+  let str,n;try{str=JSON.stringify(S);n=Math.ceil(str.length/CCH)}catch(e){return}
+  const keys=[];for(let i=0;i<n;i++)keys.push('hm_'+i);
+  cloudWriting=true;let k=0;
+  const fail=e=>{cloudErr=String(e||'ошибка записи');cloudWriting=false;if(cloudAgain){cloudAgain=false;cloudWrite()}};
+  /* В Telegram есть только setItem по одному ключу. Сначала куски, номер последним: читатель не увидит половину. */
+  const step=()=>{try{
+    if(k<n){const key=keys[k],val=str.slice(k*CCH,(k+1)*CCH);k++;cs.setItem(key,val,(e,ok)=>{if(e)return fail(e);step()});return}
+    cs.setItem('hm_n',String(n),(e)=>{if(e)return fail(e);
+      if(cloudN>n){const old=[];for(let i=n;i<cloudN;i++)old.push('hm_'+i);try{cs.removeItems(old,()=>{})}catch(x){}}
+      cloudN=n;cloudAt=Date.now();cloudOk=Date.now();cloudErr='';cloudWriting=false;
+      if(cloudAgain){cloudAgain=false;cloudWrite()}})}catch(e){fail(e&&e.message)}};
+  step()}
+const SYNCK='hronika-synced';function isSynced(){try{return localStorage.getItem(SYNCK)==='1'}catch(e){return false}}
+function setSynced(){try{localStorage.setItem(SYNCK,'1')}catch(e){}}
+let cloudAsk=null;
+let cloudWriting=false,cloudAgain=false,cloudErr='',cloudOk=0;
 /* Обычная запись: сперва подтягиваем облако (вдруг там правки с другого устройства), сливаем, потом пишем.
    При сворачивании пишем сразу: на чтение может не хватить времени. */
 function cloudPush(now){if(!tgCloud())return;if(cloudTimer)clearTimeout(cloudTimer);
@@ -544,6 +556,13 @@ function cloudRead(cb){const cs=tgCloud();if(!cs){cb(null);return}
 let cloudBusy=false,cloudAt=0,cloudPend=false;
 function cloudLive(write){if(!tgCloud())return;if(cloudBusy){if(write)cloudPend=true;return}cloudBusy=true;
   cloudRead((c,str,n)=>{try{
+    if(!isSynced()){
+      if(c&&c.onboarded){if(n)cloudN=n;
+        if(!(S.tx&&S.tx.length)){adoptCloud(c)}
+        else if(!UI.sheet){cloudAsk=c;openSheet('syncask')}
+        cloudBusy=false;cloudPend=false;return}
+      if(n===0&&S.onboarded){setSynced();cloudWrite()}
+      cloudBusy=false;cloudPend=false;return}
     if(c&&(c.epoch||'')===(S.epoch||'')||c&&(c.savedAt||0)>(S.savedAt||0)){
       if(n)cloudN=n;const before=JSON.stringify(S),mg=mergeStates(c,S),ms=JSON.stringify(mg);
       if(ms!==before){const d=defaults();S=Object.assign(d,mg,{streak:Object.assign(d.streak,mg.streak||{})});
@@ -553,6 +572,16 @@ function cloudLive(write){if(!tgCloud())return;if(cloudBusy){if(write)cloudPend=
     else if(S.onboarded&&(c||n===0))write=true;
     if(write)cloudWrite();cloudAt=Date.now()}catch(e){}
     cloudBusy=false;if(cloudPend){cloudPend=false;cloudLive(true)}})}
+function adoptCloud(c){const d=defaults();S=Object.assign(d,c,{streak:Object.assign(d.streak,c.streak||{})});
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(x){}setSynced();cloudAsk=null;cloudAt=Date.now();
+  if(S.onboarded){UI.sheet=null;try{render();renderSheet()}catch(x){}}}
+function sheetSyncAsk(){const c=cloudAsk||{},ct=(c.tx||[]).length,lt=(S.tx||[]).length;
+  return shHead('Данные с другого устройства',true)
+   +'<p class="sub" style="margin-top:0">В облаке Telegram уже есть хроника с другого устройства (записей: '+ct+'). На этом устройстве своя (записей: '+lt+'). Что оставить?</p>'
+   +'<button class="btn" style="width:100%;margin-top:10px" data-act="synccloud">Взять из облака (с другого устройства)</button>'
+   +'<button class="btn ghost" style="width:100%;margin-top:8px" data-act="synclocal">Оставить данные этого устройства</button>'
+   +'<button class="btn ghost" style="width:100%;margin-top:8px" data-act="syncmerge">Объединить всё</button>'
+   +'<p class="note" style="margin-top:10px">«Объединить» сложит записи с обоих устройств, но счета могут задвоиться (две «Карты»). Лишний счёт потом можно удалить, если на нём нет записей.</p>'}
 function cloudTick(){if(document.hidden||!tgCloud())return;if(Date.now()-cloudAt<4000)return;cloudLive(false)}
 /* Слияние двух копий (телефон и компьютер): записи объединяются по id, удалённые помнятся в del.
    Остальные настройки берутся из более свежей копии. Разные epoch (сброс или восстановление) = берём свежую целиком. */
@@ -572,7 +601,8 @@ function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
     cs.getItems(keys,(e2,vals)=>{try{if(e2||!vals){end();return}
       let str='';for(let i=0;i<n;i++){if(typeof vals['hm_'+i]!=='string'){end();return}str+=vals['hm_'+i]}
       const c=JSON.parse(str);let l=null;try{l=JSON.parse(localStorage.getItem(KEY)||'null')}catch(x){}
-      if(!l){try{localStorage.setItem(KEY,str)}catch(x){}}
+      if(!l||!(l.tx&&l.tx.length)&&!isSynced()){try{localStorage.setItem(KEY,str)}catch(x){}setSynced()}
+      else if(!isSynced()){cloudAsk=c}
       else{const mg=mergeStates(c,l),ms=JSON.stringify(mg);if(ms!==JSON.stringify(l)){try{localStorage.setItem(KEY,ms)}catch(x){}}if(ms!==str)window.__cloudMerged=true}
       cloudN=n}catch(x){}end()})})}catch(e){end()}}
 try{document.addEventListener('visibilitychange',()=>{if(document.hidden)cloudPush(true);else cloudTick()});
@@ -1450,7 +1480,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.32.0';
+const APP_V='0.32.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1627,7 +1657,7 @@ function sheetData(){const f=UI.form;
   const fxv=S.fx||'full';
   return shHead('Настройки')
    +grp('Профиль','<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><div class="field"><label for="dd">День зарплаты</label><input id="dd" class="inp" data-f="payday" inputmode="numeric" maxlength="2" value="'+esc(f.payday||'')+'" placeholder="число, пусто = конец месяца"></div><button class="btn small" data-act="namesave">Сохранить</button>')
-   +grp('Синхронизация',tgCloud()?'<p class="sub" style="margin-top:0">Данные хранятся в облаке твоего Telegram и сами сходятся на телефоне и компьютере (Telegram Desktop). '+(cloudAt?'Последняя сверка: '+new Date(cloudAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'.':'')+'</p><button class="btn ghost small" style="margin-top:8px" data-act="syncnow">Сверить сейчас</button>':'<p class="sub" style="margin-top:0">Приложение открыто не через Telegram, поэтому данные лежат только на этом устройстве. Чтобы всё совпадало с телефоном, открой бота в Telegram Desktop. Перенести вручную можно через «Сделать копию» и «Восстановить».</p>')
+   +grp('Синхронизация',tgCloud()?'<p class="sub" style="margin-top:0">Данные хранятся в облаке твоего Telegram и сами сходятся на телефоне и компьютере (Telegram Desktop). '+(cloudErr?'<b style="color:var(--red,#e66)">Облако не отвечает: '+esc(cloudErr)+'</b> ':cloudOk?'Последняя запись в облако: '+new Date(cloudOk).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'.':'В облако ещё ничего не записано.')+'</p><button class="btn ghost small" style="margin-top:8px" data-act="syncnow">Сверить сейчас</button>':'<p class="sub" style="margin-top:0">Приложение открыто не через Telegram, поэтому данные лежат только на этом устройстве. Чтобы всё совпадало с телефоном, открой бота в Telegram Desktop. Перенести вручную можно через «Сделать копию» и «Восстановить».</p>')
    +grp('Удобство',sw('lefty',S.lefty,'Я левша','свайп и кнопки «скрыть» под левую руку')+sw('calmtoggle',S.calm,'Спокойный режим','без анимаций, звуков и игровых окон')
      +'<div class="sseg" role="radiogroup" aria-label="Эффекты при записи"><span class="segl">Эффекты при записи</span><div class="segb">'+[['full','Полные'],['soft','Мягкие'],['off','Выкл']].map(k=>'<button class="'+(fxv===k[0]?'on':'')+'" role="radio" aria-checked="'+(fxv===k[0])+'" data-act="fx" data-v="'+k[0]+'">'+k[1]+'</button>').join('')+'</div></div>')
    +grp('Валюта показа','<div class="sseg"><span class="segl">Показывать «Банк», итоги и прогноз в</span><div class="segb curseg">'+CUR.filter(c=>c[0]==='KZT'||rateOf(c[0])).slice(0,6).map(c=>'<button class="'+(dCur()===c[0]?'on':'')+'" data-act="dispcur" data-v="'+c[0]+'">'+c[1]+'</button>').join('')+'</div><small class="sub">Записи и счета остаются в своей валюте.</small></div>')
@@ -1739,8 +1769,8 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
-  const lock=sh.kind==='lvl'||sh.kind==='onboard';
+  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
   if(sh.kind==='add'&&UI.focus){UI.focus=false;const a=$('#amt');if(a)a.focus()}}
@@ -1924,6 +1954,9 @@ function act(a,el){const v=el.dataset.v;
     case 'import':{const raw=(UI.form.import||'').trim();try{const o=JSON.parse(raw);if(!o||!Array.isArray(o.tx)||!Array.isArray(o.accounts)||!o.accounts.length)throw 0;
       const d=defaults();S=Object.assign(d,o,{streak:Object.assign(d.streak,o.streak||{}),onboarded:true,tourSeen:true,questInit:false});S.epoch=uid();syncQuest();UI.sheet=null;commit();toast('Данные восстановлены')}
       catch(e){UI.form.err='Не получилось прочитать копию. Проверь, что вставлен весь текст';renderSheet()}break}
+    case 'synccloud':if(cloudAsk)adoptCloud(cloudAsk);toast('Взял данные из облака');break;
+    case 'synclocal':cloudAsk=null;setSynced();UI.sheet=null;S.savedAt=Date.now();cloudWrite();commit();toast('Данные этого устройства ушли в облако');break;
+    case 'syncmerge':{const c=cloudAsk;cloudAsk=null;setSynced();if(c){const mg=mergeStates(c,Object.assign({},S,{epoch:c.epoch||''})),d=defaults();S=Object.assign(d,mg,{streak:Object.assign(d.streak,mg.streak||{})})}UI.sheet=null;cloudWrite();commit();toast('Объединил');break}
     case 'syncnow':cloudAt=0;cloudLive(true);toast('Сверяю с облаком…');setTimeout(()=>{if(UI.sheet&&UI.sheet.kind==='data')renderSheet()},1500);break;
     case 'reset':if(UI.confirm!=='reset'){UI.confirm='reset';renderSheet()}else{S=defaults();S.epoch=uid();UI.sheet=null;UI.confirm=null;save();start()}break;
     case 'onboard':{const f=UI.form;S.name=(f.name||'').trim()||'Странник';
@@ -1995,7 +2028,7 @@ function bootDots(){let on=false,rect=null;
 function boot(){bootKb();try{bootSwipe();bootDots()}catch(e){}tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);setTimeout(()=>fetchRates(),2500);try{swipeHint()}catch(e){}if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};startIntro()}else renderSheet();
   if(S.onboarded){checkAch();if(notes.length)commit()}
-  maybeTour();
+  if(cloudAsk&&S.onboarded)openSheet('syncask');else maybeTour();
   if(saveFailed)toast('Браузер не даёт сохранять данные. Сделай резервную копию')}
 function showFatal(e){let raw='';try{raw=localStorage.getItem(KEY)||''}catch(x){}
   const a=document.getElementById('app');if(!a)return;
