@@ -1,0 +1,26 @@
+// 0.26: записи в любой валюте
+const fs=require('fs');const h=fs.readFileSync(process.argv[2],'utf8');
+const m=h.match(/<script>([\s\S]*?)<\/script>/);let bad=0;const chk=(n,c)=>{if(!c){bad++;console.log('FAIL',n)}else console.log('ok  ',n)};
+const src=m[1].replace(/try\{start\(\)\}catch\(e\)\{showFatal\(e\)\}\s*$/,'');
+const vm=require('vm');const els={};const mk=()=>({focus(){},innerHTML:'',classList:{add(){},remove(){},toggle(){}},dataset:{},style:{setProperty(){}},querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}});
+const ctx={console,setTimeout,clearTimeout,clearInterval,setInterval:()=>1,localStorage:{getItem(){return null},setItem(){}},document:{body:mk(),documentElement:mk(),getElementById:i=>els[i]||(els[i]=mk()),querySelector:s=>els[s]||(els[s]=mk()),querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk()},window:{addEventListener(){},scrollTo(){},matchMedia:()=>({matches:false})},Date,Math,JSON,Intl,Image:function(){},navigator:{},performance:{now:()=>0},requestAnimationFrame(){},fetch:undefined};
+ctx.window.document=ctx.document;ctx.self=ctx.window;vm.createContext(ctx);vm.runInContext(src,ctx);
+const run=c=>vm.runInContext(c,ctx);const app=()=>els['#app'].innerHTML,lay=()=>els['#layer'].innerHTML;
+const act=(a,v)=>{ctx.__el={dataset:{v},disabled:false};run(`act('${a}',__el)`)};
+run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:100000}];NOW='2026-11-11';S.rates={r:{USD:0.002,EUR:0.0016},at:'2026-11-11'}");
+act('add','exp');chk('default currency tenge',run("UI.F.cur")==='KZT'&&lay().includes('data-act="curopen"'));
+act('curopen');chk('picker shows currencies with rates',lay().includes('data-v="USD"')&&lay().includes('data-v="EUR"')&&!lay().includes('data-act="curset" data-v="RUB"'));
+act('curset','USD');chk('usd selected',run("UI.F.cur")==='USD'&&!run("UI.F.curOpen"));
+run("UI.F.amount='20';UI.F.cat='cafe'");chk('hint shows tenge',run("curHint(UI.F)").includes(run("fmt(10000)")));
+run("saveTxForm()");const x=run("S.tx[S.tx.length-1]");
+chk('stored original and tenge',x.ocur==='USD'&&x.oamt===20&&x.amount===10000);
+chk('balance in tenge',run("accBal(S.accounts[0])")===90000);
+chk('remembers last currency',run("S.lastCur")==='USD'&&run("newF('exp').cur")==='USD');
+run("UI.tab='list';render()");chk('list shows $20 and ≈ tenge',app().includes('−$20')&&app().includes('≈ '+run("fmt(10000)")));
+run("S.rates.r.USD=0.0025");chk('old record keeps its rate',run("S.tx[S.tx.length-1].amount")===10000);
+act('txopen',x.id);chk('edit shows dollar amount',run("UI.E.amount")==='20'&&lay().includes('Курс записи'));
+run("UI.E.amount='30'");act('txsave');chk('edit recomputes with record rate',run("S.tx[S.tx.length-1].oamt")===30&&run("S.tx[S.tx.length-1].amount")===15000);
+act('add','exp');run("UI.F.cur='RUB';UI.F.amount='100';UI.F.cat='food'");run("saveTxForm()");chk('no rate -> error',String(run("UI.F.err")).includes('Нет курса'));
+chk('repeat keeps currency',run("repeatList('exp')[0].ocur")==='USD');
+run("UI.tab='home';UI.sheet=null;render()");const q=run("quickAdd(0)");chk('quick add uses today rate',q.ocur==='USD'&&q.oamt===30&&q.amount===12000);
+console.log(bad?bad+' FAILED':'V20 OK');
