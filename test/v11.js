@@ -1,0 +1,20 @@
+const fs=require('fs');const h=fs.readFileSync(process.argv[2],'utf8');
+const m=h.match(/<script>([\s\S]*?)<\/script>/);let bad=0;const chk=(n,c)=>{if(!c){bad++;console.log('FAIL',n)}else console.log('ok  ',n)};
+const src=m[1].replace(/try\{start\(\)\}catch\(e\)\{showFatal\(e\)\}\s*$/,'');
+chk('kw colors',/kw\(/.test(src));
+const vm=require('vm');const els={};const mk=()=>({focus(){},innerHTML:'',classList:{add(){},remove(){},toggle(){}},dataset:{},style:{setProperty(){}},querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}});
+const ctx={console,setTimeout,clearTimeout,clearInterval,setInterval:()=>1,localStorage:{getItem(){return null},setItem(){}},document:{body:mk(),documentElement:mk(),getElementById:i=>els[i]||(els[i]=mk()),querySelector:s=>els[s]||(els[s]=mk()),querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk()},window:{addEventListener(){},scrollTo(){},matchMedia:()=>({matches:false})},Date,Math,JSON,Intl,Image:function(){},navigator:{},performance:{now:()=>0},requestAnimationFrame(){},fetch:undefined};
+ctx.window.document=ctx.document;ctx.self=ctx.window;vm.createContext(ctx);vm.runInContext(src,ctx);
+const run=c=>vm.runInContext(c,ctx);
+
+run("S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:100000},{id:'d',name:'Депозит',type:'deposit',bal0:500000}];NOW='2026-11-10'");
+chk('total includes deposit',run('totalBal()')===600000);
+chk('free includes deposit',run('freeMoney()')===600000);
+run("UI.tab='wallet';render()");chk('wallet shows deposit note',els['#app'].innerHTML.includes('депозитах'));chk('wallet has withdraw chip',els['#app'].innerHTML.includes('Снять с депозита'));
+run("act('trdep',{dataset:{v:'out'}})");chk('trdep opens transfer from deposit',run("UI.F.type")==='tr'&&run("UI.F.acc")==='d'&&run("UI.F.to")==='a');
+run("UI.F.amount='50000';saveTxForm()");chk('transfer moves money, free grows',run('freeMoney()')===600000&&run('totalBal()')===600000);
+chk('transfer is not expense',run("S.tx.filter(t=>t.type==='exp').length")===0);
+run("UI.form={map:{},newFor:null,step:2,plan:null};UI.sheet={kind:'imp'}");
+run("UI.form.newFor='k1';UI.form.ncicon='🎮';UI.form.ncname='Игры';act('impcat',{dataset:{v:'k1'}})");
+chk('custom category added to map',run("S.customCats.length")===1&&run("UI.form.map.k1")===run("S.customCats[0].id")&&run("UI.form.newFor")===null);
+console.log(bad?bad+' FAILED':'V11 OK');

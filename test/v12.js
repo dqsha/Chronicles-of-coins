@@ -1,0 +1,24 @@
+const fs=require('fs');const h=fs.readFileSync(process.argv[2],'utf8');
+const m=h.match(/<script>([\s\S]*?)<\/script>/);let bad=0;const chk=(n,c)=>{if(!c){bad++;console.log('FAIL',n)}else console.log('ok  ',n)};
+const src=m[1].replace(/try\{start\(\)\}catch\(e\)\{showFatal\(e\)\}\s*$/,'');
+chk('kw colors',/kw\(/.test(src));
+const vm=require('vm');const els={};const mk=()=>({focus(){},innerHTML:'',classList:{add(){},remove(){},toggle(){}},dataset:{},style:{setProperty(){}},querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}});
+const ctx={console,setTimeout,clearTimeout,clearInterval,setInterval:()=>1,localStorage:{getItem(){return null},setItem(){}},document:{body:mk(),documentElement:mk(),getElementById:i=>els[i]||(els[i]=mk()),querySelector:s=>els[s]||(els[s]=mk()),querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk()},window:{addEventListener(){},scrollTo(){},matchMedia:()=>({matches:false})},Date,Math,JSON,Intl,Image:function(){},navigator:{},performance:{now:()=>0},requestAnimationFrame(){},fetch:undefined};
+ctx.window.document=ctx.document;ctx.self=ctx.window;vm.createContext(ctx);vm.runInContext(src,ctx);
+const run=c=>vm.runInContext(c,ctx);
+
+run("S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:100000}];NOW='2026-11-10'");
+chk('month end days left incl today',run('forecast().days')===21);
+chk('no data => few',run('forecast().state')==='few');
+run("for(let i=1;i<=10;i++)S.tx.push({id:'t'+i,type:'exp',amount:2000,cat:'food',acc:'a',to:null,date:addDays('2026-11-10',-i),note:'',mid:null,ts:i})");
+chk('avg daily 2000',Math.round(run('forecast().avg'))===2000);
+chk('enough: 80000 vs 21*2000',run('forecast().state')==='ok'&&Math.round(run('forecast().diff'))===38000);
+run("S.accounts[0].bal0=30000");
+chk('short state and runout',run('forecast().state')==='short'&&run('forecast().runOut')==='2026-11-15');
+run("S.accounts[0].bal0=0;S.tx=[]");chk('broke',run('forecast().state')==='broke');
+run("S.payday=25;S.accounts[0].bal0=100000");chk('payday days',run('forecast().days')===15&&run('forecast().pay')===true);
+run("S.payday=5");chk('payday next month',run('forecast().until')==='2026-12-05'&&run('forecast().days')===25);
+run("S.payday=10");chk('payday today -> next month',run('forecast().until')==='2026-12-10');
+run("S.payday=null;UI.tab='home';render()");chk('home shows forecast card',els['#app'].innerHTML.includes('t-fc'));
+chk('credit excluded from avg',(()=>{run("S.tx=[];for(let i=1;i<=6;i++)S.tx.push({id:'c'+i,type:'exp',amount:9000,cat:'credit',acc:'a',to:null,date:addDays('2026-11-10',-i),note:'',mid:null,ts:i})");return run('forecast().state')==='few'})());
+console.log(bad?bad+' FAILED':'V12 OK');

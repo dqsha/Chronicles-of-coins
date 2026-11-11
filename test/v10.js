@@ -1,0 +1,14 @@
+const fs=require('fs');const h=fs.readFileSync(process.argv[2],'utf8');
+const m=h.match(/<script>([\s\S]*?)<\/script>/);let bad=0;const chk=(n,c)=>{if(!c){bad++;console.log('FAIL',n)}else console.log('ok  ',n)};
+const src=m[1].replace(/try\{start\(\)\}catch\(e\)\{showFatal\(e\)\}\s*$/,'');
+chk('kw colors',/kw\(/.test(src));
+const vm=require('vm');const els={};const mk=()=>({innerHTML:'',classList:{add(){},remove(){},toggle(){}},dataset:{},style:{setProperty(){}},querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}});
+const ctx={console,setTimeout,clearInterval,setInterval:()=>1,localStorage:{getItem(){return null},setItem(){}},document:{body:mk(),documentElement:mk(),getElementById:i=>els[i]||(els[i]=mk()),querySelector:s=>els[s]||(els[s]=mk()),querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk()},window:{addEventListener(){},scrollTo(){},matchMedia:()=>({matches:false})},Date,Math,JSON,Intl,Image:function(){},navigator:{},performance:{now:()=>0},requestAnimationFrame(){},fetch:undefined};
+ctx.window.document=ctx.document;ctx.self=ctx.window;vm.createContext(ctx);vm.runInContext(src,ctx);
+const run=c=>vm.runInContext(c,ctx);
+chk('kw wraps',run("kw('a {y б} в',true)").includes('<b class="ky"><i>б</i></b>'));
+chk('kw escapes',run("kw('<x> {r &}',false)").includes('&lt;x&gt;'));
+run("S=defaults();UI.tour=null;startIntro()");chk('intro index 0',run('UI.intro')===0);
+run("els={};");
+run("UI.intro=6;act('dlgtap',{dataset:{act:'dlgtap'}})");chk('intro last tap opens onboarding',run("UI.intro")===null&&run("UI.sheet&&UI.sheet.kind")==='onboard');
+console.log(bad?bad+' FAILED':'V10 OK');
