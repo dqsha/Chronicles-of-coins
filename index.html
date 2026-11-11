@@ -166,7 +166,7 @@ textarea.inp[readonly]{font-size:12px;line-height:1.4}
 .dlg-t i{font-style:normal;visibility:hidden}.dlg-t i.on{visibility:visible}
 .tv-dim.intro{background:rgba(8,6,12,.82)}
 .dlg{position:fixed;z-index:72;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px));max-width:460px;margin:0 auto;background:var(--panel);
-  border:14px solid transparent;border-image:url(assets/panel-stone.webp) 48 stretch;background-clip:padding-box;padding:14px 4px 4px;cursor:pointer;animation:sheetin .3s cubic-bezier(.2,.9,.25,1) both}
+  border:14px solid transparent;border-image:url(assets/panel-stone-r.webp) 48 stretch;background-clip:padding-box;padding:14px 4px 4px;cursor:pointer;animation:sheetin .3s cubic-bezier(.2,.9,.25,1) both}
 .dlg-name{position:absolute;left:8px;top:-27px;background:var(--panel);border:2px solid var(--gold-d);padding:3px 10px;font:700 12px var(--body);color:var(--gold);letter-spacing:.05em}
 .dlg-in{display:flex;gap:12px;align-items:flex-start;min-height:112px}
 .dlg .tv-mage{flex:none;width:64px;background:var(--panel2);border:2px solid var(--line);padding:4px}
@@ -213,7 +213,7 @@ input[type=date].inp::-webkit-date-and-time-value{text-align:left;margin:0;min-h
 .q .qxp{margin-left:auto;font-size:12px;color:var(--gold);white-space:nowrap;padding-left:8px}
 .q.done .qxp{color:var(--mute)}
 .updc{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.scrim.mid .sheet.fancy,.sheet.fancy{border:14px solid transparent;border-image:url(assets/panel-stone.webp) 48 stretch;background-clip:padding-box;box-shadow:none;max-height:94%;padding:0 6px 8px}
+.scrim.mid .sheet.fancy,.sheet.fancy{border:14px solid transparent;border-image:url(assets/panel-stone-r.webp) 48 stretch;background-clip:padding-box;box-shadow:none;max-height:94%;padding:0 6px 8px}
 .sheet.fancy::before{content:"";display:block;height:18px;margin:-6px 4px -4px;background:url(assets/vine-edge.webp) repeat-x left top/auto 18px;pointer-events:none}
 .obanner{position:relative;height:96px;margin:0 0 10px;border:2px solid var(--line);overflow:hidden;background:var(--panel2)}
 .obanner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -254,20 +254,20 @@ input[type=date].inp::-webkit-date-and-time-value{text-align:left;margin:0;min-h
 .tab[aria-current="true"] .ti{opacity:1;filter:drop-shadow(0 0 5px rgba(226,178,74,.7))}
 .card{box-shadow:4px 4px 0 var(--shadow)}
 /* 0.10: рамки из нарисованных ассетов */
-.btn{border:8px solid transparent;border-image:url(assets/btn-gold.webp) 12 stretch;background-clip:padding-box;padding:5px 10px;min-height:52px;box-shadow:0 4px 0 var(--shadow)}
+.btn{border:8px solid transparent;border-image:url(assets/btn-gold-r.webp) 12 stretch;background-clip:padding-box;padding:5px 10px;min-height:52px;box-shadow:0 4px 0 var(--shadow)}
 .btn:not(.ghost):not(.danger):not(.exp):not(.inc){background:linear-gradient(180deg,#f0cb68 0,#d9a53f 100%);background-clip:padding-box}
-.btn.exp{border-image-source:url(assets/btn-red.webp);background:linear-gradient(180deg,#d4605a 0,#a83c36 100%)!important;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
-.btn.inc{border-image-source:url(assets/btn-green.webp);background:linear-gradient(180deg,#6cb67a 0,#3f8450 100%)!important;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
-.btn.ghost{border-image-source:url(assets/btn-gray.webp);background:linear-gradient(180deg,#3a3548 0,#2a2538 100%);background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
-.btn.danger{border-image-source:url(assets/btn-red.webp);background:#5a2420;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
+.btn.exp{border-image-source:url(assets/btn-red-r.webp);background:linear-gradient(180deg,#d4605a 0,#a83c36 100%)!important;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
+.btn.inc{border-image-source:url(assets/btn-green-r.webp);background:linear-gradient(180deg,#6cb67a 0,#3f8450 100%)!important;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
+.btn.ghost{border-image-source:url(assets/btn-gray-r.webp);background:linear-gradient(180deg,#3a3548 0,#2a2538 100%);background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
+.btn.danger{border-image-source:url(assets/btn-red-r.webp);background:#5a2420;background-clip:padding-box;box-shadow:0 4px 0 var(--shadow)}
 .btn:active{filter:brightness(.88)}
-.btn.ghost:active{border-image-source:url(assets/btn-pressed.webp)}
+.btn.ghost:active{border-image-source:url(assets/btn-pressed-r.webp)}
 .btn.small{min-height:44px;padding:3px 8px}
 .btn.big{min-height:68px}
-.card{border:14px solid transparent;border-image:url(assets/panel-stone.webp) 48 stretch;background-clip:padding-box;padding:12px 6px 8px}
-.qk{border:8px solid transparent;border-image:url(assets/btn-gray.webp) 12 stretch;background:linear-gradient(180deg,#3a3548 0,#2a2538 100%);background-clip:padding-box;padding:0 4px;min-height:64px}
-.qk:active{border-image-source:url(assets/btn-pressed.webp)}
-.plus{border:8px solid transparent;border-image:url(assets/btn-gold.webp) 12 stretch;background:linear-gradient(180deg,#f0cb68 0,#d9a53f 100%);background-clip:padding-box;width:62px;height:62px;margin-top:-26px;box-shadow:0 4px 0 var(--shadow);padding:0}
+.card{border:14px solid transparent;border-image:url(assets/panel-stone-r.webp) 48 stretch;background-clip:padding-box;padding:12px 6px 8px}
+.qk{border:8px solid transparent;border-image:url(assets/btn-gray-r.webp) 12 stretch;background:linear-gradient(180deg,#3a3548 0,#2a2538 100%);background-clip:padding-box;padding:0 4px;min-height:64px}
+.qk:active{border-image-source:url(assets/btn-pressed-r.webp)}
+.plus{border:8px solid transparent;border-image:url(assets/btn-gold-r.webp) 12 stretch;background:linear-gradient(180deg,#f0cb68 0,#d9a53f 100%);background-clip:padding-box;width:62px;height:62px;margin-top:-26px;box-shadow:0 4px 0 var(--shadow);padding:0}
 
 
 #toast.q{opacity:0!important}
@@ -381,12 +381,9 @@ body.lefty .hidebtn{left:8px}
 .sgrp .btn.small{align-self:flex-start}
 .ver{text-align:center;font-size:12px;color:var(--mute);margin:6px 0 4px}
 
-/* ---- 0.24 скругляем всё, сохраняя пиксельные рамки (clip-path режет углы у border-image) ---- */
-.card{clip-path:inset(0 round 22px);box-shadow:none}
-.card::before{top:-2px}
-.btn,.qk{clip-path:inset(0 round 14px);box-shadow:none}
-.btn.small{clip-path:inset(0 round 12px)}
-.plus{clip-path:inset(0 round 18px);box-shadow:none}
+/* ---- 0.24.1 рамки скруглены в самих картинках (*-r.webp), без обрезки; тень повторяет форму ---- */
+.card{box-shadow:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.btn,.qk,.plus{box-shadow:none;filter:drop-shadow(0 3px 0 rgba(0,0,0,.4))}
 .scene{border-radius:22px;box-shadow:none;border-color:rgba(255,255,255,.1)}
 .scene .cap{border-radius:0 16px 0 0;border:0;background:rgba(21,18,27,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .scene .r{border-radius:0 0 0 16px;border:0;background:rgba(21,18,27,.68);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
@@ -1210,7 +1207,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.24.0';
+const APP_V='0.24.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
