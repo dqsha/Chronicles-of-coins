@@ -380,6 +380,36 @@ body.lefty .hidebtn{left:8px}
 .dt summary{cursor:pointer;color:#cfc5e4;font-size:14px;padding:6px 0}.dt[open] summary{color:var(--gold)}.dt textarea{margin:6px 0;min-height:90px}
 .sgrp .btn.small{align-self:flex-start}
 .ver{text-align:center;font-size:12px;color:var(--mute);margin:6px 0 4px}
+
+/* ---- 0.24 скругляем всё, сохраняя пиксельные рамки (clip-path режет углы у border-image) ---- */
+.card{clip-path:inset(0 round 22px);box-shadow:none}
+.card::before{top:-2px}
+.btn,.qk{clip-path:inset(0 round 14px);box-shadow:none}
+.btn.small{clip-path:inset(0 round 12px)}
+.plus{clip-path:inset(0 round 18px);box-shadow:none}
+.scene{border-radius:22px;box-shadow:none;border-color:rgba(255,255,255,.1)}
+.scene .cap{border-radius:0 16px 0 0;border:0;background:rgba(21,18,27,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.scene .r{border-radius:0 0 0 16px;border:0;background:rgba(21,18,27,.68);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.mbtn{border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(21,18,27,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.sheet{border-radius:26px 26px 0 0;border-color:rgba(255,255,255,.1)}
+.x{border-radius:50%;width:36px;height:36px;font-size:20px;background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.amtwrap{border-radius:20px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))}
+.amtwrap:focus-within{border-color:rgba(226,178,74,.7);box-shadow:0 0 0 3px rgba(226,178,74,.15)}
+.seg{border-radius:999px;border:1px solid rgba(255,255,255,.14);padding:3px;gap:3px;background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.03));overflow:hidden}
+.seg button{border-radius:999px;background:none;transition:background .25s,color .25s}
+.seg button.on{background:linear-gradient(135deg,#f0cb68,#d9a53f);color:#271c06;box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
+.cat{border-radius:18px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.12);transition:transform .16s,background .2s,border-color .2s}
+.cat:active{transform:scale(.96)}
+.cat.on{border-color:rgba(255,220,140,.6);background:linear-gradient(135deg,rgba(226,178,74,.38),rgba(226,178,74,.1));box-shadow:inset 0 1px 0 rgba(255,240,200,.4),0 4px 14px rgba(226,178,74,.15)}
+.cat.dashed{border-style:dashed;border-color:rgba(255,255,255,.22);background:none}
+.inp{border-radius:14px;border:1px solid rgba(255,255,255,.12)}
+.inp:focus{border-color:rgba(226,178,74,.7)}
+.kpi{border-radius:16px;border:1px solid rgba(255,255,255,.08)}
+.bar{border-radius:999px;border:1px solid rgba(255,255,255,.08);overflow:hidden}.bar i{border-radius:999px}
+.tabbar{border-radius:24px 24px 0 0;border-top:1px solid rgba(255,255,255,.1)}
+.dlg{border-radius:22px}
+.row{border-radius:12px}
+.undo{border-radius:16px}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1180,7 +1210,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.23.0';
+const APP_V='0.24.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1208,7 +1238,7 @@ function sheetAdd(){const F=UI.F;
   let h=shHead('Новая запись')+'<div class="seg">'+types.map(t=>'<button class="'+(F.type===t[0]?'on':'')+'" data-act="ftype" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'
    +'<div class="amtwrap"><input id="amt" class="amount" data-f="amount" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0" aria-label="Сумма в тенге" value="'+esc(F.amount)+'"><span>₸</span></div>';
   UI.rep=F.type==='tr'?[]:repeatList(F.type);
-  if(UI.rep.length)h+='<div class="label">Повторить</div><div class="fchips">'+UI.rep.map((r,i)=>{const c=catInfo(r.cat);return '<button class="fc" data-act="rep" data-v="'+i+'">'+c.icon+' '+esc(c.name)+' · '+fmt(r.amount)+'</button>'}).join('')+'</div>';
+  if(UI.rep.length)h+='<div class="label">Повторить</div><div class="fchips">'+UI.rep.map((r,i)=>{const c=catInfo(r.cat);return '<button class="fc" data-act="rep" data-v="'+i+'">'+c.icon+' '+esc(c.name)+' · '+fmtCt(r.amount)+'</button>'}).join('')+'</div>';
   if(F.type==='tr'){h+='<div class="two"><div class="field"><label for="facc">Откуда</label><select id="facc" class="inp" data-f="acc">'+accOpts(F.acc)+'</select></div>'
      +'<div class="field"><label for="fto">Куда</label><select id="fto" class="inp" data-f="to">'+accOpts(F.to)+'</select></div></div>'}
   else{h+='<div class="cats">'+catsFor(F.type).map(c=>'<button class="cat '+(F.cat===c.id?'on':'')+'" data-act="cat" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')
