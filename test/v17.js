@@ -21,7 +21,7 @@ act('hide','s_chart');chk('stats chart hidden',!app().includes('<h2>Доходы
 run("UI.tab='wallet';render()");
 chk('wallet hide buttons',['w_hist','w_goals','w_mand','w_chr'].every(k=>app().includes('data-v="'+k+'"')));
 chk('accounts never hideable',app().includes('id="t-acc"')&&!app().includes('data-v="w_acc"'));
-chk('button has visible text',app().includes('скрыть ✕'));
+chk('button has visible text',app().includes('>скрыть</button>'));
 // свайп
 run("UI.tab='home';S.lefty=false");chk('right-hand: left swipe -> next',run("swipeTab(-100)")&&run("UI.tab")==='list');
 chk('right swipe -> back',run("swipeTab(100)")&&run("UI.tab")==='home');
