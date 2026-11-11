@@ -441,6 +441,19 @@ body.lefty .hidebtn{left:8px}
 .obox{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .olab{font:600 15px var(--body);color:#f1ebf8}.osub{font-size:12px;color:var(--mute);margin-top:-4px}
 .ohl{font-size:13px;color:#e8d9a8;background:rgba(226,178,74,.1);border-left:3px solid var(--gold);border-radius:8px;padding:8px 10px;margin:4px 0 10px}
+/* ПК и планшет: шире колонка, карточки в две колонки, окна по центру */
+@media (min-width:900px) and (hover:hover){
+#app{max-width:1040px!important;display:grid!important;grid-template-columns:1fr 1fr;align-items:start;gap:16px;padding-inline:24px}
+#app>*{min-width:0}
+#app>.scene,#app>.recseg,#app>#t-free,#app>#t-log,#app>.attn,#app>#t-attn,#app>.wide,#app>nav,#app>.fc,#app>.btn,#app>.hint{grid-column:1/-1}
+.scene{height:150px}
+.tabbar-in{max-width:620px;margin:0 auto}
+.scrim,.scrim.mid{align-items:center}
+.sheet{max-width:560px;max-height:86%;border-bottom:2px solid var(--line)!important;border-radius:22px!important}
+.dlg,.tv-box{max-width:560px}
+.row:hover,.btn:hover,.qk:hover{filter:brightness(1.12)}
+button,[data-act]{cursor:pointer}
+}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -510,13 +523,37 @@ function save(){try{S.savedAt=Date.now();localStorage.setItem(KEY,JSON.stringify
 /* Облако Telegram: данные привязаны к аккаунту Telegram. Режем JSON на куски по 3000 символов (лимит значения 4096). */
 const CCH=3000;let cloudTimer=null,cloudN=0;
 function tgCloud(){try{const w=window.Telegram&&window.Telegram.WebApp;return(w&&w.CloudStorage&&w.initData)?w.CloudStorage:null}catch(e){return null}}
-function cloudPush(now){const cs=tgCloud();if(!cs)return;if(cloudTimer)clearTimeout(cloudTimer);
-  const go=()=>{cloudTimer=null;try{const str=JSON.stringify(S),n=Math.ceil(str.length/CCH),o={};
+function cloudWrite(){const cs=tgCloud();if(!cs)return;try{const str=JSON.stringify(S),n=Math.ceil(str.length/CCH),o={};
     for(let i=0;i<n;i++)o['hm_'+i]=str.slice(i*CCH,(i+1)*CCH);o.hm_n=String(n);
     cs.setItems(o,()=>{});
     if(cloudN>n){const old=[];for(let i=n;i<cloudN;i++)old.push('hm_'+i);cs.removeItems(old,()=>{})}
-    cloudN=n}catch(e){}};
-  if(now)go();else cloudTimer=setTimeout(go,700)}
+    cloudN=n;cloudAt=Date.now()}catch(e){}}
+/* Обычная запись: сперва подтягиваем облако (вдруг там правки с другого устройства), сливаем, потом пишем.
+   При сворачивании пишем сразу: на чтение может не хватить времени. */
+function cloudPush(now){if(!tgCloud())return;if(cloudTimer)clearTimeout(cloudTimer);
+  if(now){cloudTimer=null;cloudWrite();return}
+  cloudTimer=setTimeout(()=>{cloudTimer=null;cloudLive(true)},700)}
+/* Живая синхронизация: читаем облако, сливаем с тем, что на экране, перерисовываем, если пришло новое. */
+function cloudRead(cb){const cs=tgCloud();if(!cs){cb(null);return}
+  let fin=false;const end=(c,str,n)=>{if(!fin){fin=true;cb(c,str,n)}};setTimeout(()=>end(null),4000);
+  try{cs.getItem('hm_n',(e,nv)=>{const n=parseInt(nv,10);if(e||!(n>0)){end(null,'',0);return}
+    const keys=[];for(let i=0;i<n;i++)keys.push('hm_'+i);
+    cs.getItems(keys,(e2,vals)=>{try{if(e2||!vals){end(null);return}
+      let str='';for(let i=0;i<n;i++){if(typeof vals['hm_'+i]!=='string'){end(null);return}str+=vals['hm_'+i]}
+      end(JSON.parse(str),str,n)}catch(x){end(null)}})})}catch(e){end(null)}}
+let cloudBusy=false,cloudAt=0,cloudPend=false;
+function cloudLive(write){if(!tgCloud())return;if(cloudBusy){if(write)cloudPend=true;return}cloudBusy=true;
+  cloudRead((c,str,n)=>{try{
+    if(c&&(c.epoch||'')===(S.epoch||'')||c&&(c.savedAt||0)>(S.savedAt||0)){
+      if(n)cloudN=n;const before=JSON.stringify(S),mg=mergeStates(c,S),ms=JSON.stringify(mg);
+      if(ms!==before){const d=defaults();S=Object.assign(d,mg,{streak:Object.assign(d.streak,mg.streak||{})});
+        try{localStorage.setItem(KEY,JSON.stringify(S))}catch(x){}
+        if(S.onboarded){if(UI.sheet)UI.syncDirty=true;else{try{render()}catch(x){}}}}
+      if(ms!==str)write=true}
+    else if(S.onboarded&&(c||n===0))write=true;
+    if(write)cloudWrite();cloudAt=Date.now()}catch(e){}
+    cloudBusy=false;if(cloudPend){cloudPend=false;cloudLive(true)}})}
+function cloudTick(){if(document.hidden||!tgCloud())return;if(Date.now()-cloudAt<4000)return;cloudLive(false)}
 /* Слияние двух копий (телефон и компьютер): записи объединяются по id, удалённые помнятся в del.
    Остальные настройки берутся из более свежей копии. Разные epoch (сброс или восстановление) = берём свежую целиком. */
 function mergeStates(a,b){const na=(a.savedAt||0)>=(b.savedAt||0),nw=na?a:b,od=na?b:a;
@@ -524,6 +561,8 @@ function mergeStates(a,b){const na=(a.savedAt||0)>=(b.savedAt||0),nw=na?a:b,od=n
   const del=Object.assign({},od.del||{},nw.del||{});out.del=del;
   const seen={},tx=[];(nw.tx||[]).concat(od.tx||[]).forEach(x=>{if(!x||!x.id||seen[x.id]||del[x.id])return;seen[x.id]=1;tx.push(x)});out.tx=tx;
   ['paid','noSpend','dayRec'].forEach(k=>{out[k]=Object.assign({},od[k]||{},nw[k]||{})});
+  ['accounts','mand','goals','customCats'].forEach(k=>{const m={},arr=[];(nw[k]||[]).concat(od[k]||[]).forEach(x=>{if(!x||!x.id||m[x.id]||del[x.id])return;m[x.id]=1;arr.push(x)});out[k]=arr});
+  out.ach=Object.assign({},od.ach||{},nw.ach||{});
   const pm={};(od.pro||[]).concat(nw.pro||[]).forEach(q=>{if(!q||!q.id||del[q.id])return;const c=pm[q.id];if(!c||(q.u||0)>=(c.u||0))pm[q.id]=q});out.pro=Object.keys(pm).map(k=>pm[k]);
   out.xp=Math.max(a.xp||0,b.xp||0);out.savedAt=Math.max(a.savedAt||0,b.savedAt||0);return out}
 function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
@@ -536,7 +575,8 @@ function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
       if(!l){try{localStorage.setItem(KEY,str)}catch(x){}}
       else{const mg=mergeStates(c,l),ms=JSON.stringify(mg);if(ms!==JSON.stringify(l)){try{localStorage.setItem(KEY,ms)}catch(x){}}if(ms!==str)window.__cloudMerged=true}
       cloudN=n}catch(x){}end()})})}catch(e){end()}}
-try{document.addEventListener('visibilitychange',()=>{if(document.hidden)cloudPush(true)})}catch(e){}
+try{document.addEventListener('visibilitychange',()=>{if(document.hidden)cloudPush(true);else cloudTick()});
+  window.addEventListener('focus',cloudTick);setInterval(cloudTick,15000)}catch(e){}
 
 function catsFor(kind){const base=(kind==='inc'?CATS_INC:CATS_EXP).map(c=>({id:c[0],name:c[1],icon:c[2]}));
   return base.concat(S.customCats.filter(c=>c.kind===kind))}
@@ -672,7 +712,8 @@ function closeGoal(id,o){const g=S.goals.find(x=>x.id===id&&!x.closed);if(!g)ret
   const amount=o.amount!=null?o.amount:Math.max(0,goalSaved(g));let tx=null;
   if(amount>0){tx={id:uid(),type:'exp',amount:amount,cat:o.cat||'other',acc:o.acc,to:null,date:today(),note:g.name,mid:null,ts:Date.now()};S.tx.push(tx)}
   g.closed=true;g.closedOn=today();g.spent=amount;return tx}
-function delGoal(id){S.goals=S.goals.filter(g=>g.id!==id)}
+function tomb(id){if(!S.del)S.del={};S.del[id]=Date.now()}
+function delGoal(id){tomb(id);S.goals=S.goals.filter(g=>g.id!==id)}
 function goalInfo(g){const saved=Math.max(0,goalSaved(g)),left=Math.max(0,g.target-saved);
   const pct=g.target>0?Math.min(100,Math.floor(saved/g.target*100)):0;const done=saved>=g.target;const t=today();
   let eta=null,onTrack=null,need=null,rate=0;
@@ -1409,7 +1450,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.31.0';
+const APP_V='0.32.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1428,7 +1469,7 @@ function render(){
 /* ---------- sheets ---------- */
 function accOpts(sel,skip){return S.accounts.filter(a=>a.id!==skip).map(a=>'<option value="'+a.id+'"'+(a.id===sel?' selected':'')+'>'+esc(a.name)+'</option>').join('')}
 function openSheet(kind,data){UI.sheet=Object.assign({kind:kind},data||{});UI.confirm=null;renderSheet()}
-function closeSheet(){UI.sheet=null;UI.confirm=null;let sc=null;try{sc=!S.calm&&document.querySelector('#layer .scrim')}catch(e){}
+function closeSheet(){UI.sheet=null;UI.confirm=null;if(UI.syncDirty){UI.syncDirty=false;try{render()}catch(e){}}let sc=null;try{sc=!S.calm&&document.querySelector('#layer .scrim')}catch(e){}
   if(sc&&sc.classList&&sc.classList.add){sc.classList.add('closing');setTimeout(()=>{if(!UI.sheet)renderSheet();if(UI.pendingLvl&&!UI.sheet)openSheet('lvl')},190);try{document.body.classList.remove('lock')}catch(e){}return}
   renderSheet();if(UI.pendingLvl)openSheet('lvl')}
 function shHead(t,lock){return '<div class="sh-head"><h2>'+t+'</h2>'+(lock?'':'<button class="x" data-act="close" aria-label="Закрыть">×</button>')+'</div>'}
@@ -1586,6 +1627,7 @@ function sheetData(){const f=UI.form;
   const fxv=S.fx||'full';
   return shHead('Настройки')
    +grp('Профиль','<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><div class="field"><label for="dd">День зарплаты</label><input id="dd" class="inp" data-f="payday" inputmode="numeric" maxlength="2" value="'+esc(f.payday||'')+'" placeholder="число, пусто = конец месяца"></div><button class="btn small" data-act="namesave">Сохранить</button>')
+   +grp('Синхронизация',tgCloud()?'<p class="sub" style="margin-top:0">Данные хранятся в облаке твоего Telegram и сами сходятся на телефоне и компьютере (Telegram Desktop). '+(cloudAt?'Последняя сверка: '+new Date(cloudAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'.':'')+'</p><button class="btn ghost small" style="margin-top:8px" data-act="syncnow">Сверить сейчас</button>':'<p class="sub" style="margin-top:0">Приложение открыто не через Telegram, поэтому данные лежат только на этом устройстве. Чтобы всё совпадало с телефоном, открой бота в Telegram Desktop. Перенести вручную можно через «Сделать копию» и «Восстановить».</p>')
    +grp('Удобство',sw('lefty',S.lefty,'Я левша','свайп и кнопки «скрыть» под левую руку')+sw('calmtoggle',S.calm,'Спокойный режим','без анимаций, звуков и игровых окон')
      +'<div class="sseg" role="radiogroup" aria-label="Эффекты при записи"><span class="segl">Эффекты при записи</span><div class="segb">'+[['full','Полные'],['soft','Мягкие'],['off','Выкл']].map(k=>'<button class="'+(fxv===k[0]?'on':'')+'" role="radio" aria-checked="'+(fxv===k[0])+'" data-act="fx" data-v="'+k[0]+'">'+k[1]+'</button>').join('')+'</div></div>')
    +grp('Валюта показа','<div class="sseg"><span class="segl">Показывать «Банк», итоги и прогноз в</span><div class="segb curseg">'+CUR.filter(c=>c[0]==='KZT'||rateOf(c[0])).slice(0,6).map(c=>'<button class="'+(dCur()===c[0]?'on':'')+'" data-act="dispcur" data-v="'+c[0]+'">'+c[1]+'</button>').join('')+'</div><small class="sub">Записи и счета остаются в своей валюте.</small></div>')
@@ -1732,7 +1774,7 @@ function delAcc(){const id=UI.sheet.id;
   if(UI.confirm!=='acc'){UI.confirm='acc';return renderSheet()}
   if(S.accounts.length<2){UI.form.err='Нельзя удалить последний счёт';UI.confirm=null;return renderSheet()}
   if(S.tx.some(x=>x.acc===id||x.to===id)||S.mand.some(m=>m.acc===id)){UI.form.err='По счёту есть записи или платежи, удалить нельзя';UI.confirm=null;return renderSheet()}
-  S.accounts=S.accounts.filter(a=>a.id!==id);UI.sheet=null;commit()}
+  tomb(id);S.accounts=S.accounts.filter(a=>a.id!==id);UI.sheet=null;commit()}
 function openMand(id,debt){const m=S.mand.find(x=>x.id===id);
   UI.form=m?{name:m.name,amount:String(m.amount),day:String(m.day),cat:m.cat,acc:m.acc,debt:!!m.debt,left:m.left?String(m.left):'',rate:m.rate?String(m.rate):'',err:''}:{name:'',amount:'',day:'1',cat:debt?'credit':'home',acc:S.accounts[0].id,debt:!!debt,left:'',rate:'',err:''};openSheet('mand',{id:id||null})}
 function saveMand(){const f=UI.form,id=UI.sheet.id;const amount=num(f.amount),day=Math.round(num(f.day));
@@ -1826,7 +1868,7 @@ function act(a,el){const v=el.dataset.v;
     case 'errcopy':{const txt='Хроника Монет '+APP_V+'\n'+((window.__errlog&&window.__errlog())||[]).join('\n');try{navigator.clipboard.writeText(txt).then(()=>toast('Журнал скопирован')).catch(()=>toast('Не удалось скопировать'))}catch(e){toast('Не удалось скопировать')}break}
     case 'errclear':if(window.__errclear)window.__errclear();renderSheet();toast('Журнал очищен');break;
     case 'aicopy':{const ta=document.getElementById('aix');const txt=aiSummary();let ok=false;try{navigator.clipboard.writeText(txt).then(()=>toast('Сводка скопирована')).catch(()=>{if(ta){ta.focus();ta.select()}toast('Выдели текст и скопируй')});ok=true}catch(e){}if(!ok&&ta){ta.focus();ta.select();toast('Выдели текст и скопируй')}break}
-    case 'manddel':{const id=UI.sheet.id;S.mand=S.mand.filter(m=>m.id!==id);Object.keys(S.paid).forEach(k=>{if(k.indexOf(id+'|')===0)delete S.paid[k]});UI.sheet=null;commit();break}
+    case 'manddel':{const id=UI.sheet.id;tomb(id);S.mand=S.mand.filter(m=>m.id!==id);Object.keys(S.paid).forEach(k=>{if(k.indexOf(id+'|')===0)delete S.paid[k]});UI.sheet=null;commit();break}
     case 'tour':startTour();break;
     case 'feed':if(feedPet()){playSfx('feed');commit()}break;
     case 'music':S.sound.music=!S.sound.music;save();musicSync();render();if(S.sound.music)toast('Музыка включена. Если не слышно, проверь беззвучный режим телефона');break;
@@ -1882,6 +1924,7 @@ function act(a,el){const v=el.dataset.v;
     case 'import':{const raw=(UI.form.import||'').trim();try{const o=JSON.parse(raw);if(!o||!Array.isArray(o.tx)||!Array.isArray(o.accounts)||!o.accounts.length)throw 0;
       const d=defaults();S=Object.assign(d,o,{streak:Object.assign(d.streak,o.streak||{}),onboarded:true,tourSeen:true,questInit:false});S.epoch=uid();syncQuest();UI.sheet=null;commit();toast('Данные восстановлены')}
       catch(e){UI.form.err='Не получилось прочитать копию. Проверь, что вставлен весь текст';renderSheet()}break}
+    case 'syncnow':cloudAt=0;cloudLive(true);toast('Сверяю с облаком…');setTimeout(()=>{if(UI.sheet&&UI.sheet.kind==='data')renderSheet()},1500);break;
     case 'reset':if(UI.confirm!=='reset'){UI.confirm='reset';renderSheet()}else{S=defaults();S.epoch=uid();UI.sheet=null;UI.confirm=null;save();start()}break;
     case 'onboard':{const f=UI.form;S.name=(f.name||'').trim()||'Странник';
       S.accounts=[{id:uid(),name:'Наличные',type:'cash',bal0:num(f.cash)},{id:uid(),name:'Карта',type:'card',bal0:num(f.card)}];S.lastAcc=S.accounts[1].id;S.onboarded=true;S.questInit=true;UI.sheet=null;commit();toast('Добро пожаловать, '+S.name);startTour();break}
@@ -1898,6 +1941,13 @@ let lt=0;document.addEventListener('touchend',e=>{const t=Date.now();if(t-lt<350
 document.addEventListener('input',e=>{const t=e.target;
   if(t.dataset&&t.dataset.snd==='vol'){S.sound.vol=t.value/100;if(SND.master)SND.master.gain.value=S.sound.vol;save();return}
   if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value;if(t.dataset.live==='conv')convLive();if(t.dataset.live==='addcur'){const el=document.getElementById('addconv');if(el)el.innerHTML=curHint(UI.F)}});
+document.addEventListener('keydown',e=>{try{const t=e.target,typing=t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable);
+  if(e.key==='Escape'&&UI.sheet){e.preventDefault();closeSheet();return}
+  if(typing||e.ctrlKey||e.metaKey||e.altKey||UI.sheet||!S.onboarded||UI.tour)return;
+  const k=e.key.toLowerCase();
+  if(k==='-'||k==='т'||k==='e'){e.preventDefault();act('add',{dataset:{v:'exp'}})}
+  else if(k==='+'||k==='='||k==='д'||k==='i'){e.preventDefault();act('add',{dataset:{v:'inc'}})}
+  else if(k>='1'&&k<='4'){act('tab',{dataset:{v:TAB_ORDER[+k-1]}})}}catch(x){}});
 document.addEventListener('keydown',e=>{try{if(e.key==='Enter'&&UI.sheet&&UI.sheet.kind==='add'&&e.target&&e.target.id==='amt'){e.preventDefault();saveTxForm()}}catch(x){}});
 document.addEventListener('change',e=>{const t=e.target;
   if(t.dataset&&t.dataset.file){readStatementFile(t.files&&t.files[0]);return}
