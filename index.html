@@ -159,6 +159,7 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 textarea.inp[readonly]{font-size:12px;line-height:1.4}
 .fch{font:700 16px var(--body);margin:6px 0 10px;line-height:1.35}
 #t-fc .catrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px}
+#t-pro .catrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px;margin:0}#t-pro .catrow .amt{white-space:nowrap;overflow:visible;text-overflow:clip}#t-pro .label+.catrow{margin-top:6px}#t-pro .fch{margin:10px 0 2px}
 
 /* 0.14 диалоги */
 .ky{color:var(--gold)}.kg{color:var(--inc)}.kr{color:var(--exp,#e0675a)}.kb{color:#9db4ff}
@@ -358,6 +359,8 @@ body.lefty .hidebtn{left:8px}
 .hidebtn::after{background-color:rgba(255,255,255,.18)}
 #toast{border-radius:16px;color:#f4eefc;background:linear-gradient(135deg,rgba(60,48,84,.78),rgba(30,24,44,.72))}
 .hbar{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:42px;margin:0 0 12px;padding:8px 16px;border-radius:999px;color:rgba(236,230,246,.72);font:13px var(--body);cursor:pointer}
+.prow{border-top:2px solid var(--panel2)}.prow:first-child{border-top:0}.prow .row{cursor:pointer}
+.pbtns{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 10px 52px}.pbtns .btn{flex:0 1 auto}
 .hbar .hbn::before{content:'▸ ';opacity:.6}.hbar .hbs{font-size:12px;color:var(--gold)}
 .tdots{position:absolute;left:50%;right:auto;top:-40px;transform:translateX(-50%);display:flex;gap:2px;padding:4px 8px;border-radius:999px;pointer-events:auto;touch-action:none;z-index:3}
 .tdots .dot{width:30px;height:24px;padding:0;border:0;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -494,7 +497,7 @@ const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],ban
 
 function defaults(){return{payday:null,hide:{},epoch:'',del:{},v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
   streak:{count:0,last:null,freezes:1,best:0},noSpend:{},dayRec:{},lastAcc:null,
-  goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Уголёк'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false}}
+  goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Уголёк'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[]}}
 let S=defaults();
 let saveFailed=false;
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r),d=defaults();
@@ -517,6 +520,7 @@ function mergeStates(a,b){const na=(a.savedAt||0)>=(b.savedAt||0),nw=na?a:b,od=n
   const del=Object.assign({},od.del||{},nw.del||{});out.del=del;
   const seen={},tx=[];(nw.tx||[]).concat(od.tx||[]).forEach(x=>{if(!x||!x.id||seen[x.id]||del[x.id])return;seen[x.id]=1;tx.push(x)});out.tx=tx;
   ['paid','noSpend','dayRec'].forEach(k=>{out[k]=Object.assign({},od[k]||{},nw[k]||{})});
+  const pm={};(od.pro||[]).concat(nw.pro||[]).forEach(q=>{if(!q||!q.id||del[q.id])return;const c=pm[q.id];if(!c||(q.u||0)>=(c.u||0))pm[q.id]=q});out.pro=Object.keys(pm).map(k=>pm[k]);
   out.xp=Math.max(a.xp||0,b.xp||0);out.savedAt=Math.max(a.savedAt||0,b.savedAt||0);return out}
 function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
   let fin=false;const end=()=>{if(!fin){fin=true;done()}};setTimeout(end,3500);
@@ -857,6 +861,69 @@ function forecast(){const t=today(),h=payHorizon(t),bank=freeMoney(),avg=avgDail
   if(avg<=0){r.state='ok';r.runOut=null;return r}
   r.runOut=addDays(t,Math.floor(bank/avg));r.state=r.diff>=0?'ok':'short';return r}
 
+/* ---------- пророчества: ожидаемые доходы и расходы, сверка с жизнью ---------- */
+const proList=()=>S.pro||(S.pro=[]);
+const proWait=()=>proList().filter(p=>p.st==='wait').sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+const proEvents=(t,end)=>proWait().filter(p=>p.date>=t&&p.date<=end);
+/* Остаток к дате = свободные деньги + ожидаемые доходы - ожидаемые расходы (только то, что записано пророчествами) */
+function proBalanceAt(end){let b=freeMoney();proEvents(today(),end).forEach(p=>{b+=p.type==='inc'?p.amount:-p.amount});return b}
+/* Кассовый разрыв: первая дата, когда остаток уходит в минус, и насколько глубоко он падает после этого */
+function proGap(days){const t=today(),end=addDays(t,days||60);let b=freeMoney(),first=b<0?t:null,low=b;
+  proEvents(t,end).forEach(p=>{b+=p.type==='inc'?p.amount:-p.amount;if(b<0&&!first)first=p.date;if(first&&b<low)low=b});
+  return first?{date:first,deficit:Math.ceil(-low)}:null}
+function proResolve(id,kind,fact){const p=proList().find(x=>x.id===id);if(!p||p.st!=='wait')return false;
+  if(kind==='miss'){p.st='miss';p.fact=0}
+  else{const amt=Math.round((kind==='hit'?p.amount:fact)*100)/100;if(!(amt>0)||amt>MAXAMT)return false;
+    const acc=S.accounts.find(a=>a.id===p.acc)?p.acc:(S.accounts[0]||{}).id;if(!acc)return false;
+    const tx=addTx({type:p.type,amount:amt,cat:p.cat,acc:acc,date:p.date<=today()?p.date:today(),note:p.note});
+    p.st='done';p.fact=amt;p.tx=tx.id}
+  p.done=today();p.u=Date.now();
+  if(p.rec==='month')proList().push({id:uid(),type:p.type,cat:p.cat,acc:p.acc,amount:p.amount,date:addMonths(p.date,1),note:p.note,rec:'month',st:'wait',fact:null,u:Date.now()});
+  return true}
+function proRow(p,due){const c=catInfo(p.cat),inc=p.type==='inc';
+  const when=due?(p.date===today()?'сегодня':'ждали '+fmtDate(p.date)):fmtDate(p.date);
+  return '<div class="prow"><div class="row" data-act="proedit" data-v="'+p.id+'" role="button" tabindex="0"><span class="tile">'+c.icon+'</span><span class="mid"><div class="t1">'+esc(p.note||c.name)+'</div><div class="t2">'+when+(p.rec==='month'?' · каждый месяц':'')+'</div></span>'
+   +'<span class="amt '+(inc?'pos':'neg')+'">'+(inc?'+':'−')+fmt(p.amount)+'</span></div>'
+   +(due?'<div class="pbtns"><button class="btn small" data-act="prohit" data-v="'+p.id+'">Сбылось</button><button class="btn small ghost" data-act="prodiff" data-v="'+p.id+'">Иначе</button><button class="btn small ghost" data-act="promiss" data-v="'+p.id+'">Не сбылось</button></div>':'')+'</div>'}
+function proCard(){if(!S.accounts.length)return '';const t=today(),w=proWait(),due=w.filter(p=>p.date<=t),soon=w.filter(p=>p.date>t);
+  const end=payHorizon(t).date,ev=proEvents(t,end),si=ev.filter(p=>p.type==='inc').reduce((q,p)=>q+p.amount,0),se=ev.filter(p=>p.type==='exp').reduce((q,p)=>q+p.amount,0);
+  let h='<section class="card" id="t-pro"><div class="label">Пророчества</div>';
+  if(!w.length)h+='<p>Запиши, что ждёшь: зарплату, платёж, большую покупку. Когда придёт срок, я сверю с жизнью и покажу, где ты ошибся.</p>';
+  else{const g=proGap(60);
+    if(ev.length)h+='<div class="catrow"><span>Ждёшь до '+fmtDate(end)+'</span><span class="amt"><span class="pos">+'+fmtDt(si)+'</span> <span class="neg">−'+fmtDt(se)+'</span></span></div>'
+      +'<div class="catrow"><span>Останется к '+fmtDate(end)+'</span><span class="amt '+(proBalanceAt(end)<0?'neg':'')+'">'+fmtDt(proBalanceAt(end))+'</span></div>';
+    if(g)h+='<p class="fch neg">Кассовый разрыв с '+fmtDate(g.date)+': не хватит около '+fmtDt(g.deficit)+'</p><p class="sub">Считаю только то, что записано пророчествами, без обычных трат.</p>';
+    h+='<div class="list">'+due.map(p=>proRow(p,true)).join('')+soon.slice(0,Math.max(0,3-due.length)).map(p=>proRow(p,false)).join('')+'</div>';
+    if(w.length>Math.max(3,due.length))h+='<p class="sub">И ещё '+(w.length-Math.max(3,due.length))+' впереди.</p>'}
+  return h+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="pronew">+ Пророчество</button></section>'}
+function openPro(id){const p=proList().find(x=>x.id===id);
+  UI.form=p?{type:p.type,amount:String(p.amount),cat:p.cat,acc:p.acc,date:p.date,note:p.note||'',rec:p.rec==='month',err:''}
+   :{type:'exp',amount:'',cat:catsFor('exp')[0].id,acc:S.accounts.find(a=>a.id===S.lastAcc)?S.lastAcc:S.accounts[0].id,date:addDays(today(),1),note:'',rec:false,err:''};
+  openSheet('pro',{id:id||null})}
+function sheetPro(){const f=UI.form,edit=!!UI.sheet.id;
+  return shHead(edit?'Пророчество':'Новое пророчество')
+   +'<div class="fchips"><button class="fc'+(f.type==='exp'?' on':'')+'" data-act="protype" data-v="exp">Потрачу</button><button class="fc'+(f.type==='inc'?' on':'')+'" data-act="protype" data-v="inc">Получу</button></div>'
+   +'<div class="two"><div class="field"><label for="pa">Сумма, ₸</label><input id="pa" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
+   +'<div class="field"><label for="pd">Когда</label><input id="pd" class="inp" type="date" data-f="date"'+(edit?'':' min="'+today()+'"')+' value="'+esc(f.date)+'"></div></div>'
+   +'<div class="two"><div class="field"><label for="pc">Категория</label><select id="pc" class="inp" data-f="cat">'+catsFor(f.type).map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'
+   +'<div class="field"><label for="pac">Счёт</label><select id="pac" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
+   +'<div class="field"><label for="pn">Подпись (по желанию)</label><input id="pn" class="inp" data-f="note" maxlength="30" value="'+esc(f.note)+'" placeholder="Зарплата, ремонт, подарок"></div>'
+   +'<div class="fchips"><button class="fc'+(f.rec?' on':'')+'" data-act="prorec">Повторять каждый месяц</button></div>'
+   +'<p class="note">Когда придёт срок, нажмёшь «Сбылось», и это станет обычной записью.</p>'
+   +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="prosave">Сохранить</button>'+(edit?'<button class="btn ghost" data-act="prodel">Удалить пророчество</button>':'')}
+function savePro(){const f=UI.form,id=UI.sheet.id,amount=num(f.amount);
+  if(!(amount>0)){f.err='Введите сумму';return renderSheet()}
+  if(amount>MAXAMT){f.err='Слишком большая сумма: максимум 999 млрд ₸';return renderSheet()}
+  if(!f.date){f.err='Выбери дату';return renderSheet()}
+  if(f.date>addDays(today(),730)){f.err='Дальше двух лет не загадываю';return renderSheet()}
+  const o={type:f.type,amount:Math.round(amount*100)/100,cat:f.cat,acc:f.acc,date:f.date,note:(f.note||'').trim(),rec:f.rec?'month':'none'};
+  if(id){const p=proList().find(x=>x.id===id);if(p){Object.assign(p,o);p.u=Date.now()}}else proList().push(Object.assign({id:uid(),st:'wait',fact:null,u:Date.now()},o));
+  UI.sheet=null;commit()}
+function sheetProRes(){const f=UI.form,p=proList().find(x=>x.id===f.id);if(!p)return shHead('Пророчество')+'<p>Не нашёл пророчество.</p>';
+  return shHead('Сбылось иначе')+'<p>Ты ждал: <b>'+(p.type==='inc'?'+':'−')+fmt(p.amount)+'</b>'+(p.note?' · '+esc(p.note):'')+'</p>'
+   +'<div class="field"><label for="pf">Сколько на самом деле, ₸</label><input id="pf" class="inp" data-f="fact" inputmode="decimal" value="'+esc(f.fact)+'"></div>'
+   +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="prodiffsave">Записать</button>'}
+
 /* ---------- долги и рассрочки ---------- */
 function addMonths(t,n){const d=parseD(t),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));return dstr(d)}
 const isDebt=m=>!!m.debt&&!m.closed;
@@ -1093,7 +1160,7 @@ function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const
   else if(f.state==='ok')note='<p class="sub">Прогноз по твоим тратам за последний месяц, без кредитов и переводов людям.</p>';
   return '<section class="card" id="t-fc"><div class="label">Хватит ли '+wh+'?</div><div class="fch '+cls+'">'+esc(head)+'</div>'+rows+note+(f.pay?'':'<p class="sub"><button class="fc" data-act="data">Указать день зарплаты</button></p>')+'</section>'}
 /* Скрываемые блоки главной: выбор хранится в S.hide, вернуть можно в «Данные и настройки» */
-const HIDEABLE={forecast:'Главная: прогноз «хватит ли»',today:'Главная: сегодня',hero:'Главная: герой',quest:'Главная: задания',mand:'Главная: платежи',goal:'Главная: ближайшая цель',
+const HIDEABLE={forecast:'Главная: прогноз «хватит ли»',pro:'Главная: пророчества',today:'Главная: сегодня',hero:'Главная: герой',quest:'Главная: задания',mand:'Главная: платежи',goal:'Главная: ближайшая цель',
   s_kpi:'Анализ: итоги периода',s_chart:'Анализ: доходы и расходы',s_cats:'Анализ: куда уходят деньги',s_days:'Анализ: по дням',s_hab:'Анализ: привычки',s_best:'Анализ: рекорды',
   w_fx:'Кошелёк: курсы валют',w_hist:'Кошелёк: история трат',w_goals:'Кошелёк: цели и копилки',w_debt:'Кошелёк: долги',w_mand:'Кошелёк: платежи',w_chr:'Кошелёк: сокровищница героя'};
 function hb(key,html){if(!html)return '';const nm=(HIDEABLE[key]||'').replace(/^[^:]+: /,'');
@@ -1116,7 +1183,7 @@ function viewHome(){
     :'<p>'+(nsDone?'Трат нет. Отличный день.':'Пока ничего не записано.')+'</p>';
   const upd=UI.upd?'<section class="card updc"><p>Вышла новая версия '+esc(UI.upd)+'.</p><button class="btn small" data-act="reload">Обновить</button></section>':'';
   return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn())+upd
-  +'<section class="card" id="t-free"><div class="label">Банк сейчас</div><div class="big '+(fm<0?'neg':'')+'" title="'+fmt(fm)+'">'+fmtD(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'+hb('forecast',forecastCard())
+  +'<section class="card" id="t-free"><div class="label">Банк сейчас</div><div class="big '+(fm<0?'neg':'')+'" title="'+fmt(fm)+'">'+fmtD(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'+hb('forecast',forecastCard())+hb('pro',proCard())
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
     +quick+undo
     +'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button></section>'
@@ -1286,7 +1353,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.28.0';
+const APP_V='0.29.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1573,7 +1640,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
@@ -1680,6 +1747,17 @@ function act(a,el){const v=el.dataset.v;
     case 'accedit':openAcc(v);break;
     case 'accsave':saveAcc();break;
     case 'accdel':delAcc();break;
+    case 'pronew':openPro(null);break;
+    case 'proedit':openPro(v);break;
+    case 'protype':UI.form.type=v;UI.form.cat=catsFor(v)[0].id;renderSheet();break;
+    case 'prorec':UI.form.rec=!UI.form.rec;renderSheet();break;
+    case 'prosave':savePro();break;
+    case 'prodel':{const id=UI.sheet.id;if(!S.del)S.del={};S.del[id]=Date.now();S.pro=proList().filter(x=>x.id!==id);UI.sheet=null;commit();break}
+    case 'prohit':if(proResolve(v,'hit')){commit();toast('Сбылось. Записал в хронику')}break;
+    case 'prodiff':UI.form={id:v,fact:'',err:''};openSheet('prores');break;
+    case 'prodiffsave':{const f=UI.form,a=num(f.fact);if(!(a>0)){f.err='Введите сумму';return renderSheet()}if(a>MAXAMT){f.err='Слишком большая сумма';return renderSheet()}
+      if(proResolve(f.id,'diff',a)){UI.sheet=null;commit();toast('Записал как есть')}break}
+    case 'promiss':if(proResolve(v,'miss')){commit();toast('Не сбылось. Так тоже бывает')}break;
     case 'mandnew':openMand(null);break;
     case 'mandedit':openMand(v);break;
     case 'mandsave':saveMand();break;
