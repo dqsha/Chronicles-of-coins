@@ -157,7 +157,8 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 textarea.inp[readonly]{font-size:12px;line-height:1.4}
 .fch{font:700 16px var(--body);margin:6px 0 10px;line-height:1.35}
 #t-fc .catrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px}
-#t-pro .catrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px;margin:0}#t-pro .catrow .amt{white-space:nowrap;overflow:visible;text-overflow:clip}#t-pro .label+.catrow{margin-top:6px}#t-pro .fch{margin:10px 0 2px}
+#t-pro .catrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px;margin:0}#t-pro .catrow .amt{white-space:nowrap;overflow:visible;text-overflow:clip}#t-pro .label+.catrow{margin-top:6px}
+.prrep .catrow{display:flex;justify-content:space-between;gap:10px;margin:8px 0;font-size:14px}.prrep .catrow .amt{white-space:nowrap;overflow:visible;text-overflow:clip}.prtop{text-align:center;padding:6px 0 12px}.prtop .big{display:block}.prrank{margin:4px 0 0;color:var(--gold);font-size:18px}#t-pro .fch{margin:10px 0 2px}
 
 /* 0.14 диалоги */
 .ky{color:var(--gold)}.kg{color:var(--inc)}.kr{color:var(--exp,#e0675a)}.kb{color:#9db4ff}
@@ -870,14 +871,45 @@ function proGap(days){const t=today(),end=addDays(t,days||60);let b=freeMoney(),
   proEvents(t,end).forEach(p=>{b+=p.type==='inc'?p.amount:-p.amount;if(b<0&&!first)first=p.date;if(first&&b<low)low=b});
   return first?{date:first,deficit:Math.ceil(-low)}:null}
 function proResolve(id,kind,fact){const p=proList().find(x=>x.id===id);if(!p||p.st!=='wait')return false;
-  if(kind==='miss'){p.st='miss';p.fact=0}
+  if(kind==='miss'){p.st='miss';p.fact=0;p.hit=false}
   else{const amt=Math.round((kind==='hit'?p.amount:fact)*100)/100;if(!(amt>0)||amt>MAXAMT)return false;
     const acc=S.accounts.find(a=>a.id===p.acc)?p.acc:(S.accounts[0]||{}).id;if(!acc)return false;
     const tx=addTx({type:p.type,amount:amt,cat:p.cat,acc:acc,date:p.date<=today()?p.date:today(),note:p.note});
-    p.st='done';p.fact=amt;p.tx=tx.id}
+    p.st='done';p.fact=amt;p.tx=tx.id;p.hit=Math.abs(amt-p.amount)/p.amount<=PRO_TOL;
+    if(p.hit&&p.c&&p.c<p.date&&p.date<=today())gainXp(15,'Пророчество сбылось')}
   p.done=today();p.u=Date.now();
-  if(p.rec==='month')proList().push({id:uid(),type:p.type,cat:p.cat,acc:p.acc,amount:p.amount,date:addMonths(p.date,1),note:p.note,rec:'month',st:'wait',fact:null,u:Date.now()});
+  if(p.rec==='month')proList().push({id:uid(),type:p.type,cat:p.cat,acc:p.acc,amount:p.amount,date:addMonths(p.date,1),note:p.note,rec:'month',st:'wait',fact:null,c:today(),u:Date.now()});
   return true}
+/* Меткость и привычные ошибки: считаются по закрытым пророчествам */
+const PRO_TOL=0.1,PRO_MIN=3;
+const proMedian=a=>{const b=a.slice().sort((x,y)=>x-y),n=b.length;return n?(n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2):0};
+function proStats(){const all=proList().filter(p=>p.st==='done'||p.st==='miss'),from=addDays(today(),-30);
+  const o={n:all.length,hits:0,cats:{},leak:0};
+  all.forEach(p=>{if(p.st==='done'&&Math.abs(p.fact-p.amount)/p.amount<=PRO_TOL)o.hits++;
+    if(p.st!=='done')return;const c=o.cats[p.cat]||(o.cats[p.cat]={n:0,errs:[],type:p.type,leak:0});c.n++;c.errs.push((p.fact-p.amount)/p.amount);
+    const d=p.fact-p.amount,bad=(p.type==='exp'&&d>0)||(p.type==='inc'&&d<0);if(bad&&p.done>=from){c.leak+=Math.abs(d);o.leak+=Math.abs(d)}});
+  o.acc=o.n?Math.round(o.hits/o.n*100):null;
+  Object.keys(o.cats).forEach(k=>{const c=o.cats[k];c.bias=proMedian(c.errs);c.mae=c.errs.reduce((q,x)=>q+Math.abs(x),0)/c.n;c.ok=c.n>=PRO_MIN});
+  return o}
+function proRank(st){if(st.n<5)return 'Новичок';if(st.n>=20&&st.acc>=85)return 'Оракул';if(st.n>=10&&st.acc>=70)return 'Провидец';return 'Подмастерье'}
+/* Три сценария остатка к дате: ожидаемый (с поправкой на твою привычную ошибку), худший и лучший (с разбросом = средняя ошибка по категории, без данных 10%) */
+function proScen(end){const st=proStats();let e=freeMoney(),w=e,b=e;
+  proEvents(today(),end).forEach(p=>{const c=st.cats[p.cat],ok=c&&c.ok,bias=ok?Math.max(-.5,Math.min(1,c.bias)):0,sp=ok?Math.min(.5,c.mae):.1,a=p.amount*(1+bias),inc=p.type==='inc',sg=inc?1:-1;
+    e+=sg*a;w+=sg*a*(inc?1-sp:1+sp);b+=sg*a*(inc?1+sp:1-sp)});
+  return{exp:e,worst:w,best:b}}
+const pct=x=>(x>=0?'+':'−')+Math.round(Math.abs(x)*100)+'%';
+function sheetProRep(){const st=proStats(),rk=proRank(st);
+  let h=shHead('Меткость пророка')+'<div class="prrep">';
+  if(!st.n)return h+'<p>Пока нет закрытых пророчеств. Когда срок наступит и ты отметишь «Сбылось» или «Не сбылось», здесь появится твоя меткость.</p></div>';
+  h+='<div class="prtop"><div class="big">'+st.acc+'%</div><p class="sub">'+st.hits+' из '+st.n+' попали в ±'+Math.round(PRO_TOL*100)+'%</p><p class="prrank">'+rk+'</p></div>';
+  const ks=Object.keys(st.cats).sort((a,b)=>st.cats[b].n-st.cats[a].n);
+  if(ks.length){h+='<div class="label">По категориям</div>';
+    ks.forEach(k=>{const c=st.cats[k],ci=catInfo(k);h+='<div class="catrow"><span>'+ci.icon+' '+esc(ci.name)+' · '+c.n+' шт.</span><span class="amt '+(c.ok?((c.type==='exp'?c.bias>0.05:c.bias<-0.05)?'neg':''):'')+'">'+(c.ok?pct(c.bias):'мало данных')+'</span></div>'})}
+  if(st.leak>0)h+='<p class="fch neg">За 30 дней ушло мимо плана: '+fmtDt(Math.round(st.leak))+'</p><p class="sub">Это траты сверх плана плюс недополученные доходы.</p>';
+  const worst=ks.filter(k=>st.cats[k].ok&&st.cats[k].type==='exp'&&st.cats[k].bias>0.05).sort((a,b)=>st.cats[b].bias-st.cats[a].bias)[0];
+  if(worst)h+='<p>Сильнее всего ты недооцениваешь «'+esc(catInfo(worst).name)+'»: обычно выходит '+pct(st.cats[worst].bias)+'. Закладывай запас.</p>';
+  else h+='<p class="note">Привычную ошибку по категории я покажу, когда в ней будет хотя бы '+PRO_MIN+' закрытых пророчества.</p>';
+  return h+'<p class="note">Это простая оценка по твоим закрытым пророчествам, не прогноз будущего. Чем их больше, тем она точнее.</p></div>'}
 function proRow(p,due){const c=catInfo(p.cat),inc=p.type==='inc';
   const when=due?(p.date===today()?'сегодня':'ждали '+fmtDate(p.date)):fmtDate(p.date);
   return '<div class="prow"><div class="row" data-act="proedit" data-v="'+p.id+'" role="button" tabindex="0"><span class="tile">'+c.icon+'</span><span class="mid"><div class="t1">'+esc(p.note||c.name)+'</div><div class="t2">'+when+(p.rec==='month'?' · каждый месяц':'')+'</div></span>'
@@ -885,19 +917,25 @@ function proRow(p,due){const c=catInfo(p.cat),inc=p.type==='inc';
    +(due?'<div class="pbtns"><button class="btn small" data-act="prohit" data-v="'+p.id+'">Сбылось</button><button class="btn small ghost" data-act="prodiff" data-v="'+p.id+'">Иначе</button><button class="btn small ghost" data-act="promiss" data-v="'+p.id+'">Не сбылось</button></div>':'')+'</div>'}
 function proCard(){if(!S.accounts.length)return '';const t=today(),w=proWait(),due=w.filter(p=>p.date<=t),soon=w.filter(p=>p.date>t);
   const end=payHorizon(t).date,ev=proEvents(t,end),si=ev.filter(p=>p.type==='inc').reduce((q,p)=>q+p.amount,0),se=ev.filter(p=>p.type==='exp').reduce((q,p)=>q+p.amount,0);
-  let h='<section class="card" id="t-pro"><div class="label">Пророчества</div>';
+  const pst=proStats();
+  let h='<section class="card" id="t-pro"><div class="label">Пророчества</div>'+(pst.n?'<p class="sub" style="margin:0 0 6px">Меткость '+pst.acc+'% · '+proRank(pst)+'</p>':'');
   if(!w.length)h+='<p>Запиши, что ждёшь: зарплату, платёж, большую покупку. Когда придёт срок, я сверю с жизнью и покажу, где ты ошибся.</p>';
   else{const g=proGap(60);
-    if(ev.length)h+='<div class="catrow"><span>Ждёшь до '+fmtDate(end)+'</span><span class="amt"><span class="pos">+'+fmtDt(si)+'</span> <span class="neg">−'+fmtDt(se)+'</span></span></div>'
-      +'<div class="catrow"><span>Останется к '+fmtDate(end)+'</span><span class="amt '+(proBalanceAt(end)<0?'neg':'')+'">'+fmtDt(proBalanceAt(end))+'</span></div>';
+    if(ev.length){const sc=proScen(end),bal=proBalanceAt(end);
+      h+='<div class="catrow"><span>Ждёшь до '+fmtDate(end)+'</span><span class="amt"><span class="pos">+'+fmtDt(si)+'</span> <span class="neg">−'+fmtDt(se)+'</span></span></div>'
+      +'<div class="catrow"><span>Останется по плану</span><span class="amt '+(bal<0?'neg':'')+'">'+fmtDt(bal)+'</span></div>'
+      +(Math.abs(sc.exp-bal)>1?'<div class="catrow"><span>С поправкой на твои привычки</span><span class="amt '+(sc.exp<0?'neg':'')+'">'+fmtDt(sc.exp)+'</span></div>':'')
+      +'<div class="catrow"><span>Худший · лучший случай</span><span class="amt"><span class="'+(sc.worst<0?'neg':'')+'">'+fmtDt(sc.worst)+'</span> · <span class="'+(sc.best<0?'neg':'')+'">'+fmtDt(sc.best)+'</span></span></div>'}
     if(g)h+='<p class="fch neg">Кассовый разрыв с '+fmtDate(g.date)+': не хватит около '+fmtDt(g.deficit)+'</p><p class="sub">Считаю только то, что записано пророчествами, без обычных трат.</p>';
     h+='<div class="list">'+due.map(p=>proRow(p,true)).join('')+soon.slice(0,Math.max(0,3-due.length)).map(p=>proRow(p,false)).join('')+'</div>';
     if(w.length>Math.max(3,due.length))h+='<p class="sub">И ещё '+(w.length-Math.max(3,due.length))+' впереди.</p>'}
-  return h+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="pronew">+ Пророчество</button></section>'}
+  return h+'<div class="pbtns" style="padding:10px 0 0"><button class="btn ghost" style="flex:1" data-act="pronew">+ Пророчество</button>'+(pst.n?'<button class="btn ghost" style="flex:1" data-act="prorep">Меткость</button>':'')+'</div></section>'}
 function openPro(id){const p=proList().find(x=>x.id===id);
   UI.form=p?{type:p.type,amount:String(p.amount),cat:p.cat,acc:p.acc,date:p.date,note:p.note||'',rec:p.rec==='month',err:''}
    :{type:'exp',amount:'',cat:catsFor('exp')[0].id,acc:S.accounts.find(a=>a.id===S.lastAcc)?S.lastAcc:S.accounts[0].id,date:addDays(today(),1),note:'',rec:false,err:''};
   openSheet('pro',{id:id||null})}
+function proHint(f){const c=proStats().cats[f.cat];if(!c||!c.ok||Math.abs(c.bias)<0.03)return '';
+  return '<p class="note">По этой категории ты обычно ошибаешься на '+pct(c.bias)+'. <button class="fc" data-act="proapply">Учесть поправку</button></p>'}
 function sheetPro(){const f=UI.form,edit=!!UI.sheet.id;
   return shHead(edit?'Пророчество':'Новое пророчество')
    +'<div class="fchips"><button class="fc'+(f.type==='exp'?' on':'')+'" data-act="protype" data-v="exp">Потрачу</button><button class="fc'+(f.type==='inc'?' on':'')+'" data-act="protype" data-v="inc">Получу</button></div>'
@@ -907,7 +945,7 @@ function sheetPro(){const f=UI.form,edit=!!UI.sheet.id;
    +'<div class="field"><label for="pac">Счёт</label><select id="pac" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
    +'<div class="field"><label for="pn">Подпись (по желанию)</label><input id="pn" class="inp" data-f="note" maxlength="30" value="'+esc(f.note)+'" placeholder="Зарплата, ремонт, подарок"></div>'
    +'<div class="fchips"><button class="fc'+(f.rec?' on':'')+'" data-act="prorec">Повторять каждый месяц</button></div>'
-   +'<p class="note">Когда придёт срок, нажмёшь «Сбылось», и это станет обычной записью.</p>'
+   +proHint(f)+'<p class="note">Когда придёт срок, нажмёшь «Сбылось», и это станет обычной записью.</p>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="prosave">Сохранить</button>'+(edit?'<button class="btn ghost" data-act="prodel">Удалить пророчество</button>':'')}
 function savePro(){const f=UI.form,id=UI.sheet.id,amount=num(f.amount);
   if(!(amount>0)){f.err='Введите сумму';return renderSheet()}
@@ -915,7 +953,7 @@ function savePro(){const f=UI.form,id=UI.sheet.id,amount=num(f.amount);
   if(!f.date){f.err='Выбери дату';return renderSheet()}
   if(f.date>addDays(today(),730)){f.err='Дальше двух лет не загадываю';return renderSheet()}
   const o={type:f.type,amount:Math.round(amount*100)/100,cat:f.cat,acc:f.acc,date:f.date,note:(f.note||'').trim(),rec:f.rec?'month':'none'};
-  if(id){const p=proList().find(x=>x.id===id);if(p){Object.assign(p,o);p.u=Date.now()}}else proList().push(Object.assign({id:uid(),st:'wait',fact:null,u:Date.now()},o));
+  if(id){const p=proList().find(x=>x.id===id);if(p){Object.assign(p,o);p.u=Date.now()}}else proList().push(Object.assign({id:uid(),st:'wait',fact:null,c:today(),u:Date.now()},o));
   UI.sheet=null;commit()}
 function sheetProRes(){const f=UI.form,p=proList().find(x=>x.id===f.id);if(!p)return shHead('Пророчество')+'<p>Не нашёл пророчество.</p>';
   return shHead('Сбылось иначе')+'<p>Ты ждал: <b>'+(p.type==='inc'?'+':'−')+fmt(p.amount)+'</b>'+(p.note?' · '+esc(p.note):'')+'</p>'
@@ -1351,7 +1389,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.29.0';
+const APP_V='0.30.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1638,7 +1676,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
@@ -1748,6 +1786,8 @@ function act(a,el){const v=el.dataset.v;
     case 'pronew':openPro(null);break;
     case 'proedit':openPro(v);break;
     case 'protype':UI.form.type=v;UI.form.cat=catsFor(v)[0].id;renderSheet();break;
+    case 'prorep':openSheet('prorep');break;
+    case 'proapply':{const f=UI.form,c=proStats().cats[f.cat],a=num(f.amount);if(c&&c.ok&&a>0){f.amount=String(Math.round(a*(1+Math.max(-.5,Math.min(1,c.bias)))));renderSheet()}else toast('Сначала введи сумму');break}
     case 'prorec':UI.form.rec=!UI.form.rec;renderSheet();break;
     case 'prosave':savePro();break;
     case 'prodel':{const id=UI.sheet.id;if(!S.del)S.del={};S.del[id]=Date.now();S.pro=proList().filter(x=>x.id!==id);UI.sheet=null;commit();break}
