@@ -159,7 +159,7 @@ textarea.inp{min-height:90px;resize:vertical;font:12px/1.4 ui-monospace,monospac
 textarea.inp[readonly]{font-size:12px;line-height:1.4}
 .fch{font:700 16px var(--body);margin:6px 0 10px;line-height:1.35}
 #t-fc .catrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px}
-#t-pro .catrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px;margin:0}#t-pro .catrow .amt{white-space:nowrap;overflow:visible;text-overflow:clip}#t-pro .label+.catrow{margin-top:6px}
+#t-pro .catrow{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;padding:6px 0;border-top:2px solid var(--panel2);font-size:14px;margin:0}#t-pro .catrow .amt{white-space:nowrap;overflow:visible;text-overflow:clip}#t-pro .label+.catrow{margin-top:6px}
 .prrep .catrow{display:flex;justify-content:space-between;gap:10px;margin:8px 0;font-size:14px}.prrep .catrow .amt{white-space:nowrap;overflow:visible;text-overflow:clip}.prtop{text-align:center;padding:6px 0 12px}.prtop .big{display:block}.prrank{margin:4px 0 0;color:var(--gold);font-size:18px}#t-pro .fch{margin:10px 0 2px}
 
 /* 0.14 диалоги */
@@ -1001,7 +1001,8 @@ function proCard(){if(!S.accounts.length)return '';const t=today(),w=proWait(),d
       h+='<div class="catrow"><span>Ждёшь до '+fmtDate(end)+'</span><span class="amt"><span class="pos">+'+fmtDt(si)+'</span> <span class="neg">−'+fmtDt(se)+'</span></span></div>'
       +'<div class="catrow"><span>Останется по плану</span><span class="amt '+(bal<0?'neg':'')+'">'+fmtDt(bal)+'</span></div>'
       +(Math.abs(sc.exp-bal)>1?'<div class="catrow"><span>С поправкой на твои привычки</span><span class="amt '+(sc.exp<0?'neg':'')+'">'+fmtDt(sc.exp)+'</span></div>':'')
-      +'<div class="catrow"><span>Худший · лучший случай</span><span class="amt"><span class="'+(sc.worst<0?'neg':'')+'">'+fmtDt(sc.worst)+'</span> · <span class="'+(sc.best<0?'neg':'')+'">'+fmtDt(sc.best)+'</span></span></div>'}
+      +'<div class="catrow"><span>Худший случай</span><span class="amt '+(sc.worst<0?'neg':'')+'">'+fmtDt(sc.worst)+'</span></div>'
+      +'<div class="catrow"><span>Лучший случай</span><span class="amt '+(sc.best<0?'neg':'')+'">'+fmtDt(sc.best)+'</span></div>'}
     if(g)h+='<p class="fch neg">Кассовый разрыв с '+fmtDate(g.date)+': не хватит около '+fmtDt(g.deficit)+'</p><p class="sub">Считаю только то, что записано пророчествами, без обычных трат.</p>';
     h+='<div class="list">'+due.map(p=>proRow(p,true)).join('')+soon.slice(0,Math.max(0,3-due.length)).map(p=>proRow(p,false)).join('')+'</div>';
     if(w.length>Math.max(3,due.length))h+='<p class="sub">И ещё '+(w.length-Math.max(3,due.length))+' впереди.</p>'}
@@ -1480,7 +1481,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.32.1';
+const APP_V='0.32.2';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
