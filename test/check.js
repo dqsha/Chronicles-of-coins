@@ -27,7 +27,7 @@ t('levelInfo 0xp', run('levelInfo(0)'), { L: 1, cur: 0, need: 40 });
 t('levelInfo 40xp', run('levelInfo(40)'), { L: 2, cur: 0, need: 55 });
 t('levelInfo 95xp', run('levelInfo(95)'), { L: 3, cur: 0, need: 70 });
 t('xpAtLevel 3', run('xpAtLevel(3)'), 95);
-t('tier weapon L1/L2/L8/L16', run('[1,2,8,16].map(l=>tier("weapon",l))'), [0, 1, 2, 3]);
+t('tier weapon L1/L2/L8/L16', run('[1,5,10,16].map(l=>tier("weapon",l))'), [0, 1, 2, 3]);
 
 // day 1: first expense
 run(`addTx({type:'exp',amount:2000,cat:'food',acc:'card'});`);
@@ -109,19 +109,18 @@ t('fmt negative', run('fmt(-100)'), '−100 ₸');
 run(`S=defaults();S.accounts=[{id:'a',name:'A',type:'cash',bal0:0}];NOW='2026-12-01';notes=[];S.streak.freezes=0;gainXp(xpAtLevel(5)+1,'t');`);
 t('level 5 reached', run('levelInfo(S.xp).L'), 5);
 t('freeze granted at L5', run('S.streak.freezes'), 1);
-t('unlocked list 1->5', run('unlockedBetween(1,5)'), ['Оружие: Ржавый меч', 'Броня: Кожаная куртка', 'Шлем: Капюшон', 'Плащ: Серый плащ']);
+t('unlocked list 1->5', run('unlockedBetween(1,5)'), ['Оружие: Стальной меч', 'Компаньон: Слайм']);
 
 // equipment switching
 run(`S=defaults();S.xp=xpAtLevel(9);`);
-t('auto tier at L9: weapon steel(2)', run('equippedTier("weapon",9)'), 2);
+t('auto tier at L9: weapon index 1', run('equippedTier("weapon",9)'), 1);
 t('equip stick over steel', run('setEquip("weapon",0,9)'), true);
-t('stick now equipped', run('equippedTier("weapon",9)'), 0);
-t('other slots stay auto', run('[equippedTier("armor",9),equippedTier("helm",9)]'), [1, 2]);
+t('first weapon now equipped', run('equippedTier("weapon",9)'), 0);
 t('cannot equip locked item', run('setEquip("weapon",3,9)'), false);
-t('re-equip best clears override', run('setEquip("weapon",2,9)&&S.equip.weapon===undefined'), true);
-run(`setEquip("weapon",1,9);`);
-t('manual choice survives level-up', run('equippedTier("weapon",20)'), 1);
-t('old save without equip field is safe', run(`S.equip=undefined;equippedTier("weapon",9)`), 2);
+t('re-equip best clears override', run('setEquip("weapon",1,9)&&S.equip.weapon===undefined'), true);
+run(`setEquip("weapon",0,9);`);
+t('manual choice survives level-up', run('equippedTier("weapon",20)'), 0);
+t('old save without equip field is safe', run(`S.equip=undefined;equippedTier("weapon",9)`), 1);
 
 
 // ---- 0.2 goals ----

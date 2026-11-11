@@ -454,6 +454,30 @@ body.lefty .hidebtn{left:8px}
 .row:hover,.btn:hover,.qk:hover{filter:brightness(1.12)}
 button,[data-act]{cursor:pointer}
 }
+/* герой и компаньоны на картинках */
+.hero-img{display:block;height:150px;width:auto;max-width:100%;pointer-events:none}
+.hero-art .hero-img{animation:heroidle 3.4s ease-in-out infinite;position:relative;z-index:1}
+.hero-wpn{position:absolute;right:0;bottom:8px;width:46px;height:46px;object-fit:contain;z-index:2;filter:drop-shadow(0 2px 0 rgba(0,0,0,.55));pointer-events:none}
+.hs-art .hero-img{width:58px;height:58px;object-fit:cover;object-position:50% 10%}
+.herobig{padding:12px}.hbox{position:relative;display:flex;justify-content:center}.herobig .hero-img{height:210px}.herobig .hero-wpn{width:66px;height:66px;right:calc(50% - 130px);bottom:10px}
+.gear .g .gl{display:flex;align-items:center;gap:10px;min-width:0}.wicon{width:50px;height:50px;object-fit:contain;flex:none}.gear .g>span:last-child{white-space:nowrap;flex:none}
+.gear .g.lock .wicon{filter:grayscale(1) brightness(.6)}
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px}
+.pk{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;background:var(--panel2);border:2px solid var(--line);font-size:12px;cursor:pointer;color:var(--ink)}
+.pk.on{border-color:var(--gold);color:var(--gold);background:#352d1c}
+.pkimg{height:78px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}.pkimg .hero-img{height:78px;width:auto;object-fit:contain}
+.pet-art .pet-img{display:block;animation:bob 1.8s steps(2) infinite;margin:0 auto;pointer-events:none}
+.pet-art.m-hungry .pet-img{filter:grayscale(.75) brightness(.78)}
+.pet-art{min-width:116px;align-items:flex-end;min-height:100px}
+.plist{display:flex;flex-direction:column;gap:6px}
+.prow2{display:flex;align-items:center;gap:12px;padding:8px 10px;background:var(--panel2);border:2px solid var(--line);width:100%;text-align:left;cursor:pointer;color:var(--ink)}
+.prow2.on{border-color:var(--gold)}.prow2.lock{opacity:.7}
+.pthumb{width:70px;height:60px;display:flex;align-items:flex-end;justify-content:center;flex:none}.pthumb .pet-img{animation:none}.pthumb svg{width:56px;height:auto}
+.pinfo{display:flex;flex-direction:column;gap:2px}.pinfo small{color:var(--mute);font-size:12px}
+.petrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 12px}
+.pst{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;text-align:center;background:var(--panel2);border:2px solid var(--line);padding:6px 2px}
+.pst .pimg{height:86px;display:flex;align-items:flex-end;justify-content:center}.pst .pet-img{animation:none}.pst .pimg svg{width:56px;height:auto}.pst small{font-size:10px;color:var(--mute);line-height:1.2}
+@media (prefers-reduced-motion:reduce){.hero-img,.pet-img{animation:none!important}}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -514,7 +538,7 @@ const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],ban
 
 function defaults(){return{payday:null,hide:{},epoch:'',del:{},v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
   streak:{count:0,last:null,freezes:1,best:0},noSpend:{},dayRec:{},lastAcc:null,
-  goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Уголёк'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[]}}
+  goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Уголёк'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[],hero:{race:'human',cls:'warrior'},petBox:{}}}
 let S=defaults();
 let saveFailed=false;
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r),d=defaults();
@@ -635,18 +659,24 @@ function fetchRates(force){try{if(!window.fetch||(!force&&!ratesStale()))return 
 const req=L=>40+15*(L-1);
 function xpAtLevel(L){let s=0;for(let k=1;k<L;k++)s+=req(k);return s}
 function levelInfo(xp){let L=1,rem=xp;while(rem>=req(L)&&L<99){rem-=req(L);L++}return{L:L,cur:rem,need:req(L)}}
-const GEAR={
-  weapon:[{n:'Палка странника',l:1},{n:'Ржавый меч',l:2},{n:'Стальной меч',l:8},{n:'Проклятый клинок',l:16}],
-  armor:[{n:'Тряпьё',l:1},{n:'Кожаная куртка',l:4},{n:'Кольчуга',l:10},{n:'Латы стража',l:20}],
-  helm:[{n:'Без шлема',l:1},{n:'Капюшон',l:3},{n:'Железный шлем',l:7},{n:'Рогатый шлем',l:14}],
-  cloak:[{n:'Без плаща',l:1},{n:'Серый плащ',l:5},{n:'Багровый плащ',l:12}]};
-const SLOTN={weapon:'Оружие',armor:'Броня',helm:'Шлем',cloak:'Плащ'};
+/* Облик героя: раса и класс. Оружие своё у каждого класса, 5 штук, открываются с уровнем. */
+const RACES=[{id:'human',n:'Человек'},{id:'elf',n:'Эльф'},{id:'orc',n:'Орк'},{id:'goblin',n:'Гоблин'}];
+const CLASSES=[{id:'warrior',n:'Воин'},{id:'mage',n:'Маг'},{id:'ranger',n:'Следопыт'},{id:'rogue',n:'Плут'}];
+const WLV=[1,5,10,16,24];
+const WEAPONS={warrior:['Тренировочный меч','Стальной меч','Боевая секира','Двуручный молот','Клинок Легенды'],
+  mage:['Посох ученика','Жезл искр','Гримуар','Посох звёздного света','Скипетр Архимага'],
+  ranger:['Короткий лук','Охотничий лук','Арбалет','Эльфийский длинный лук','Лук Рассвета'],
+  rogue:['Ржавый кинжал','Парные кинжалы','Ядовитый стилет','Связка метательных ножей','Клинок Теней']};
+function heroLook(){const h=S.hero||{};return{race:RACES.some(r=>r.id===h.race)?h.race:'human',cls:CLASSES.some(c=>c.id===h.cls)?h.cls:'warrior'}}
+const GEAR={};
+Object.defineProperty(GEAR,'weapon',{enumerable:true,get(){return WEAPONS[heroLook().cls].map((n,i)=>({n:n,l:WLV[i]}))}});
+const SLOTN={weapon:'Оружие'};
 function tier(slot,L){let t=0;GEAR[slot].forEach((g,i)=>{if(g.l<=L)t=i});return t}
 function equippedTier(slot,L){const e=S.equip&&S.equip[slot];return(e!=null&&GEAR[slot][e]&&GEAR[slot][e].l<=L)?e:tier(slot,L)}
 function setEquip(slot,i,L){if(!GEAR[slot]||!GEAR[slot][i]||GEAR[slot][i].l>L)return false;
   if(!S.equip)S.equip={};if(i===tier(slot,L))delete S.equip[slot];else S.equip[slot]=i;return true}
-function unlockedBetween(a,b){const out=[];Object.keys(GEAR).forEach(s=>GEAR[s].forEach(g=>{if(g.l>a&&g.l<=b&&g.l>1)out.push(SLOTN[s]+': '+g.n)}));return out}
-function nextUnlock(L){let best=null;Object.keys(GEAR).forEach(s=>GEAR[s].forEach(g=>{if(g.l>L&&(!best||g.l<best.l))best={l:g.l,n:g.n}}));return best}
+function unlockedBetween(a,b){const out=[];Object.keys(GEAR).forEach(s=>GEAR[s].forEach(g=>{if(g.l>a&&g.l<=b&&g.l>1)out.push(SLOTN[s]+': '+g.n)}));PETS.forEach(p=>{if(p.l>a&&p.l<=b&&p.l>1)out.push('Компаньон: '+p.n)});return out}
+function nextUnlock(L){let best=null;Object.keys(GEAR).forEach(s=>GEAR[s].forEach(g=>{if(g.l>L&&(!best||g.l<best.l))best={l:g.l,n:g.n}}));PETS.forEach(p=>{if(p.l>L&&(!best||p.l<best.l))best={l:p.l,n:'компаньон '+p.n}});return best}
 
 /* ---------- money ---------- */
 /* Счёт в валюте: остаток ведётся в его валюте (nat у записи — сумма в валюте счёта на момент записи), в тенге — по текущему курсу */
@@ -783,13 +813,36 @@ function checkAch(){if(!S.ach)S.ach={};
 
 /* ---------- companion ---------- */
 const PET_STAGES=[['Волчонок',0],['Молодой волк',8],['Матёрый волк',24],['Вожак стаи',60]];
+/* Компаньоны: волк рисуется кодом, остальные картинками. 4 стадии роста у каждого. */
+const PETS=[
+  {id:'wolf',n:'Волк',l:1,nm:'Уголёк',st:['Волчонок','Молодой волк','Матёрый волк','Вожак стаи']},
+  {id:'slime',n:'Слайм',l:3,nm:'Желе',st:['Капля слайма','Малыш-слайм','Слайм с монеткой','Король слаймов']},
+  {id:'cat',n:'Теневой кот',l:6,nm:'Мрак',st:['Котёнок из тени','Юный теневой кот','Теневой кот-охотник','Страж теней']},
+  {id:'dragon',n:'Дракончик',l:10,nm:'Искра',st:['Яйцо дракона','Дракончик','Молодой дракон','Взрослый дракон']},
+  {id:'phoenix',n:'Феникс',l:15,nm:'Жарик',st:['Яйцо феникса','Птенец феникса','Молодой феникс','Феникс']}];
+const PETSZ={slime:[[238,96],[213,176],[250,243],[387,340]],cat:[[119,130],[260,202],[242,261],[341,340]],dragon:[[105,143],[113,123],[248,226],[452,340]],phoenix:[[102,126],[123,129],[237,272],[445,340]]};
+function petDef(k){return PETS.find(p=>p.id===k)||PETS[0]}
+function petKind(){const k=S.pet&&S.pet.kind;return PETS.some(p=>p.id===k)?k:'wolf'}
+function petStageName(st,k){return petDef(k||petKind()).st[st]||''}
+/* Рисует питомца нужной стадии. box = [ширина, высота] области; все стадии одного питомца масштабируются одинаково, чтобы рост было видно. */
+function petImg(k,st,mood,box){if(k==='wolf')return petSVG(st,mood||'ok');
+  const sz=PETSZ[k];if(!sz)return '';const bw=box?box[0]:104,bh=box?box[1]:92;
+  const mw=Math.max.apply(null,sz.map(x=>x[0])),mh=Math.max.apply(null,sz.map(x=>x[1]));
+  const ratio=Math.max(sz[st][0]/mw,sz[st][1]/mh),sc=Math.min(bw/sz[st][0],bh/sz[st][1])*Math.pow(ratio,0.6);
+  return '<img class="pet-img" src="assets/pet/'+k+'-'+(st+1)+'.webp" alt="'+esc(petStageName(st,k))+'" draggable="false" style="width:'+Math.round(sz[st][0]*sc)+'px;height:'+Math.round(sz[st][1]*sc)+'px">'}
+function switchPet(k){const P=petDef(k),L=levelInfo(S.xp).L;if(!P||P.id!==k||P.l>L||k===petKind())return false;
+  if(!S.petBox)S.petBox={};const cur=petKind(),food=(S.pet&&S.pet.food)||0;
+  const old=Object.assign({},S.pet);delete old.food;S.petBox[cur]=old;
+  const nx=S.petBox[k]||{xp:0,fedOn:null,name:P.nm};delete S.petBox[k];
+  S.pet=Object.assign({},nx,{kind:k,food:food});return true}
+
 function petFood(n){if(!S.pet)S.pet={food:0,xp:0,fedOn:null,name:'Уголёк'};S.pet.food+=n;notes.push({k:'food',n:n})}
 function petInfo(){const p=S.pet||{food:0,xp:0,fedOn:null,name:'Уголёк'};let st=0;PET_STAGES.forEach((x,i)=>{if(p.xp>=x[1])st=i});
   const nxt=PET_STAGES[st+1];const mood=!p.fedOn?'hungry':p.fedOn===today()?'happy':dayDiff(p.fedOn,today())<=2?'ok':'hungry';
-  return{stage:st,stageName:PET_STAGES[st][0],next:nxt?nxt[1]:null,cur:p.xp-PET_STAGES[st][1],span:nxt?nxt[1]-PET_STAGES[st][1]:1,mood:mood}}
+  return{stage:st,stageName:petStageName(st),next:nxt?nxt[1]:null,cur:p.xp-PET_STAGES[st][1],span:nxt?nxt[1]-PET_STAGES[st][1]:1,mood:mood}}
 function feedPet(){if(!S.pet||S.pet.food<1)return false;const b=petInfo().stage;S.pet.food--;S.pet.xp++;S.pet.fedOn=today();
   const a=petInfo().stage;say(S.pet.name+' поел и доволен');
-  if(a>b){say(S.pet.name+' вырос: '+PET_STAGES[a][0]);gainXp(10,'Компаньон вырос')}return true}
+  if(a>b){say(S.pet.name+' вырос: '+petStageName(a));gainXp(10,'Компаньон вырос')}return true}
 
 /* ---------- statistics ---------- */
 function monthsBack(n){const t=today();let y=+t.slice(0,4),m=+t.slice(5,7);const out=[];
@@ -1089,6 +1142,10 @@ function pix(rows,pal,px){const h=rows.length,w=rows[0].length;let o='<svg viewB
 const flame=px=>pix(FLAME,{o:'#e0832b',y:'#f6d25a'},px);
 const snow=px=>pix(SNOW,{c:'#8fd3ef'},px);
 
+function heroArt(L,nobadge){const h=heroLook(),k=equippedTier('weapon',L)+1;
+  return '<img class="hero-img" src="assets/hero/'+h.race+'-'+h.cls+'.webp" alt="Герой" draggable="false">'
+   +(nobadge?'':'<img class="hero-wpn" src="assets/weapon/'+h.cls+'-'+k+'.webp" alt="" draggable="false">')}
+function heroPick(race,cls){return '<img class="hero-img" src="assets/hero/'+race+'-'+cls+'.webp" alt="" draggable="false">'}
 function heroSVG(L){
   const t={w:equippedTier('weapon',L),a:equippedTier('armor',L),h:equippedTier('helm',L),c:equippedTier('cloak',L)};let o='';
   const r=(x,y,w,h,c)=>{o+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+c+'"/>'};
@@ -1254,12 +1311,12 @@ function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
   const stTxt={new:'Запиши первую трату, чтобы зажечь огонь',ok:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд',
     wait:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд. Запиши что-нибудь сегодня',
     frozen:'Пропущено дней: '+sv.missed+'. Заморозка сохранит серию, если запишешь сегодня',broken:'Серия прервалась, ничего страшного. Начни новую сегодня'}[sv.state];
-  return '<section class="card hero'+(full?'':' herom')+'"'+(full?'':' data-act="camp" role="button" tabindex="0" aria-label="Открыть лагерь героя"')+'><div class="hero-art">'+heroSVG(lv.L)+'</div><div class="hero-info">'
+  return '<section class="card hero'+(full?'':' herom')+'"'+(full?'':' data-act="camp" role="button" tabindex="0" aria-label="Открыть лагерь героя"')+'><div class="hero-art">'+heroArt(lv.L)+'</div><div class="hero-info">'
     +'<div class="lvl">Уровень <span class="n">'+lv.L+'</span></div><div class="name">'+esc(S.name)+'</div>'
     +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div>'
     +'<div class="xpline">'+(full?lv.cur+' / '+lv.need+' XP · ':'')+'До уровня '+(lv.L+1)+': ещё '+(lv.need-lv.cur)+' XP</div>'
     +'<div class="streak"><span class="ic">'+flame(3)+'<span>'+esc(full?stTxt:(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь')+'</span></span>'+(full?'<span class="ic">'+snow(3)+'<span>Заморозки: '+S.streak.freezes+' из 3</span></span>':'')+'</div>'
-    +(full?'<div class="chips"><button class="btn ghost small" data-act="gear">Экипировка</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
+    +(full?'<div class="chips"><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="gear">Оружие</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
 function sheetCamp(){const lv=levelInfo(S.xp),nx=nextUnlock(lv.L);
   return shHead('Лагерь героя')+heroCard(true)+((nx&&!S.calm)?'<p class="note">Следующая вещь: '+esc(nx.n)+' на '+nx.l+' уровне.</p>':'')+(S.calm?'':petCard()+questCard())}
 function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const wh=f.pay?'до зарплаты':'до конца месяца';
@@ -1294,7 +1351,7 @@ function viewHero(){return scene('hero','Герой','Лагерь у костр
   +'<button class="btn ghost" data-act="data">Данные и настройки</button>'}
 function heroStrip(){const lv=levelInfo(S.xp),sv=streakView();
   const days=(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь';
-  return '<section class="card herostrip" data-act="tab" data-v="hero" role="button" tabindex="0" aria-label="Открыть героя"><div class="hs-art">'+heroSVG(lv.L)+'</div><div class="hs-info"><div class="hs-top"><b>'+esc(S.name)+'</b><span>Уровень '+lv.L+'</span></div>'
+  return '<section class="card herostrip" data-act="tab" data-v="hero" role="button" tabindex="0" aria-label="Открыть героя"><div class="hs-art">'+heroArt(lv.L,true)+'</div><div class="hs-info"><div class="hs-top"><b>'+esc(S.name)+'</b><span>Уровень '+lv.L+'</span></div>'
    +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div><div class="xpline">'+esc(days)+' · ещё '+(lv.need-lv.cur)+' XP</div></div></section>'}
 function attnCard(){const t=today(),it=[];
   const g=proGap(60);if(g)it.push('Кассовый разрыв с '+fmtDate(g.date)+': не хватит около '+fmtDt(g.deficit));
@@ -1342,10 +1399,10 @@ function petSVG(st,mood){let o='';const r=(x,y,w,h,c)=>{o+='<rect x="'+x+'" y="'
 function petCard(){const p=petInfo(),pet=S.pet||{food:0,xp:0,name:'Уголёк'};
   const mt={happy:'Сыт и доволен.',ok:'Пока не голоден.',hungry:'Проголодался.'}[p.mood];
   const prog=p.next?Math.round(p.cur/p.span*100):100;
-  return '<section class="card" id="t-pet"><div class="pet"><div class="pet-art">'+petSVG(p.stage,p.mood)+'</div><div class="pet-info"><div class="label">Компаньон</div><div class="pet-name">'+esc(pet.name)+'</div>'
+  return '<section class="card" id="t-pet"><div class="pet"><div class="pet-art m-'+p.mood+'">'+petImg(petKind(),p.stage,p.mood)+'</div><div class="pet-info"><div class="label">Компаньон</div><div class="pet-name">'+esc(pet.name)+'</div>'
    +'<div class="note">'+p.stageName+'. '+mt+'</div><div class="bar thin"><i style="width:'+prog+'%"></i></div>'
    +'<div class="xpline">'+(p.next?'Кормлений до роста: '+(p.span-p.cur):'Достиг вершины')+'</div></div></div>'
-   +'<div class="chips" style="margin-top:10px;align-items:center"><button class="btn small" data-act="feed"'+(pet.food<1?' disabled':'')+'>Покормить</button><span class="ic">Корм: <b class="n">'+pet.food+'</b></span></div>'
+   +'<div class="chips" style="margin-top:10px;align-items:center"><button class="btn small" data-act="feed"'+(pet.food<1?' disabled':'')+'>Покормить</button><span class="ic">Корм: <b class="n">'+pet.food+'</b></span><button class="btn ghost small" data-act="pets">Компаньоны</button></div>'
    +'<p class="sub">Корм дают за взносы в цели, дни без трат, достижения и новые уровни.</p></section>'}
 const COIN=['..ooo..','.oyyyo.','oyyoyyo','oyoyyyo','oyyoyyo','.oyyyo.','..ooo..'];
 const fmtDateY=d=>fmtDate(d)+(d.slice(0,4)!==today().slice(0,4)?' '+d.slice(0,4):'');
@@ -1481,7 +1538,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.32.2';
+const APP_V='0.33.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1622,12 +1679,24 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
    +(f.debt?'<div class="two"><div class="field"><label for="ml">Остаток долга, ₸</label><input id="ml" class="inp" data-f="left" inputmode="decimal" value="'+esc(f.left)+'"></div><div class="field"><label for="mr">Ставка, % год</label><input id="mr" class="inp" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="0"></div></div><p class="note">Для рассрочки без процентов ставка 0. Остаток уменьшается при каждой оплате.</p>':'')
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="mandsave">Сохранить</button>'
    +(edit?'<button class="btn ghost" data-act="manddel">Удалить платёж</button>':'')}
-function sheetGear(){const L=levelInfo(S.xp).L;
-  let h=shHead('Экипировка')+'<div class="herobig">'+heroSVG(L)+'</div><p class="note">Вещи открываются с уровнем. Нажми на открытую вещь, чтобы надеть её. Прежнюю можно вернуть в любой момент.</p>';
-  Object.keys(GEAR).forEach(s=>{const cur=equippedTier(s,L);h+='<div class="slot">'+SLOTN[s]+'</div><div class="gear">'+GEAR[s].map((g,i)=>'<button class="g '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span>'+esc(g.n)+'</span><span>'+(i===cur?'надето':g.l>L?'с '+g.l+' ур.':'надеть')+'</span></button>').join('')+'</div>'});
+function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls;
+  let h=shHead('Оружие')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div><p class="note">Оружие открывается с уровнем. Нажми на открытое, чтобы взять его в руки. Прежнее можно вернуть в любой момент. У каждого класса своё оружие.</p>';
+  Object.keys(GEAR).forEach(s=>{const cur=equippedTier(s,L);h+='<div class="gear">'+GEAR[s].map((g,i)=>'<button class="g '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl"><img class="wicon" src="assets/weapon/'+cl+'-'+(i+1)+'.webp" alt="" draggable="false"><span>'+esc(g.n)+'</span></span><span>'+(i===cur?'в руках':g.l>L?'с '+g.l+' ур.':'взять')+'</span></button>').join('')+'</div>'});
   return h}
+function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
+  return shHead('Облик героя')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
+   +'<div class="slot">Раса</div><div class="pick">'+RACES.map(r=>'<button class="pk'+(r.id===h.race?' on':'')+'" data-act="setrace" data-v="'+r.id+'"><span class="pkimg">'+heroPick(r.id,h.cls)+'</span><span>'+r.n+'</span></button>').join('')+'</div>'
+   +'<div class="slot">Класс</div><div class="pick">'+CLASSES.map(c=>'<button class="pk'+(c.id===h.cls?' on':'')+'" data-act="setcls" data-v="'+c.id+'"><span class="pkimg">'+heroPick(h.race,c.id)+'</span><span>'+c.n+'</span></button>').join('')+'</div>'
+   +'<p class="note">Облик ничего не меняет в расчётах денег, это только вид героя. Сменить можно когда угодно. У каждого класса своё оружие.</p>'}
+function sheetPets(){const L=levelInfo(S.xp).L,cur=petKind(),v=UI.sheet&&UI.sheet.view;
+  if(v){const P=petDef(v),un=P.l<=L;
+    return shHead(P.n)+'<div class="petrow">'+[0,1,2,3].map(i=>'<div class="pst"><div class="pimg">'+petImg(P.id,i,'happy',[74,84])+'</div><small>'+esc(P.st[i])+'</small></div>').join('')+'</div>'
+     +(P.id===cur?'<p class="note" style="text-align:center">Сейчас он с тобой.</p>':un?'<button class="btn" style="width:100%" data-act="petpick" data-v="'+P.id+'">Взять с собой</button><p class="note">Прогресс прежнего компаньона сохранится, вернуться к нему можно когда угодно.</p>':'<p class="note" style="text-align:center">Откроется на '+P.l+' уровне. Пока можно посмотреть, как он растёт.</p>')
+     +'<button class="btn ghost" style="width:100%;margin-top:8px" data-act="pets">Назад к списку</button>'}
+  return shHead('Компаньоны')+'<p class="note" style="margin-top:0">Новые компаньоны открываются с уровнем. Нажми, чтобы посмотреть, как они растут.</p><div class="plist">'
+   +PETS.map(P=>{const un=P.l<=L;return '<button class="prow2'+(P.id===cur?' on':'')+(un?'':' lock')+'" data-act="petview" data-v="'+P.id+'"><span class="pthumb">'+petImg(P.id,3,'happy',[64,56])+'</span><span class="pinfo"><b>'+esc(P.n)+'</b><small>'+(P.id===cur?'с тобой':un?'открыт':'с '+P.l+' ур.')+'</small></span></button>'}).join('')+'</div>'}
 function sheetLvl(){const p=UI.pendingLvl;const un=unlockedBetween(p.from,p.to);
-  return shHead('Новый уровень!',true)+'<div class="herobig">'+heroSVG(p.to)+'</div><p class="lvbig">Уровень <span class="n">'+p.to+'</span></p>'
+  return shHead('Новый уровень!',true)+'<div class="herobig"><div class="hbox">'+heroArt(p.to)+'</div></div><p class="lvbig">Уровень <span class="n">'+p.to+'</span></p>'
    +(un.length?'<div><div class="label">Открыто</div>'+un.map(u=>'<p>'+esc(u)+'</p>').join('')+'</div>':'<p class="note" style="text-align:center">Новые вещи ждут на следующих уровнях.</p>')
    +(p.fz?'<p class="ic">'+snow(3)+'<span>Получена заморозка стрика</span></p>':'')+'<button class="btn" data-act="lvlok">Продолжить</button>'}
 function sheetOnboard(){const f=UI.form;
@@ -1770,7 +1839,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
@@ -1958,6 +2027,12 @@ function act(a,el){const v=el.dataset.v;
     case 'synccloud':if(cloudAsk)adoptCloud(cloudAsk);toast('Взял данные из облака');break;
     case 'synclocal':cloudAsk=null;setSynced();UI.sheet=null;S.savedAt=Date.now();cloudWrite();commit();toast('Данные этого устройства ушли в облако');break;
     case 'syncmerge':{const c=cloudAsk;cloudAsk=null;setSynced();if(c){const mg=mergeStates(c,Object.assign({},S,{epoch:c.epoch||''})),d=defaults();S=Object.assign(d,mg,{streak:Object.assign(d.streak,mg.streak||{})})}UI.sheet=null;cloudWrite();commit();toast('Объединил');break}
+    case 'look':openSheet('look');break;
+    case 'setrace':{const h=heroLook();S.hero={race:v,cls:h.cls};save();render();renderSheet();break}
+    case 'setcls':{const h=heroLook();S.hero={race:h.race,cls:v};if(S.equip)delete S.equip.weapon;save();render();renderSheet();break}
+    case 'pets':openSheet('pets');break;
+    case 'petview':openSheet('pets',{view:v});break;
+    case 'petpick':if(switchPet(v)){say(S.pet.name+' теперь с тобой');save();UI.sheet=null;commit()}break;
     case 'syncnow':cloudAt=0;cloudLive(true);toast('Сверяю с облаком…');setTimeout(()=>{if(UI.sheet&&UI.sheet.kind==='data')renderSheet()},1500);break;
     case 'reset':if(UI.confirm!=='reset'){UI.confirm='reset';renderSheet()}else{S=defaults();S.epoch=uid();UI.sheet=null;UI.confirm=null;save();start()}break;
     case 'onboard':{const f=UI.form;S.name=(f.name||'').trim()||'Странник';
