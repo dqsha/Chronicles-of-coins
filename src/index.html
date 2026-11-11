@@ -364,7 +364,7 @@ const CATS_EXP=[['food','Продукты','🛒'],['cafe','Кафе','🍔'],['
 const CATS_INC=[['salary','Зарплата','💰'],['side','Подработка','🛠️'],['giftin','Подарок','🎁'],['otherin','Прочее','📥']];
 const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],bank:['Счёт или депозит','🏦'],save:['Накопления','🐷'],deposit:['Депозит','🏛️']};
 
-function defaults(){return{payday:null,hide:{},v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
+function defaults(){return{payday:null,hide:{},epoch:'',del:{},v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
   streak:{count:0,last:null,freezes:1,best:0},noSpend:{},dayRec:{},lastAcc:null,
   goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Уголёк'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false}}
 let S=defaults();
@@ -382,6 +382,14 @@ function cloudPush(now){const cs=tgCloud();if(!cs)return;if(cloudTimer)clearTime
     if(cloudN>n){const old=[];for(let i=n;i<cloudN;i++)old.push('hm_'+i);cs.removeItems(old,()=>{})}
     cloudN=n}catch(e){}};
   if(now)go();else cloudTimer=setTimeout(go,700)}
+/* Слияние двух копий (телефон и компьютер): записи объединяются по id, удалённые помнятся в del.
+   Остальные настройки берутся из более свежей копии. Разные epoch (сброс или восстановление) = берём свежую целиком. */
+function mergeStates(a,b){const na=(a.savedAt||0)>=(b.savedAt||0),nw=na?a:b,od=na?b:a;
+  const out=JSON.parse(JSON.stringify(nw));if((a.epoch||'')!==(b.epoch||''))return out;
+  const del=Object.assign({},od.del||{},nw.del||{});out.del=del;
+  const seen={},tx=[];(nw.tx||[]).concat(od.tx||[]).forEach(x=>{if(!x||!x.id||seen[x.id]||del[x.id])return;seen[x.id]=1;tx.push(x)});out.tx=tx;
+  ['paid','noSpend','dayRec'].forEach(k=>{out[k]=Object.assign({},od[k]||{},nw[k]||{})});
+  out.xp=Math.max(a.xp||0,b.xp||0);out.savedAt=Math.max(a.savedAt||0,b.savedAt||0);return out}
 function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
   let fin=false;const end=()=>{if(!fin){fin=true;done()}};setTimeout(end,3500);
   try{cs.getItem('hm_n',(e,nv)=>{const n=parseInt(nv,10);if(e||!(n>0)){end();return}
@@ -389,7 +397,8 @@ function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
     cs.getItems(keys,(e2,vals)=>{try{if(e2||!vals){end();return}
       let str='';for(let i=0;i<n;i++){if(typeof vals['hm_'+i]!=='string'){end();return}str+=vals['hm_'+i]}
       const c=JSON.parse(str);let l=null;try{l=JSON.parse(localStorage.getItem(KEY)||'null')}catch(x){}
-      if(!l||(c.savedAt||0)>(l.savedAt||0)){try{localStorage.setItem(KEY,str)}catch(x){window.__cloudData=str}}
+      if(!l){try{localStorage.setItem(KEY,str)}catch(x){}}
+      else{const mg=mergeStates(c,l),ms=JSON.stringify(mg);if(ms!==JSON.stringify(l)){try{localStorage.setItem(KEY,ms)}catch(x){}}if(ms!==str)window.__cloudMerged=true}
       cloudN=n}catch(x){}end()})})}catch(e){end()}}
 try{document.addEventListener('visibilitychange',()=>{if(document.hidden)cloudPush(true)})}catch(e){}
 
@@ -462,7 +471,7 @@ function repeatList(kind){const lim=Date.now()-90*864e5,m={};
   S.tx.forEach(x=>{if(x.type!==kind||!x.cat||x.mid||x.ts<lim)return;const k=x.cat+'|'+x.amount+'|'+x.acc;
     const g=m[k]||(m[k]={cat:x.cat,amount:x.amount,acc:x.acc,note:'',n:0,ts:0});g.n++;if((x.ts||0)>=g.ts){g.ts=x.ts||0;g.note=x.note||''}});
   return Object.keys(m).map(k=>m[k]).sort((a,b)=>b.n-a.n||b.ts-a.ts).slice(0,4)}
-function delTx(id){const i=S.tx.findIndex(x=>x.id===id);if(i<0)return;const dx=S.tx[i];if(dx.dp&&dx.mid){const dm=S.mand.find(m=>m.id===dx.mid);if(dm){dm.left=Math.round(((dm.left||0)+dx.dp)*100)/100;dm.closed=false}}S.tx.splice(i,1);
+function delTx(id){const i=S.tx.findIndex(x=>x.id===id);if(i<0)return;if(!S.del)S.del={};S.del[id]=Date.now();const dx=S.tx[i];if(dx.dp&&dx.mid){const dm=S.mand.find(m=>m.id===dx.mid);if(dm){dm.left=Math.round(((dm.left||0)+dx.dp)*100)/100;dm.closed=false}}S.tx.splice(i,1);
   Object.keys(S.paid).forEach(k=>{if(S.paid[k]===id)delete S.paid[k]})}
 function noSpendToday(){const t=today();if(S.noSpend[t])return false;
   if(S.tx.some(x=>x.type==='exp'&&x.date===t)){say('Сегодня уже есть траты');return false}
@@ -1093,7 +1102,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.19.0';
+const APP_V='0.20.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1520,9 +1529,9 @@ function act(a,el){const v=el.dataset.v;
     case 'copy':{S.lastBackup=today();save();const txt=JSON.stringify(S);const sel=()=>{const t=$('#dx');if(t){t.focus();t.select()}toast('Выдели и скопируй текст вручную')};
       try{navigator.clipboard.writeText(txt).then(()=>toast('Копия в буфере обмена')).catch(sel)}catch(e){sel()}break}
     case 'import':{const raw=(UI.form.import||'').trim();try{const o=JSON.parse(raw);if(!o||!Array.isArray(o.tx)||!Array.isArray(o.accounts)||!o.accounts.length)throw 0;
-      const d=defaults();S=Object.assign(d,o,{streak:Object.assign(d.streak,o.streak||{}),onboarded:true,tourSeen:true,questInit:false});syncQuest();UI.sheet=null;commit();toast('Данные восстановлены')}
+      const d=defaults();S=Object.assign(d,o,{streak:Object.assign(d.streak,o.streak||{}),onboarded:true,tourSeen:true,questInit:false});S.epoch=uid();syncQuest();UI.sheet=null;commit();toast('Данные восстановлены')}
       catch(e){UI.form.err='Не получилось прочитать копию. Проверь, что вставлен весь текст';renderSheet()}break}
-    case 'reset':if(UI.confirm!=='reset'){UI.confirm='reset';renderSheet()}else{S=defaults();UI.sheet=null;UI.confirm=null;save();start()}break;
+    case 'reset':if(UI.confirm!=='reset'){UI.confirm='reset';renderSheet()}else{S=defaults();S.epoch=uid();UI.sheet=null;UI.confirm=null;save();start()}break;
     case 'onboard':{const f=UI.form;S.name=(f.name||'').trim()||'Странник';
       S.accounts=[{id:uid(),name:'Наличные',type:'cash',bal0:num(f.cash)},{id:uid(),name:'Карта',type:'card',bal0:num(f.card)}];S.lastAcc=S.accounts[1].id;S.onboarded=true;S.questInit=true;UI.sheet=null;commit();toast('Добро пожаловать, '+S.name);startTour();break}
   }}
@@ -1554,7 +1563,7 @@ function checkUpdate(){try{if(!window.fetch)return;fetch('version.json?t='+Date.
 function vvSync(){try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);document.documentElement.style.setProperty('--vvh',h+'px')}catch(e){}}
 function bootKb(){try{vvSync();if(window.visualViewport)window.visualViewport.addEventListener('resize',vvSync);window.addEventListener('resize',vvSync);
   document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'})}catch(x){}},320)})}catch(e){}}
-function boot(){bootKb();tgInit();preloadLoc();S=load();setTimeout(checkUpdate,1500);if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
+function boot(){bootKb();tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};startIntro()}else renderSheet();
   if(S.onboarded){checkAch();if(notes.length)commit()}
   maybeTour();

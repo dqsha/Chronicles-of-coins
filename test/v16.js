@@ -1,0 +1,33 @@
+// 0.20: слияние копий с двух устройств
+const fs=require('fs');const h=fs.readFileSync(process.argv[2],'utf8');
+const m=h.match(/<script>([\s\S]*?)<\/script>/);let bad=0;const chk=(n,c)=>{if(!c){bad++;console.log('FAIL',n)}else console.log('ok  ',n)};
+const src=m[1].replace(/try\{start\(\)\}catch\(e\)\{showFatal\(e\)\}\s*$/,'');
+const vm=require('vm');const els={};const mk=()=>({focus(){},innerHTML:'',classList:{add(){},remove(){},toggle(){}},dataset:{},style:{setProperty(){}},querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}});
+const store={};const cloud={};
+const CS={getItem(k,cb){cb(null,cloud[k])},getItems(ks,cb){const o={};ks.forEach(k=>o[k]=cloud[k]);cb(null,o)},setItems(o,cb){Object.assign(cloud,o);cb&&cb()},removeItems(ks,cb){ks.forEach(k=>delete cloud[k]);cb&&cb()}};
+const ctx={console,setTimeout,clearTimeout,clearInterval,setInterval:()=>1,localStorage:{getItem(k){return k in store?store[k]:null},setItem(k,v){store[k]=String(v)},removeItem(k){delete store[k]}},document:{body:mk(),documentElement:mk(),getElementById:i=>els[i]||(els[i]=mk()),querySelector:s=>els[s]||(els[s]=mk()),querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk()},window:{addEventListener(){},scrollTo(){},matchMedia:()=>({matches:false}),Telegram:{WebApp:{CloudStorage:CS,initData:'x'}}},Date,Math,JSON,Intl,Image:function(){},navigator:{},performance:{now:()=>0},requestAnimationFrame(){},fetch:undefined};
+ctx.window.document=ctx.document;ctx.self=ctx.window;vm.createContext(ctx);vm.runInContext(src,ctx);
+const run=c=>vm.runInContext(c,ctx);
+const T=(id,amt,ts)=>({id,type:'exp',amount:amt,cat:'food',acc:'a',to:null,date:'2026-11-05',note:'',mid:null,ts:ts||1});
+const base={accounts:[{id:'a',name:'Карта',type:'card',bal0:1000}],onboarded:true,epoch:'',del:{},paid:{},noSpend:{},dayRec:{}};
+const phone=Object.assign({},base,{savedAt:100,xp:50,tx:[T('p1',10),T('both',5)],noSpend:{'2026-11-01':1}});
+const pc=Object.assign({},base,{savedAt:200,xp:30,tx:[T('c1',20),T('both',7)],noSpend:{'2026-11-02':1}});
+ctx.__a=phone;ctx.__b=pc;const mg=run('mergeStates(__a,__b)');
+chk('union of records',mg.tx.length===3&&['p1','c1','both'].every(i=>mg.tx.some(x=>x.id===i)));
+chk('same id: newer copy wins',mg.tx.find(x=>x.id==='both').amount===7);
+chk('xp max, savedAt max',mg.xp===50&&mg.savedAt===200);
+chk('noSpend merged',Object.keys(mg.noSpend).length===2);
+const pc2=Object.assign({},pc,{tx:[T('c1',20)],del:{both:150}});ctx.__b=pc2;
+chk('deleted stays deleted',!run('mergeStates(__a,__b)').tx.some(x=>x.id==='both'));
+const reset=Object.assign({},pc,{epoch:'new1',tx:[]});ctx.__b=reset;
+chk('after reset newer copy wins whole',run('mergeStates(__a,__b)').tx.length===0);
+// через cloudSync: облако = компьютер, локально = телефон
+run("cloudPush=function(){}");
+const str=JSON.stringify(pc);cloud.hm_n='1';cloud.hm_0=str;store['hronika-monet-v1']=JSON.stringify(phone);
+let done=false;ctx.__done=()=>{done=true};run('cloudSync(__done)');
+const loc=JSON.parse(store['hronika-monet-v1']);
+chk('cloudSync merges into local',done&&loc.tx.length===3);
+chk('flag to push merged copy',run('window.__cloudMerged')===true);
+run("S=defaults();S.accounts=[{id:'a',name:'К',type:'card',bal0:0}];S.tx=[{id:'z',type:'exp',amount:1,cat:'food',acc:'a',date:'2026-11-05',ts:1}];delTx('z')");
+chk('delTx records tombstone',run("!!S.del.z"));
+console.log(bad?bad+' FAILED':'V16 OK');
