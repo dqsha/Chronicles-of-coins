@@ -489,6 +489,26 @@ button,[data-act]{cursor:pointer}
 .islot b{font-size:12px;line-height:1.2}.islot small{font-size:10px;color:var(--mute)}
 .islot.on{border-color:var(--gold)}.islot.on b{color:var(--gold)}.islot .wicon{width:44px;height:44px}
 .islot.lock{opacity:.55;border-style:dashed}.islot .lk{font-size:20px;filter:grayscale(1)}
+
+/* слот оружия: подсветка по редкости */
+.r0{--rc:#8d8a99;--rg:141,138,153;--gs:0px}.r1{--rc:#62b35c;--rg:98,179,92;--gs:6px}.r2{--rc:#4f93e6;--rg:79,147,230;--gs:10px}.r3{--rc:#a864e8;--rg:168,100,232;--gs:14px}.r4{--rc:#f0c04a;--rg:240,192,74;--gs:20px}
+.hero-col{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0;width:104px}.hero-col .hero-art{padding:6px 4px}.wslot .wsl-n{overflow-wrap:anywhere}
+.wslot{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px 6px;cursor:pointer;overflow:hidden;color:var(--ink);
+  background:radial-gradient(circle at 50% 38%,rgba(var(--rg),.30),rgba(var(--rg),0) 72%),var(--panel2);border:2px solid var(--rc);border-radius:10px;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),0 0 var(--gs) rgba(var(--rg),.55);animation:wglow 2.8s ease-in-out infinite}
+.wslot .wsl-img{position:relative;z-index:1;width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 0 rgba(0,0,0,.5))}
+.wslot .wsl-n{position:relative;z-index:1;font-size:10px;line-height:1.15;text-align:center}
+.wslot .wsl-r{position:relative;z-index:1;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--rc)}
+.wslot .wsl-glow{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(var(--rg),.0) 42%,rgba(255,255,255,.28) 50%,rgba(var(--rg),0) 58%,transparent 65%);transform:translateX(-120%);opacity:0}
+.wslot.r3 .wsl-glow,.wslot.r4 .wsl-glow{opacity:1;animation:wshine 3.6s ease-in-out infinite}
+.wslot.r4{border-width:2px;background:radial-gradient(circle at 50% 38%,rgba(var(--rg),.42),rgba(var(--rg),0) 72%),linear-gradient(180deg,#3a2f14,var(--panel2))}
+@keyframes wglow{0%,100%{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),0 0 var(--gs) rgba(var(--rg),.45)}50%{box-shadow:inset 0 0 0 1px rgba(0,0,0,.6),0 0 calc(var(--gs) * 1.7) rgba(var(--rg),.85)}}
+@keyframes wshine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.wslot.r0{animation:none}
+.islot.on{border-color:var(--rc,var(--gold));box-shadow:0 0 var(--gs,0px) rgba(var(--rg,226,178,74),.5)}.islot.on b{color:var(--rc,var(--gold))}
+.gear .g{border-left:5px solid var(--rc,var(--line))}.gear .g .gr{display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap}.gear .g .gr small{font-size:10px;color:var(--rc);text-transform:uppercase;letter-spacing:.05em}
+.gear .g.on{border-color:var(--rc,var(--gold));border-left-width:5px}
+@media (prefers-reduced-motion:reduce){.wslot,.wslot .wsl-glow{animation:none!important}}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -678,6 +698,7 @@ const WEAPONS={warrior:['Тренировочный меч','Стальной м
   mage:['Посох ученика','Жезл искр','Гримуар','Посох звёздного света','Скипетр Архимага'],
   ranger:['Короткий лук','Охотничий лук','Арбалет','Эльфийский длинный лук','Лук Рассвета'],
   rogue:['Ржавый кинжал','Парные кинжалы','Ядовитый стилет','Связка метательных ножей','Клинок Теней']};
+const RARITY=['Обычное','Необычное','Редкое','Эпическое','Легендарное'];
 function heroLook(){const h=S.hero||{};return{race:RACES.some(r=>r.id===h.race)?h.race:'human',cls:CLASSES.some(c=>c.id===h.cls)?h.cls:'warrior'}}
 const GEAR={};
 Object.defineProperty(GEAR,'weapon',{enumerable:true,get(){return WEAPONS[heroLook().cls].map((n,i)=>({n:n,l:WLV[i]}))}});
@@ -1155,6 +1176,9 @@ const snow=px=>pix(SNOW,{c:'#8fd3ef'},px);
 
 function heroArt(L){const h=heroLook();return '<img class="hero-img" src="assets/hero/'+h.race+'-'+h.cls+'.webp" alt="Герой" draggable="false">'}
 function heroAvatar(){const h=heroLook();return '<img class="avatar-img" src="assets/avatar/'+h.race+'-'+h.cls+'.webp" alt="Герой" draggable="false">'}
+/* Слот оружия под героем: подсветка по редкости (чем позже открыто оружие, тем реднее) */
+function weaponSlot(L){const cl=heroLook().cls,cur=equippedTier('weapon',L),g=GEAR.weapon[cur];
+  return '<button class="wslot r'+cur+'" data-act="gear" aria-label="Оружие: '+esc(g.n)+'. Открыть инвентарь"><span class="wsl-glow"></span><img class="wsl-img" src="assets/weapon/'+cl+'-'+(cur+1)+'.webp" alt="" draggable="false"><span class="wsl-n">'+esc(g.n)+'</span><span class="wsl-r">'+RARITY[cur]+'</span></button>'}
 function heroPick(race,cls){return '<img class="hero-img" src="assets/hero/'+race+'-'+cls+'.webp" alt="" draggable="false">'}
 function heroSVG(L){
   const t={w:equippedTier('weapon',L),a:equippedTier('armor',L),h:equippedTier('helm',L),c:equippedTier('cloak',L)};let o='';
@@ -1321,12 +1345,12 @@ function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
   const stTxt={new:'Запиши первую трату, чтобы зажечь огонь',ok:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд',
     wait:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд. Запиши что-нибудь сегодня',
     frozen:'Пропущено дней: '+sv.missed+'. Заморозка сохранит серию, если запишешь сегодня',broken:'Серия прервалась, ничего страшного. Начни новую сегодня'}[sv.state];
-  return '<section class="card hero'+(full?'':' herom')+'"'+(full?'':' data-act="camp" role="button" tabindex="0" aria-label="Открыть лагерь героя"')+'><div class="hero-art">'+heroArt(lv.L)+'</div><div class="hero-info">'
+  return '<section class="card hero'+(full?'':' herom')+'"'+(full?'':' data-act="camp" role="button" tabindex="0" aria-label="Открыть лагерь героя"')+'><div class="hero-col"><div class="hero-art">'+heroArt(lv.L)+'</div>'+(full?weaponSlot(lv.L):'')+'</div><div class="hero-info">'
     +'<div class="lvl">Уровень <span class="n">'+lv.L+'</span></div><div class="name">'+esc(S.name)+'</div>'
     +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div>'
     +'<div class="xpline">'+(full?lv.cur+' / '+lv.need+' XP · ':'')+'До уровня '+(lv.L+1)+': ещё '+(lv.need-lv.cur)+' XP</div>'
     +'<div class="streak"><span class="ic">'+flame(3)+'<span>'+esc(full?stTxt:(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь')+'</span></span>'+(full?'<span class="ic">'+snow(3)+'<span>Заморозки: '+S.streak.freezes+' из 3</span></span>':'')+'</div>'
-    +(full?'<div class="chips"><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="gear">Инвентарь</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
+    +(full?'<div class="chips"><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
 function sheetCamp(){const lv=levelInfo(S.xp),nx=nextUnlock(lv.L);
   return shHead('Лагерь героя')+heroCard(true)+((nx&&!S.calm)?'<p class="note">Следующая вещь: '+esc(nx.n)+' на '+nx.l+' уровне.</p>':'')+(S.calm?'':petCard()+questCard())}
 function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const wh=f.pay?'до зарплаты':'до конца месяца';
@@ -1548,7 +1572,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.33.1';
+const APP_V='0.33.2';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1692,9 +1716,9 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
 const INVSLOTS=[{id:'weapon',n:'Оружие'},{id:'armor',n:'Броня'},{id:'helm',n:'Шлем'},{id:'cloak',n:'Плащ'},{id:'ring',n:'Кольцо'},{id:'amulet',n:'Амулет'}];
 function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls,cur=equippedTier('weapon',L);
   let h=shHead('Инвентарь')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
-   +'<div class="inv">'+INVSLOTS.map(sl=>sl.id==='weapon'?'<div class="islot on"><img class="wicon" src="assets/weapon/'+cl+'-'+(cur+1)+'.webp" alt="" draggable="false"><b>'+esc(GEAR.weapon[cur].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
+   +'<div class="inv">'+INVSLOTS.map(sl=>sl.id==='weapon'?'<div class="islot on r'+cur+'"><img class="wicon" src="assets/weapon/'+cl+'-'+(cur+1)+'.webp" alt="" draggable="false"><b>'+esc(GEAR.weapon[cur].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
    +'<div class="slot">Оружие</div><p class="note" style="margin-top:2px">Открывается с уровнем. Нажми на открытое, чтобы взять его. Прежнее можно вернуть в любой момент. У каждого класса своё.</p>';
-  Object.keys(GEAR).forEach(s=>{h+='<div class="gear">'+GEAR[s].map((g,i)=>'<button class="g '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl"><img class="wicon" src="assets/weapon/'+cl+'-'+(i+1)+'.webp" alt="" draggable="false"><span>'+esc(g.n)+'</span></span><span>'+(i===cur?'в руках':g.l>L?'с '+g.l+' ур.':'взять')+'</span></button>').join('')+'</div>'});
+  Object.keys(GEAR).forEach(s=>{h+='<div class="gear">'+GEAR[s].map((g,i)=>'<button class="g r'+i+' '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl"><img class="wicon" src="assets/weapon/'+cl+'-'+(i+1)+'.webp" alt="" draggable="false"><span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cur?'в руках':g.l>L?'с '+g.l+' ур.':'взять')+'</span></button>').join('')+'</div>'});
   return h}
 function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
   return shHead('Облик героя')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'

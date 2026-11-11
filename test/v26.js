@@ -24,6 +24,9 @@ chk('no weapon drawn on the hero image',!ha.includes('hero-wpn')&&!ha.includes('
 chk('avatar uses portrait image',run("heroAvatar()").includes('assets/avatar/orc-mage.webp'));
 run("UI.tab='hero';render()");
 chk('hero tab: look button',app().includes('data-act="look"')&&app().includes('hero-img'));
+chk('weapon slot under hero with rarity class (lvl 12 = 3rd weapon = r2)',app().includes('class="wslot r2"')&&app().includes('Редкое')&&app().includes('assets/weapon/mage-3.webp'));
+run("S.xp=xpAtLevel(30)");run("render()");chk('lvl 30: legendary slot r4',app().includes('class="wslot r4"')&&app().includes('Легендарное'));
+run("S.xp=xpAtLevel(12)");run("render()");
 act('look');chk('look sheet shows 4 races and 4 classes',lay().includes('data-act="setrace" data-v="goblin"')&&lay().includes('data-act="setcls" data-v="rogue"'));
 act('gear');chk('inventory: 6 slots, 5 locked',(lay().match(/class="islot/g)||[]).length===6&&(lay().match(/islot lock/g)||[]).length===5&&lay().includes('в разработке'));
 chk('inventory: 5 weapon rows + current in slot',(lay().match(/data-act="equip"/g)||[]).length===5&&lay().includes('Гримуар'));
