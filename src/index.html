@@ -415,6 +415,23 @@ body.lefty .hidebtn{left:8px}
 .curpick{margin-top:8px}.curhint{text-align:right;margin-top:6px;min-height:1em}
 .row .amt{text-align:right}
 .amt small.amt2{display:block;font:12px var(--body);color:var(--mute);text-align:right;margin-top:2px}
+
+/* ---- 0.28 обучение и знакомство в общем стиле ---- */
+.dlg{border:14px solid transparent;border-image:url(assets/panel-stone-r.webp) 48 stretch;background:var(--panel-a,#1f1a29);background-clip:padding-box;border-radius:0;padding:10px 6px 6px;box-shadow:none;filter:drop-shadow(0 8px 18px rgba(0,0,0,.55))}
+.dlg.top{bottom:auto;top:calc(14px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px))}
+.dlg-name{left:10px;top:-30px;border:0;border-radius:999px;padding:4px 12px;background:linear-gradient(135deg,#f0cb68,#c9932f);color:#271c06;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 4px 10px rgba(0,0,0,.35)}
+.dlg .tv-mage{border-radius:16px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.02))}
+.dlg-t{font-size:16px;line-height:1.55;color:#f1ebf8}
+.dlg-dots u{border-radius:50%;border:0;background:rgba(255,255,255,.25)}.dlg-dots u.on{background:var(--gold)}
+.tv-back{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#f1ebf8;width:30px;height:30px;border-radius:50%;font-size:18px;line-height:1;cursor:pointer}
+.tv-spot{border-radius:20px;border:2px solid rgba(255,214,120,.95);box-shadow:0 0 0 9999px rgba(8,6,12,.74),0 0 22px rgba(226,178,74,.55);animation:spotp 1.8s ease-in-out infinite;transition:all .3s cubic-bezier(.22,.8,.3,1)}
+@keyframes spotp{50%{box-shadow:0 0 0 9999px rgba(8,6,12,.74),0 0 34px rgba(226,178,74,.85)}}
+.obanner{border-radius:20px;border:1px solid rgba(255,255,255,.12)}
+.otitle{font-size:22px;margin:6px 0 2px}
+.otext{margin-bottom:6px}
+.obox{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.olab{font:600 15px var(--body);color:#f1ebf8}.osub{font-size:12px;color:var(--mute);margin-top:-4px}
+.ohl{font-size:13px;color:#e8d9a8;background:rgba(226,178,74,.1);border-left:3px solid var(--gold);border-radius:8px;padding:8px 10px;margin:4px 0 10px}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1267,7 +1284,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.27.0';
+const APP_V='0.28.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1418,11 +1435,12 @@ function sheetLvl(){const p=UI.pendingLvl;const un=unlockedBetween(p.from,p.to);
    +(p.fz?'<p class="ic">'+snow(3)+'<span>Получена заморозка стрика</span></p>':'')+'<button class="btn" data-act="lvlok">Продолжить</button>'}
 function sheetOnboard(){const f=UI.form;
   return '<div class="obanner"><img src="assets/loc-home.webp" alt="" onerror="this.remove()"><div class="obt">Хроника Монет</div></div>'
-   +'<h2 class="otitle">Добро пожаловать, '+kw('{y путник}')+'</h2><p class="otext">'+kw('Записывай {r траты} и {g доходы}, и твой герой будет расти. Данные хранятся в твоём {y аккаунте Telegram}.')+'</p>'
-   +'<div class="field"><label for="on">Как зовут героя</label><input id="on" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div>'
-   +'<div class="two"><div class="field"><label for="oc">Наличные, ₸</label><input id="oc" class="inp" data-f="cash" inputmode="decimal" value="'+esc(f.cash)+'" placeholder="0"></div>'
-   +'<div class="field"><label for="ok">На карте, ₸</label><input id="ok" class="inp" data-f="card" inputmode="decimal" value="'+esc(f.card)+'" placeholder="0"></div></div>'
-   +'<p class="note">Суммы примерные, потом можно поправить. Другие счета добавишь в Кошельке.</p><button class="btn big" data-act="onboard">Начать путь</button>'}
+   +'<h2 class="otitle">Давай знакомиться</h2><p class="otext">'+kw('Пара вопросов, и в путь. Всё можно {y поменять потом}.')+'</p>'
+   +'<div class="obox"><label class="olab" for="on">Как тебя записать в хронику?</label><input id="on" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'" placeholder="Имя или прозвище"></div>'
+   +'<div class="obox"><span class="olab">Сколько у тебя сейчас денег?</span><small class="osub">Примерно. Точность до копейки не нужна.</small>'
+   +'<div class="two"><div class="field"><label for="oc">💵 Наличные, ₸</label><input id="oc" class="inp" data-f="cash" inputmode="decimal" value="'+esc(f.cash)+'" placeholder="0"></div>'
+   +'<div class="field"><label for="ok">💳 На карте, ₸</label><input id="ok" class="inp" data-f="card" inputmode="decimal" value="'+esc(f.card)+'" placeholder="0"></div></div></div>'
+   +'<p class="ohl">🔒 Данные хранятся только в твоём Telegram. Никто, кроме тебя, их не видит.</p><button class="btn big" data-act="onboard">В путь</button>'}
 function debtRow(m){const s=mandStatus(m);const inf=debtInfo(m,0);
   const t2=m.closed?'Погашено':'остаток '+fmt(m.left)+' · '+(isFinite(inf.months)?'ещё '+inf.months+' мес.':'не закрывается')+((m.rate||0)>0?' · '+m.rate+'%':' · без процентов');
   return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'🏦':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'</span></div>'
@@ -1469,24 +1487,28 @@ function mageSVG(){let o='';const r=(x,y,w,h,c)=>{o+='<rect x="'+x+'" y="'+y+'" 
 function kw(t,ch){t=esc(t);const sp=x=>ch?x.replace(/&#?\w+;|[^\s]/g,c=>'<i>'+c+'</i>'):x;let o='',last=0,m;const re=/\{([ygrb]) ([^}]+)\}/g;
   while((m=re.exec(t))){o+=sp(t.slice(last,m.index))+'<b class="k'+m[1]+'">'+sp(m[2])+'</b>';last=re.lastIndex}return o+sp(t.slice(last))}
 const INTRO=[
- 'Эй, путник! Присядь у костра. Тебя гложет один вопрос, верно?',
- '{y Куда деваются деньги?} Вроде только получил, а уже снова считаешь последние монеты.',
- 'Тяжело считать каждую копейку и жить {r от зарплаты до зарплаты}. Знакомо? Тогда тебе сюда.',
- 'Я Орвин, хранитель этой хроники. Здесь ты записываешь {r каждую трату} и {g любой доход}.',
- 'А я покажу {y статистику всего}: на что уходят деньги, в какие дни и в каких местах.',
- 'В любой момент загляни в записи и увидишь, {y когда и где} ты что купил или перевёл.',
- 'За записи герой получает {y опыт} и растёт, а привычка копится сама. Назови своё имя и скажи, сколько у тебя монет.'];
+ 'О, живой человек! Подходи к костру, не стесняйся, тут тепло.',
+ 'Я {y Орвин}. Веду хроники: кто сколько заработал и куда всё это потом {r испарилось}.',
+ 'Секрет простой: записываешь {r траты} и {g доходы}, и деньги перестают исчезать загадочным образом.',
+ 'А за порядок в деньгах твой герой будет {y расти}. Давай знакомиться.'];
+/* Экскурсия: sel — что подсветить. Если элемента нет (скрыт или ещё не появился), шаг пропускается. */
 const TOURS=[
- {tab:'home',t:'Отлично, {y %n}! Покажу лагерь за минуту.'},
- {tab:'home',t:'Сверху твой {g Банк}: сколько денег у тебя сейчас, за вычетом платежей месяца и копилок. Это главное число.'},
- {tab:'home',t:'Потратил? Жми {r Трата}. Получил? Жми {g Доход}. Привычное повторяется одним касанием.'},
- {tab:'home',t:'За записи ты получаешь {y опыт}. Нажми на героя, и откроется {y Лагерь}: питомец, экипировка и {y задания}.'},
- {tab:'wallet',t:'В {y Кошельке} живут счета, цели и платежи. Загрузи выписку Kaspi в PDF, и я сам разберу твои траты.',btn:'Загрузить выписку'},
- {tab:'home',t:'Если игры станет много, включи {b Спокойный режим} в настройках. В путь!'}];
+ {tab:'home',t:'{y %n}, сейчас быстро покажу, что тут где. Минута, честно.'},
+ {tab:'home',sel:'#t-free',t:'Это {g Банк}: сколько у тебя реально есть. Платежи месяца и копилки я уже вычел, чтобы ты не радовался раньше времени.'},
+ {tab:'home',sel:'#t-log .logbtns',t:'Потратил, жми {r Трата}. Пришли деньги, жми {g Доход}. Два касания, быстрее, чем найти чек в кармане.'},
+ {tab:'home',sel:'#tabbar .plus',t:'Эта жёлтая кнопка делает то же самое с любой вкладки. Увидел трату, записал, забыл.'},
+ {tab:'home',sel:'#app .hidebtn',t:'Что-то лишнее? Жми {y скрыть}, и блок свернётся в строчку. Передумал, нажал на строчку, вернулся.'},
+ {tab:'home',sel:'#tabbar .tdots',t:'Вкладки листаются пальцем влево и вправо. А если провести по этим точкам, пролетишь всё за секунду.'},
+ {tab:'list',sel:'#tabbar .tab[data-v="list"]',t:'В {y Записях} вся история: что, когда и где. Нажми на любую запись, чтобы поправить или удалить.'},
+ {tab:'stats',sel:'#tabbar .tab[data-v="stats"]',t:'{y Анализ} показывает, куда утекают деньги. Иногда больно, зато честно.'},
+ {tab:'wallet',sel:'#t-acc',t:'В {y Кошельке} счета, валюты, цели и долги. Есть выписка Kaspi в PDF? Загрузи, разберу сам.',btn:'Загрузить выписку'},
+ {tab:'home',t:'Всё, дальше сам. Если игра начнёт отвлекать, в настройках есть {b Спокойный режим}. Удачи, {y %n}!'}];
 function maybeTour(){if(S.onboarded&&!S.tourSeen&&UI.tour==null&&UI.intro==null&&!UI.sheet&&!UI.pendingLvl)startTour()}
 function startTour(){UI.sheet=null;UI.confirm=null;renderSheet();UI.tour=0;tourGo()}
 function tourGo(dir){dir=dir||1;if(UI.tour<0)UI.tour=0;const st=TOURS[UI.tour];if(!st)return endTour();
-  if(UI.tab!==st.tab){UI.tab=st.tab;render();window.scrollTo(0,0)}
+  if(UI.tab!==st.tab){UI.tab=st.tab;render();try{window.scrollTo(0,0)}catch(e){}}
+  if(st.sel){let el=null;try{el=document.querySelector(st.sel)}catch(e){}
+    if(!el||!el.getBoundingClientRect){const nx=UI.tour+dir;if(nx>=0&&nx<TOURS.length){UI.tour=nx;return tourGo(dir)}}}
   drawTour()}
 function endTour(){UI.tour=null;S.tourSeen=true;save();dlgStop();$('#tourlayer').innerHTML='';
   if(UI.tab!=='home'){UI.tab='home';render()}window.scrollTo(0,0)}
@@ -1498,16 +1520,21 @@ function dlgType(){dlgStop();let cs=[];try{cs=Array.prototype.slice.call(documen
   if(!cs.length||S.calm||(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)){cs.forEach(c=>c.classList.add('on'));box();return}
   UI.typing=true;let n=0;UI.dtm=setInterval(()=>{if(n>=cs.length){dlgStop();box();return}cs[n++].classList.add('on');if(n<cs.length)cs[n++].classList.add('on')},34)}
 function dlgFinish(){try{document.querySelectorAll('#tourlayer .dlg-t i').forEach(c=>c.classList.add('on'))}catch(e){}dlgStop();try{document.querySelector('#tourlayer .dlg').classList.add('done')}catch(e){}}
-function dlgBox(text,n,total,intro,extra){
-  return '<div class="tv-block"></div><div class="tv-dim'+(intro?' intro':'')+'"></div>'
-   +'<div class="dlg'+(intro?' intro':'')+'" role="dialog" aria-label="Диалог" data-act="dlgtap"><div class="dlg-name">Маг Орвин</div>'
+function dlgBox(text,n,total,intro,extra,spot,top){
+  return '<div class="tv-block"></div>'+(spot?'<div class="tv-spot" style="'+spot+'"></div>':'<div class="tv-dim'+(intro?' intro':'')+'"></div>')
+   +'<div class="dlg'+(intro?' intro':'')+(top?' top':'')+'" role="dialog" aria-label="Диалог" data-act="dlgtap"><div class="dlg-name">Маг Орвин</div>'
    +'<div class="dlg-in"><div class="tv-mage">'+mageSVG()+'</div><p class="dlg-t">'+text+'</p></div>'+(extra||'')
-   +'<div class="dlg-bar"><button class="tv-skip" data-act="'+(intro?'introend':'tourend')+'">Пропустить</button><span class="dlg-dots">'+Array.from({length:total},(_,i)=>'<u class="'+(i<=n?'on':'')+'"></u>').join('')+'</span><span class="dlg-more">▼</span></div></div>'}
+   +'<div class="dlg-bar">'+(!intro&&n>0?'<button class="tv-back" data-act="tourprev" aria-label="Назад">‹</button>':'')+'<button class="tv-skip" data-act="'+(intro?'introend':'tourend')+'">Пропустить</button><span class="dlg-dots">'+Array.from({length:total},(_,i)=>'<u class="'+(i<=n?'on':'')+'"></u>').join('')+'</span><span class="dlg-more">▼</span></div></div>'}
 function drawIntro(){const L=$('#tourlayer');if(UI.intro==null){L.innerHTML='';return}
   L.innerHTML=dlgBox(kw(INTRO[UI.intro],true),UI.intro,INTRO.length,true);dlgType()}
 function drawTour(){const L=$('#tourlayer');if(UI.tour==null){L.innerHTML='';return}
-  const i=UI.tour,st=TOURS[i];
-  L.innerHTML=dlgBox(kw(st.t.replace('%n',S.name||'путник'),true),i,TOURS.length,false,st.btn?'<button class="btn" data-act="tourimp">'+esc(st.btn)+'</button>':'');dlgType()}
+  const i=UI.tour,st=TOURS[i];let spot='',top=false;
+  if(st.sel){try{const el=document.querySelector(st.sel);if(el&&el.getBoundingClientRect){
+    const inBar=!!(el.closest&&el.closest('#tabbar'));if(!inBar&&el.scrollIntoView)el.scrollIntoView({block:'center'});
+    const r=el.getBoundingClientRect(),H=window.innerHeight||800,p=8;
+    if(r.width>0){spot='left:'+Math.round(r.left-p)+'px;top:'+Math.round(r.top-p)+'px;width:'+Math.round(r.width+p*2)+'px;height:'+Math.round(r.height+p*2)+'px';top=(r.top+r.height/2)>H*0.5}}}catch(e){}}
+  const nm=S.name&&S.name!=='Странник'?S.name:'путник';
+  L.innerHTML=dlgBox(kw(st.t.split('%n').join(nm),true),i,TOURS.length,false,st.btn?'<button class="btn" data-act="tourimp">'+esc(st.btn)+'</button>':'',spot,top);dlgType()}
 function sheetGoal(){const f=UI.form,edit=!!UI.sheet.id;
   return shHead(edit?'Цель':'Новая цель')
    +'<div class="two"><div class="field"><label for="gi">Значок</label><input id="gi" class="inp" data-f="icon" maxlength="4" value="'+esc(f.icon)+'" placeholder="📱"></div>'

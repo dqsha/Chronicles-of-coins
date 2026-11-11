@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2],'utf8');
 const code=html.match(/<script>([\s\S]*)<\/script>/)[1].replace(/\nstart\(\);\s*$/,'\n');
-const els={};const el=k=>els[k]||(els[k]={innerHTML:'',classList:{add(){},remove(){}},dataset:{},focus(){},select(){},set textContent(v){this._t=v}});
+const els={};const el=k=>els[k]||(els[k]={innerHTML:'',classList:{add(){},remove(){}},dataset:{},focus(){},select(){},getBoundingClientRect:()=>({left:10,top:600,width:100,height:40}),set textContent(v){this._t=v}});
 const ctx=vm.createContext({console,window:{scrollTo(){},addEventListener(){},innerHeight:800,scrollY:0},document:{querySelector:el,addEventListener(){},body:{dataset:{},classList:{toggle(){}}}},localStorage:{getItem(){return null},setItem(){}},navigator:{clipboard:{writeText:()=>Promise.resolve()}},setTimeout,clearTimeout});
 vm.runInContext(code,ctx);
 const run=c=>vm.runInContext(c,ctx);
@@ -18,12 +18,12 @@ for(const [k,pre] of [['goal',`UI.form={name:'',icon:'',target:'',deadline:'',er
   run(`${pre}UI.tourStep=0;openSheet('${k}',{id:'${gid}'})`);chk('sheet '+k,els['#layer'].innerHTML.includes('sheet'))}
 const act=(a,v,ds)=>{ctx.__el={dataset:Object.assign({v},ds||{}),disabled:false};run(`act('${a}',__el)`)};
 const L=()=>els['#tourlayer'].innerHTML;
-run(`startTour()`);chk('tour step 1 half-screen card + mage',L().includes('class="dlg"')&&L().includes('Маг Орвин')&&L().includes('<i>О</i>'));
+run(`startTour()`);chk('tour step 1 card + mage',L().includes('class="dlg')&&L().includes('Маг Орвин')&&L().includes('<i>п</i>'));
 const goTo=n=>{while(run('UI.tour')<n)act('tournext')};
 chk('no spotlight, no bullet list',!L().includes('tv-spot')&&!L().includes('<li'));
-goTo(4);chk('tour switches to wallet tab',run('UI.tab')==='wallet');
-act('tourprev');chk('prev works',run('UI.tour')===3);
-goTo(5);chk('last step button text',run('UI.tour')===5&&L().includes('<b class="kb">'));
+goTo(8);chk('tour switches to wallet tab',run('UI.tab')==='wallet');chk('spotlight on target, dialog on top',L().includes('tv-spot')&&L().includes('dlg top'));
+act('tourprev');chk('prev works',run('UI.tour')<8&&run('UI.tour')>=0);
+goTo(9);chk('last step: calm mode word',run('UI.tour')===9&&L().includes('<b class="kb">'));
 chk('calm hint on last step',L().replace(/<[^>]+>/g,'').includes('Спокойный режим'));
 act('tournext');chk('tour finished',run('UI.tour')===null&&L()===''&&run('S.tourSeen')===true&&run('UI.tab')==='home');
 run(`UI.tab='home';render()`);
