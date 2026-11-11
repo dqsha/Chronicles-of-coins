@@ -480,6 +480,17 @@ button,[data-act]{cursor:pointer}
 .pst{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;text-align:center;background:var(--panel2);border:2px solid var(--line);padding:6px 2px}
 .pst .pimg{height:86px;display:flex;align-items:flex-end;justify-content:center}.pst .pet-img{animation:none}.pst .pimg svg{width:56px;height:auto}.pst small{font-size:10px;color:var(--mute);line-height:1.2}
 @media (prefers-reduced-motion:reduce){.hero-img,.pet-img{animation:none!important}}
+
+/* портрет героя и инвентарь */
+.herostrip .hs-top{flex-wrap:wrap;justify-content:flex-start;gap:0 10px;padding-right:76px}
+.hs-info{flex:1;min-width:0;padding-top:2px}
+.hs-art{width:64px!important;height:64px!important;border:2px solid var(--line);border-radius:14px!important;overflow:hidden;background:var(--panel2);display:block!important}
+.hs-art .avatar-img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.inv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.islot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:96px;padding:6px 4px;text-align:center;background:var(--panel2);border:2px solid var(--line)}
+.islot b{font-size:12px;line-height:1.2}.islot small{font-size:10px;color:var(--mute)}
+.islot.on{border-color:var(--gold)}.islot.on b{color:var(--gold)}.islot .wicon{width:44px;height:44px}
+.islot.lock{opacity:.55;border-style:dashed}.islot .lk{font-size:20px;filter:grayscale(1)}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1144,9 +1155,8 @@ function pix(rows,pal,px){const h=rows.length,w=rows[0].length;let o='<svg viewB
 const flame=px=>pix(FLAME,{o:'#e0832b',y:'#f6d25a'},px);
 const snow=px=>pix(SNOW,{c:'#8fd3ef'},px);
 
-function heroArt(L,nobadge){const h=heroLook(),k=equippedTier('weapon',L)+1;
-  return '<img class="hero-img" src="assets/hero/'+h.race+'-'+h.cls+'.webp" alt="Герой" draggable="false">'
-   +(nobadge?'':'<img class="hero-wpn" src="assets/weapon/'+h.cls+'-'+k+'.webp" alt="" draggable="false">')}
+function heroArt(L){const h=heroLook();return '<img class="hero-img" src="assets/hero/'+h.race+'-'+h.cls+'.webp" alt="Герой" draggable="false">'}
+function heroAvatar(){const h=heroLook();return '<img class="avatar-img" src="assets/avatar/'+h.race+'-'+h.cls+'.webp" alt="Герой" draggable="false">'}
 function heroPick(race,cls){return '<img class="hero-img" src="assets/hero/'+race+'-'+cls+'.webp" alt="" draggable="false">'}
 function heroSVG(L){
   const t={w:equippedTier('weapon',L),a:equippedTier('armor',L),h:equippedTier('helm',L),c:equippedTier('cloak',L)};let o='';
@@ -1318,7 +1328,7 @@ function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
     +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div>'
     +'<div class="xpline">'+(full?lv.cur+' / '+lv.need+' XP · ':'')+'До уровня '+(lv.L+1)+': ещё '+(lv.need-lv.cur)+' XP</div>'
     +'<div class="streak"><span class="ic">'+flame(3)+'<span>'+esc(full?stTxt:(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь')+'</span></span>'+(full?'<span class="ic">'+snow(3)+'<span>Заморозки: '+S.streak.freezes+' из 3</span></span>':'')+'</div>'
-    +(full?'<div class="chips"><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="gear">Оружие</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
+    +(full?'<div class="chips"><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="gear">Инвентарь</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
 function sheetCamp(){const lv=levelInfo(S.xp),nx=nextUnlock(lv.L);
   return shHead('Лагерь героя')+heroCard(true)+((nx&&!S.calm)?'<p class="note">Следующая вещь: '+esc(nx.n)+' на '+nx.l+' уровне.</p>':'')+(S.calm?'':petCard()+questCard())}
 function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const wh=f.pay?'до зарплаты':'до конца месяца';
@@ -1353,7 +1363,7 @@ function viewHero(){return scene('hero','Герой','Лагерь у костр
   +'<button class="btn ghost" data-act="data">Данные и настройки</button>'}
 function heroStrip(){const lv=levelInfo(S.xp),sv=streakView();
   const days=(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь';
-  return '<section class="card herostrip" data-act="tab" data-v="hero" role="button" tabindex="0" aria-label="Открыть героя"><div class="hs-art">'+heroArt(lv.L,true)+'</div><div class="hs-info"><div class="hs-top"><b>'+esc(S.name)+'</b><span>Уровень '+lv.L+'</span></div>'
+  return '<section class="card herostrip" data-act="tab" data-v="hero" role="button" tabindex="0" aria-label="Открыть героя"><div class="hs-art">'+heroAvatar()+'</div><div class="hs-info"><div class="hs-top"><b>'+esc(S.name)+'</b><span>Уровень '+lv.L+'</span></div>'
    +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div><div class="xpline">'+esc(days)+' · ещё '+(lv.need-lv.cur)+' XP</div></div></section>'}
 function attnCard(){const t=today(),it=[];
   const g=proGap(60);if(g)it.push('Кассовый разрыв с '+fmtDate(g.date)+': не хватит около '+fmtDt(g.deficit));
@@ -1540,7 +1550,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.33.0';
+const APP_V='0.33.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1681,9 +1691,12 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
    +(f.debt?'<div class="two"><div class="field"><label for="ml">Остаток долга, ₸</label><input id="ml" class="inp" data-f="left" inputmode="decimal" value="'+esc(f.left)+'"></div><div class="field"><label for="mr">Ставка, % год</label><input id="mr" class="inp" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="0"></div></div><p class="note">Для рассрочки без процентов ставка 0. Остаток уменьшается при каждой оплате.</p>':'')
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="mandsave">Сохранить</button>'
    +(edit?'<button class="btn ghost" data-act="manddel">Удалить платёж</button>':'')}
-function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls;
-  let h=shHead('Оружие')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div><p class="note">Оружие открывается с уровнем. Нажми на открытое, чтобы взять его в руки. Прежнее можно вернуть в любой момент. У каждого класса своё оружие.</p>';
-  Object.keys(GEAR).forEach(s=>{const cur=equippedTier(s,L);h+='<div class="gear">'+GEAR[s].map((g,i)=>'<button class="g '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl"><img class="wicon" src="assets/weapon/'+cl+'-'+(i+1)+'.webp" alt="" draggable="false"><span>'+esc(g.n)+'</span></span><span>'+(i===cur?'в руках':g.l>L?'с '+g.l+' ур.':'взять')+'</span></button>').join('')+'</div>'});
+const INVSLOTS=[{id:'weapon',n:'Оружие'},{id:'armor',n:'Броня'},{id:'helm',n:'Шлем'},{id:'cloak',n:'Плащ'},{id:'ring',n:'Кольцо'},{id:'amulet',n:'Амулет'}];
+function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls,cur=equippedTier('weapon',L);
+  let h=shHead('Инвентарь')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
+   +'<div class="inv">'+INVSLOTS.map(sl=>sl.id==='weapon'?'<div class="islot on"><img class="wicon" src="assets/weapon/'+cl+'-'+(cur+1)+'.webp" alt="" draggable="false"><b>'+esc(GEAR.weapon[cur].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
+   +'<div class="slot">Оружие</div><p class="note" style="margin-top:2px">Открывается с уровнем. Нажми на открытое, чтобы взять его. Прежнее можно вернуть в любой момент. У каждого класса своё.</p>';
+  Object.keys(GEAR).forEach(s=>{h+='<div class="gear">'+GEAR[s].map((g,i)=>'<button class="g '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl"><img class="wicon" src="assets/weapon/'+cl+'-'+(i+1)+'.webp" alt="" draggable="false"><span>'+esc(g.n)+'</span></span><span>'+(i===cur?'в руках':g.l>L?'с '+g.l+' ур.':'взять')+'</span></button>').join('')+'</div>'});
   return h}
 function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
   return shHead('Облик героя')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
