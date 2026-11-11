@@ -552,9 +552,14 @@ function unlockedBetween(a,b){const out=[];Object.keys(GEAR).forEach(s=>GEAR[s].
 function nextUnlock(L){let best=null;Object.keys(GEAR).forEach(s=>GEAR[s].forEach(g=>{if(g.l>L&&(!best||g.l<best.l))best={l:g.l,n:g.n}}));return best}
 
 /* ---------- money ---------- */
-function accBal(a){let b=Number(a.bal0)||0;
-  for(const t of S.tx){if(t.type==='inc'&&t.acc===a.id)b+=t.amount;else if(t.type==='exp'&&t.acc===a.id)b-=t.amount;
-    else if(t.type==='tr'){if(t.acc===a.id)b-=t.amount;if(t.to===a.id)b+=t.amount}}return b}
+/* Счёт в валюте: остаток ведётся в его валюте (nat у записи — сумма в валюте счёта на момент записи), в тенге — по текущему курсу */
+const accCur=a=>(a&&a.cur)||'KZT';
+function natOf(t,a,second){const c=accCur(a);if(c==='KZT')return t.amount;const n=second?t.nat2:t.nat;if(n!=null)return n;
+  if(t.ocur===c&&!second)return t.oamt;const v=convert(t.amount,'KZT',c);return v==null?0:v}
+function accBalNative(a){let b=Number(a.bal0)||0;
+  for(const t of S.tx){if(t.type==='inc'&&t.acc===a.id)b+=natOf(t,a);else if(t.type==='exp'&&t.acc===a.id)b-=natOf(t,a);
+    else if(t.type==='tr'){if(t.acc===a.id)b-=natOf(t,a);if(t.to===a.id)b+=natOf(t,a,true)}}return b}
+function accBal(a){const n=accBalNative(a),c=accCur(a);if(c==='KZT')return n;const v=convert(n,c,'KZT');return v==null?0:v}
 const totalBal=()=>S.accounts.reduce((s,a)=>s+accBal(a),0);
 function dueDay(m,mk){const p=mk.split('-').map(Number);return Math.min(m.day,dim(p[0],p[1]))}
 function mandStatus(m){const mk=mkey(today());const paid=!!m.closed||!!S.paid[m.id+'|'+mk];const dd=dueDay(m,mk);const day=+today().slice(8);
@@ -588,6 +593,8 @@ function streakView(){const st=S.streak;if(!st.last)return{count:0,state:'new'};
   const missed=d-1;return st.freezes>=missed?{count:st.count,state:'frozen',missed:missed}:{count:0,state:'broken'}}
 function addTx(o){const t=today();
   const tx={id:uid(),type:o.type,amount:o.amount,cat:o.cat||null,acc:o.acc,to:o.to||null,date:o.date||t,note:(o.note||'').trim(),mid:o.mid||null,ts:Date.now()};if(o.ocur){tx.ocur=o.ocur;tx.oamt=o.oamt}
+  const nt=(acc)=>{const a=S.accounts.find(q=>q.id===acc),c=accCur(a);if(c==='KZT')return null;if(o.ocur===c)return o.oamt;const v=convert(o.amount,'KZT',c);return v==null?null:Math.round(v*100)/100};
+  {const n1=nt(o.acc);if(n1!=null)tx.nat=n1;if(o.type==='tr'&&o.to){const n2=nt(o.to);if(n2!=null)tx.nat2=n2}}
   S.tx.push(tx);
   if(o.type==='tr')return tx;
   let xp=0;const n=S.dayRec[t]||0;if(n<5){S.dayRec[t]=n+1;xp=10}
@@ -797,7 +804,7 @@ function saveTxEdit(E){const x=S.tx.find(t=>t.id===E.id);if(!x||x.type==='tr')re
   const eff=t=>t.hist?(t.type==='exp'?t.amount:-t.amount):0;
   const fix=(t,sg)=>{const a=S.accounts.find(q=>q.id===t.acc),e=eff(t);if(a&&e)a.bal0=(Number(a.bal0)||0)+sg*e};
   const sim=E.all?similarTx(x):[],key=merchKey(x.note);
-  fix(x,-1);if(x.ocur)x.oamt=oa;x.amount=amount;x.cat=E.cat;x.date=E.date;x.note=String(E.note||'').trim();x.acc=E.acc;fix(x,1);
+  fix(x,-1);if(x.ocur)x.oamt=oa;if(x.nat!=null&&x.amount>0)x.nat=Math.round(x.nat*amount/x.amount*100)/100;x.amount=amount;x.cat=E.cat;x.date=E.date;x.note=String(E.note||'').trim();x.acc=E.acc;fix(x,1);
   sim.forEach(t=>{t.cat=E.cat});
   if(E.all&&key&&x.type==='exp'){if(!S.rules)S.rules={};S.rules[key]=E.cat}
   return{ok:true,changed:sim.length+1}}
@@ -1056,14 +1063,14 @@ function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const
   let head,cls='';
   if(f.state==='broke'){head='Денег до '+(f.pay?'зарплаты':'конца месяца')+' не остаётся';cls='neg'}
   else if(f.state==='few')head='Пока мало данных для прогноза';
-  else if(f.state==='ok'){head='Хватит '+wh+', запас '+fmtCt(Math.max(0,f.diff));cls='pos'}
-  else{head='Не хватит '+wh+': не хватает '+fmtCt(-f.diff);cls='neg'}
+  else if(f.state==='ok'){head='Хватит '+wh+', запас '+fmtDt(Math.max(0,f.diff));cls='pos'}
+  else{head='Не хватит '+wh+': не хватает '+fmtDt(-f.diff);cls='neg'}
   let rows='<div class="catrow"><span>Осталось дней ('+fmtDate(f.until)+')</span><span class="amt">'+f.days+'</span></div>'
-   +'<div class="catrow"><span>Можно тратить в день</span><span class="amt">'+fmtCt(f.perDay)+'</span></div>';
-  if(f.avg!=null)rows+='<div class="catrow"><span>Обычно тратишь в день</span><span class="amt">'+fmtCt(Math.round(f.avg))+'</span></div>';
+   +'<div class="catrow"><span>Можно тратить в день</span><span class="amt">'+fmtDt(f.perDay)+'</span></div>';
+  if(f.avg!=null)rows+='<div class="catrow"><span>Обычно тратишь в день</span><span class="amt">'+fmtDt(Math.round(f.avg))+'</span></div>';
   let note='';
   if(f.state==='few')note='<p class="sub">Запиши траты хотя бы за 3 дня, и я посчитаю, на сколько тебя хватит.</p>';
-  else if(f.state==='short'&&f.runOut)note='<p class="sub">При обычных тратах денег хватит до '+fmtDate(f.runOut)+'. Чтобы дотянуть, держись в '+fmtCt(f.perDay)+' в день.</p>';
+  else if(f.state==='short'&&f.runOut)note='<p class="sub">При обычных тратах денег хватит до '+fmtDate(f.runOut)+'. Чтобы дотянуть, держись в '+fmtDt(f.perDay)+' в день.</p>';
   else if(f.state==='ok')note='<p class="sub">Прогноз по твоим тратам за последний месяц, без кредитов и переводов людям.</p>';
   return '<section class="card" id="t-fc"><div class="label">Хватит ли '+wh+'?</div><div class="fch '+cls+'">'+esc(head)+'</div>'+rows+note+(f.pay?'':'<p class="sub"><button class="fc" data-act="data">Указать день зарплаты</button></p>')+'</section>'}
 /* Скрываемые блоки главной: выбор хранится в S.hide, вернуть можно в «Данные и настройки» */
@@ -1081,7 +1088,7 @@ function viewHome(){
   const todayExp=todayAll.filter(x=>x.type==='exp'),tsum=todayExp.reduce((s,x)=>s+x.amount,0);
   const hasExp=todayExp.length>0,nsDone=!!S.noSpend[t];
   const up=S.mand.filter(m=>!mandStatus(m).paid).sort((a,b)=>mandStatus(a).dd-mandStatus(b).dd).slice(0,3);
-  const fsub='На счетах '+fmtCt(totalBal())+(depBal()>0?' (из них на депозитах '+fmt(depBal())+')':'')+(unpaidSum()>0?', минус платежи месяца '+fmt(unpaidSum()):'')+(reserved()>0?', минус отложенное в целях '+fmt(reserved()):'')+'.';
+  const fsub='На счетах '+fmtDt(totalBal())+(depBal()>0?' (из них на депозитах '+fmt(depBal())+')':'')+(unpaidSum()>0?', минус платежи месяца '+fmt(unpaidSum()):'')+(reserved()>0?', минус отложенное в целях '+fmt(reserved()):'')+'.';
   const rl=repeatList('exp');
   const quick=rl.length?'<div class="label" style="margin-top:12px">Быстро, одним касанием</div><div class="qgrid">'+rl.map((r,i)=>{const c=catInfo(r.cat);return '<button class="qk" data-act="quick" data-v="'+i+'"><span class="qi">'+c.icon+'</span><span class="qn">'+esc(r.note||c.name)+'</span><span class="qa">'+(r.ocur?fmtCur(r.oamt,r.ocur):fmt(r.amount))+'</span></button>'}).join('')+'</div>'
     :'<p class="sub">Когда накопятся записи, здесь появятся привычные траты: одно касание, и запись готова.</p>';
@@ -1090,7 +1097,7 @@ function viewHome(){
     :'<p>'+(nsDone?'Трат нет. Отличный день.':'Пока ничего не записано.')+'</p>';
   const upd=UI.upd?'<section class="card updc"><p>Вышла новая версия '+esc(UI.upd)+'.</p><button class="btn small" data-act="reload">Обновить</button></section>':'';
   return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn())+upd
-  +'<section class="card" id="t-free"><div class="label">Банк сейчас</div><div class="big '+(fm<0?'neg':'')+'" title="'+fmt(fm)+'">'+fmtC(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'+hb('forecast',forecastCard())
+  +'<section class="card" id="t-free"><div class="label">Банк сейчас</div><div class="big '+(fm<0?'neg':'')+'" title="'+fmt(fm)+'">'+fmtD(fm)+'</div><p class="sub">'+esc(fsub)+'</p></section>'+hb('forecast',forecastCard())
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
     +quick+undo
     +'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button></section>'
@@ -1152,6 +1159,10 @@ function goalsSection(){const a=activeGoals(),c=S.goals.filter(g=>g.closed);
 function fmtDate(d){const dt=parseD(d);return dt.getDate()+' '+MG[dt.getMonth()]}
 function dayLabel(d){const t=today();return d===t?'Сегодня':d===addDays(t,-1)?'Вчера':fmtDate(d)+(d.slice(0,4)!==t.slice(0,4)?' '+d.slice(0,4):'')}
 function accName(id){const a=S.accounts.find(x=>x.id===id);return a?a.name:'Счёт удалён'}
+/* Главная валюта показа: «Банк», итог кошелька, итоги «Анализа» и прогноз */
+const dCur=()=>S.dispCur&&S.dispCur!=='KZT'&&rateOf(S.dispCur)?S.dispCur:'KZT';
+function fmtD(n,lim){const c=dCur();if(c==='KZT')return fmtC(n,lim);return fmtCur(convert(n,'KZT',c),c)}
+function fmtDt(n,lim){const c=dCur();if(c==='KZT')return fmtCt(n,lim);return fmtCur(convert(n,'KZT',c),c)}
 function curPicker(F){if(!F.curOpen)return '';return '<div class="fchips curpick">'+CUR.filter(c=>c[0]==='KZT'||rateOf(c[0])).map(c=>'<button class="fc'+(F.cur===c[0]?' on':'')+'" data-act="curset" data-v="'+c[0]+'">'+c[3]+' '+c[0]+'</button>').join('')
   +(CUR.some(c=>c[0]!=='KZT'&&!rateOf(c[0]))?'<span class="sub" style="align-self:center">другие валюты появятся, когда загрузятся курсы</span>':'')+'</div>'}
 function curHint(F){if(!F||F.cur==='KZT')return '';const a=num(F.amount),r=convert(1,F.cur,'KZT');if(r==null)return 'Нет курса для '+F.cur+'. Подключись к интернету.';
@@ -1215,16 +1226,16 @@ function viewStats(){
   return scene('stats','Анализ','Башня звездочёта','')
   +'<div class="fchips">'+pr.map(p=>'<button class="fc '+(UI.period===p[0]?'on':'')+'" data-act="period" data-v="'+p[0]+'">'+p[1]+'</button>').join('')+'</div>'
   +mnav
-  +hb('s_kpi','<section class="card"><div class="kpis"><div class="kpi"><span class="label">Доходы</span><b class="pos">'+fmtC(st.inc,1e6)+'</b></div><div class="kpi"><span class="label">Расходы</span><b class="neg">'+fmtC(st.exp,1e6)+'</b>'+coreExpSub(st)+'</div>'
-    +'<div class="kpi"><span class="label">Накоплено</span><b class="'+(net<0?'neg':'pos')+'">'+fmtC(net,1e6)+'</b></div><div class="kpi"><span class="label">Дней без трат</span><b>'+st.ns+'</b></div></div></section>')
+  +hb('s_kpi','<section class="card"><div class="kpis"><div class="kpi"><span class="label">Доходы</span><b class="pos">'+fmtD(st.inc,1e6)+'</b></div><div class="kpi"><span class="label">Расходы</span><b class="neg">'+fmtD(st.exp,1e6)+'</b>'+coreExpSub(st)+'</div>'
+    +'<div class="kpi"><span class="label">Накоплено</span><b class="'+(net<0?'neg':'pos')+'">'+fmtD(net,1e6)+'</b></div><div class="kpi"><span class="label">Дней без трат</span><b>'+st.ns+'</b></div></div></section>')
   +hb('s_chart','<section class="card"><h2>Доходы и расходы</h2>'+chartPart+'</section>')
   +hb('s_cats','<section class="card"><h2>Куда уходят деньги</h2>'+(cats.length?catHtml:'<p class="empty">Расходов за период нет.</p>')+'</section>')+hb('s_days',days)+hb('s_hab',habitsCard())+hb('s_best',best)}
 function viewWallet(){
   const accs=S.accounts.map(a=>{const ty=ACC_TYPES[a.type]||ACC_TYPES.card;const b=accBal(a);
-    return '<button class="row" data-act="accedit" data-v="'+a.id+'"><span class="tile">'+ty[1]+'</span><span class="mid"><div class="t1">'+esc(a.name)+'</div><div class="t2">'+ty[0]+'</div></span><span class="amt '+(b<0?'neg':'')+'">'+fmtCt(b)+'</span></button>'}).join('');
+    return '<button class="row" data-act="accedit" data-v="'+a.id+'"><span class="tile">'+ty[1]+'</span><span class="mid"><div class="t1">'+esc(a.name)+'</div><div class="t2">'+ty[0]+'</div></span><span class="amt '+(b<0?'neg':'')+'">'+(accCur(a)==='KZT'?fmtCt(b):fmtCur(accBalNative(a),accCur(a))+'<small class="amt2">≈ '+fmtCt(b)+'</small>')+'</span></button>'}).join('');
   const md=S.mand.map(m=>'<div style="display:flex;gap:8px;align-items:center">'+'<div style="flex:1;min-width:0">'+mandRow(m,true)+'</div></div>').join('');
-  return scene('wallet','Кошелёк','Сокровищница',fmtCt(totalBal(),1e6))
-  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'" title="'+fmt(totalBal())+'">'+fmtC(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
+  return scene('wallet','Кошелёк','Сокровищница',fmtDt(totalBal(),1e6))
+  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'" title="'+fmt(totalBal())+'">'+fmtD(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
   +'<section class="card" id="t-acc"><h2>Счета</h2><div class="list">'+accs+'</div>'+(S.accounts.length>1?'<div class="fchips" style="margin-top:10px">'+(S.accounts.some(a=>a.type==='deposit')?'<button class="fc" data-act="trdep" data-v="out">Снять с депозита</button><button class="fc" data-act="trdep" data-v="in">Положить на депозит</button>':'')+'<button class="fc" data-act="trdep" data-v="any">Перевод между счетами</button></div>':'')+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
   +hb('w_fx',fxCard())
   +hb('w_hist',histWalletCard())
@@ -1256,7 +1267,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.26.0';
+const APP_V='0.27.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1381,7 +1392,8 @@ function sheetAcc(){const f=UI.form;const edit=!!UI.sheet.id;
   return shHead(edit?'Счёт':'Новый счёт')
    +'<div class="field"><label for="an">Название</label><input id="an" class="inp" data-f="name" maxlength="24" value="'+esc(f.name)+'" placeholder="Например, Kaspi Gold"></div>'
    +'<div class="field"><label for="at">Тип</label><select id="at" class="inp" data-f="type">'+Object.keys(ACC_TYPES).map(k=>'<option value="'+k+'"'+(f.type===k?' selected':'')+'>'+ACC_TYPES[k][0]+'</option>').join('')+'</select></div>'
-   +'<div class="field"><label for="ab">'+(edit?'Сколько сейчас на счёте':'Сколько сейчас на счёте')+'</label><input id="ab" class="inp" data-f="bal" inputmode="decimal" value="'+esc(f.bal)+'" placeholder="0"></div>'
+   +'<div class="field"><label for="ac">Валюта счёта</label><select id="ac" class="inp" data-f="cur" data-live="acccur">'+CUR.filter(c=>c[0]==='KZT'||rateOf(c[0])||c[0]===f.cur).map(c=>'<option value="'+c[0]+'"'+((f.cur||'KZT')===c[0]?' selected':'')+'>'+c[3]+' '+c[0]+' · '+c[2]+'</option>').join('')+'</select></div>'
+   +'<div class="field"><label for="ab">Сколько сейчас на счёте, '+curInfo(f.cur||'KZT').sym+'</label><input id="ab" class="inp" data-f="bal" inputmode="decimal" value="'+esc(f.bal)+'" placeholder="0"></div>'
    +(edit?'<p class="note">Поменяешь сумму, приложение подгонит остаток под реальный.</p>':'')
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="accsave">Сохранить</button>'
    +(edit?(UI.confirm==='acc'?'<p class="err">Удалить счёт? Это возможно, только если по нему нет записей.</p><button class="btn danger" data-act="accdel">Да, удалить</button>':'<button class="btn ghost" data-act="accdel">Удалить счёт</button>'):'')}
@@ -1433,6 +1445,7 @@ function sheetData(){const f=UI.form;
    +grp('Профиль','<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><div class="field"><label for="dd">День зарплаты</label><input id="dd" class="inp" data-f="payday" inputmode="numeric" maxlength="2" value="'+esc(f.payday||'')+'" placeholder="число, пусто = конец месяца"></div><button class="btn small" data-act="namesave">Сохранить</button>')
    +grp('Удобство',sw('lefty',S.lefty,'Я левша','свайп и кнопки «скрыть» под левую руку')+sw('calmtoggle',S.calm,'Спокойный режим','без анимаций, звуков и игровых окон')
      +'<div class="sseg" role="radiogroup" aria-label="Эффекты при записи"><span class="segl">Эффекты при записи</span><div class="segb">'+[['full','Полные'],['soft','Мягкие'],['off','Выкл']].map(k=>'<button class="'+(fxv===k[0]?'on':'')+'" role="radio" aria-checked="'+(fxv===k[0])+'" data-act="fx" data-v="'+k[0]+'">'+k[1]+'</button>').join('')+'</div></div>')
+   +grp('Валюта показа','<div class="sseg"><span class="segl">Показывать «Банк», итоги и прогноз в</span><div class="segb curseg">'+CUR.filter(c=>c[0]==='KZT'||rateOf(c[0])).slice(0,6).map(c=>'<button class="'+(dCur()===c[0]?'on':'')+'" data-act="dispcur" data-v="'+c[0]+'">'+c[1]+'</button>').join('')+'</div><small class="sub">Записи и счета остаются в своей валюте.</small></div>')
    +grp('Звук',sw('sfxtoggle',S.sound.sfx,'Звуки')+sw('musictoggle',S.sound.music,'Музыка')+'<div class="field"><label for="dv">Громкость</label><input id="dv" type="range" min="0" max="100" value="'+Math.round((S.sound.vol==null?0.6:S.sound.vol)*100)+'" data-snd="vol"></div>')
    +grp('Данные','<p class="hl">Данные хранятся в твоём Telegram и на этом телефоне. Раз в пару недель делай копию.</p><button class="btn small" data-act="copy">Скопировать копию</button>'
      +'<details class="dt"><summary>Показать текст копии</summary><textarea id="dx" class="inp" readonly>'+esc(JSON.stringify(S))+'</textarea></details>'
@@ -1540,7 +1553,8 @@ function renderSheet(){const L=$('#layer');const sh=UI.sheet;
 /* ---------- actions ---------- */
 function newF(type){const acc=S.accounts.find(a=>a.id===S.lastAcc)?S.lastAcc:S.accounts[0].id;
   const to=(S.accounts.find(a=>a.id!==acc)||{}).id||null;
-  return{type:type||'exp',amount:'',cur:(S.lastCur&&(S.lastCur==='KZT'||rateOf(S.lastCur)))?S.lastCur:'KZT',curOpen:false,cat:null,acc:acc,to:to,date:today(),note:'',more:false,custom:false,cname:'',cicon:'',err:''}}
+  const ac=accCur(S.accounts.find(a=>a.id===acc));
+  return{type:type||'exp',amount:'',cur:ac!=='KZT'&&rateOf(ac)?ac:(S.lastCur&&(S.lastCur==='KZT'||rateOf(S.lastCur)))?S.lastCur:'KZT',curOpen:false,cat:null,acc:acc,to:to,date:today(),note:'',more:false,custom:false,cname:'',cicon:'',err:''}}
 function saveTxForm(){const F=UI.F;const oamt=num(F.amount),cur=F.cur||'KZT';
   if(!(oamt>0)){F.err='Введите сумму';return renderSheet()}
   const amount=cur==='KZT'?oamt:convert(oamt,cur,'KZT');
@@ -1552,11 +1566,14 @@ function saveTxForm(){const F=UI.F;const oamt=num(F.amount),cur=F.cur||'KZT';
   addTx({type:F.type,amount:Math.round(amount*100)/100,cat:F.cat,acc:F.acc,to:F.type==='tr'?F.to:null,date:F.date,note:F.note,ocur:cur==='KZT'?null:cur,oamt:cur==='KZT'?null:oamt});
   S.lastAcc=F.acc;S.lastCur=cur;UI.sheet=null;commit()}
 function openAcc(id){const a=S.accounts.find(x=>x.id===id);
-  UI.form=a?{name:a.name,type:a.type,bal:String(Math.round(accBal(a)*100)/100),err:''}:{name:'',type:'card',bal:'',err:''};openSheet('acc',{id:id||null})}
+  UI.form=a?{name:a.name,type:a.type,cur:accCur(a),bal:String(Math.round(accBalNative(a)*100)/100),err:''}:{name:'',type:'card',cur:'KZT',bal:'',err:''};openSheet('acc',{id:id||null})}
 function saveAcc(){const f=UI.form,id=UI.sheet.id;if(!f.name.trim()){f.err='Введите название';return renderSheet()}
   const bal=num(f.bal);if(Math.abs(bal)>MAXAMT){f.err='Слишком большой остаток: максимум 999 млрд ₸';return renderSheet()}
-  if(id){const a=S.accounts.find(x=>x.id===id);const cur=accBal(a);a.bal0=(Number(a.bal0)||0)+(bal-cur);a.name=f.name.trim();a.type=f.type}
-  else S.accounts.push({id:uid(),name:f.name.trim(),type:f.type,bal0:bal});
+  const fc=f.cur||'KZT';if(fc!=='KZT'&&!rateOf(fc)){f.err='Нет курса '+fc+'. Подключись к интернету';return renderSheet()}
+  if(id){const a=S.accounts.find(x=>x.id===id);const used=S.tx.some(t=>t.acc===id||t.to===id);
+    if(fc!==accCur(a)){if(used){f.err='Валюту можно сменить, только пока по счёту нет записей';return renderSheet()}a.cur=fc==='KZT'?undefined:fc;if(!a.cur)delete a.cur}
+    const cur=accBalNative(a);a.bal0=(Number(a.bal0)||0)+(bal-cur);a.name=f.name.trim();a.type=f.type}
+  else{const na={id:uid(),name:f.name.trim(),type:f.type,bal0:bal};if(fc!=='KZT')na.cur=fc;S.accounts.push(na)}
   UI.sheet=null;commit()}
 function delAcc(){const id=UI.sheet.id;
   if(UI.confirm!=='acc'){UI.confirm='acc';return renderSheet()}
@@ -1653,6 +1670,7 @@ function act(a,el){const v=el.dataset.v;
     case 'ratesupd':toast('Обновляю курсы…');fetchRates(true).then(ok=>toast(ok?'Курсы обновлены':'Не удалось: нет интернета'));break;
     case 'curopen':if(UI.F){UI.F.curOpen=!UI.F.curOpen;if(UI.F.curOpen)fetchRates();renderSheet()}break;
     case 'curset':if(UI.F&&(v==='KZT'||rateOf(v))){UI.F.cur=v;UI.F.curOpen=false;renderSheet()}break;
+    case 'dispcur':S.dispCur=v==='KZT'?undefined:v;if(!S.dispCur)delete S.dispCur;save();render();renderSheet();break;
     case 'lefty':S.lefty=!S.lefty;save();render();renderSheet();break;
     case 'calmtoggle':S.calm=!S.calm;save();musicSync();render();renderSheet();break;
     case 'sfxtoggle':S.sound.sfx=!S.sound.sfx;save();renderSheet();break;
@@ -1720,7 +1738,7 @@ document.addEventListener('change',e=>{const t=e.target;
   if(t.dataset&&t.dataset.mon){const keys=monthKeys();UI.mon=t.value===keys[keys.length-1]?null:t.value;UI.day=null;render();return}
   if(t.dataset&&t.dataset.mk&&UI.form&&UI.form.map){if(t.value==='__new'){UI.form.newFor=t.dataset.mk;UI.form.ncicon='';UI.form.ncname='';renderSheet();return}UI.form.map[t.dataset.mk]=t.value;return}
   if(t.dataset&&t.dataset.snd==='vol'){playSfx('coin');return}
-  if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value;if(t.dataset.live==='conv'&&t.tagName==='SELECT')renderSheet()});
+  if(!t.dataset||!t.dataset.f)return;const f=curF();f[t.dataset.f]=t.value;if((t.dataset.live==='conv'||t.dataset.live==='acccur')&&t.tagName==='SELECT')renderSheet()});
 
 function convLive(){try{const f=UI.form,el=document.getElementById('convres');if(!el)return;const a=num(f.amount),r=a>0?convert(a,f.from,f.to):null;
   el.innerHTML=r==null?(convert(1,f.from,f.to)==null?'Нет курса. Подключись к интернету.':'Введи сумму'):'<b>'+fmtCur(r,f.to)+'</b>'}catch(e){}}
