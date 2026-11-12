@@ -20,4 +20,5 @@ act('gear');act('hint','gear');chk('hint over sheet',run("UI.sheet.kind")==='hin
 act('hintok');chk('back to inventory',run("UI.sheet&&UI.sheet.kind")==='gear');
 chk('unknown key no button',run("hq('nope')")==='');
 chk('tour mentions ?',run("TOURS.some(t=>/\\{y \\?\\}/.test(t.t))"));
+chk('hint class does not clash with quest rows',run("hq('pro')").indexOf('class="qm"')>0&&run("hq('pro')").indexOf('class="q"')<0);
 console.log(bad?'FAILED '+bad:'OK all');
