@@ -515,6 +515,10 @@ button,[data-act]{cursor:pointer}
 .catsel{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;text-align:left;border-radius:18px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.02));color:inherit;font:inherit;cursor:pointer}
 .catsel .ci{font-size:20px}.catsel .chev{margin-left:auto;color:var(--mute)}
 .catsel:active{transform:scale(.98)}
+/* подсказки «?» */
+.q{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:8px;padding:0;border:1px solid var(--line);border-radius:50%;background:none;color:var(--mute);font:12px var(--num);cursor:pointer;vertical-align:middle;position:relative}
+.q::after{content:'';position:absolute;inset:-10px}
+.q:hover,.q:focus{color:#fff;border-color:var(--gold-d,#a07a2a)}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1088,8 +1092,8 @@ function proRow(p,due){const c=catInfo(p.cat),inc=p.type==='inc';
 function proCard(){if(!S.accounts.length)return '';const t=today(),w=proWait(),due=w.filter(p=>p.date<=t),soon=w.filter(p=>p.date>t);
   const end=payHorizon(t).date,ev=proEvents(t,end),si=ev.filter(p=>p.type==='inc').reduce((q,p)=>q+p.amount,0),se=ev.filter(p=>p.type==='exp').reduce((q,p)=>q+p.amount,0);
   const pst=proStats();
-  let h='<section class="card" id="t-pro"><div class="label">Пророчества</div>'+(pst.n?'<p class="sub" style="margin:0 0 6px">Меткость '+pst.acc+'% · '+proRank(pst)+'</p>':'');
-  if(!w.length)h+='<p>Запиши, что ждёшь: зарплату, платёж, большую покупку. Когда придёт срок, я сверю с жизнью и покажу, где ты ошибся.</p>';
+  let h='<section class="card" id="t-pro"><div class="label">Пророчества'+hq('pro')+'</div>'+(pst.n?'<p class="sub" style="margin:0 0 6px">Меткость '+pst.acc+'% · '+proRank(pst)+'</p>':'');
+  if(!w.length)h+='<p>Запиши, что ждёшь: зарплату, платёж, покупку.</p>';
   else{const g=proGap(60);
     if(ev.length){const sc=proScen(end),bal=proBalanceAt(end);
       h+='<div class="catrow"><span>Ждёшь до '+fmtDate(end)+'</span><span class="amt"><span class="pos">+'+fmtDt(si)+'</span> <span class="neg">−'+fmtDt(se)+'</span></span></div>'
@@ -1372,10 +1376,10 @@ function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const
    +'<div class="catrow"><span>Можно тратить в день</span><span class="amt">'+fmtDt(f.perDay)+'</span></div>';
   if(f.avg!=null)rows+='<div class="catrow"><span>Обычно тратишь в день</span><span class="amt">'+fmtDt(Math.round(f.avg))+'</span></div>';
   let note='';
-  if(f.state==='few')note='<p class="sub">Запиши траты хотя бы за 3 дня, и я посчитаю, на сколько тебя хватит.</p>';
-  else if(f.state==='short'&&f.runOut)note='<p class="sub">При обычных тратах денег хватит до '+fmtDate(f.runOut)+'. Чтобы дотянуть, держись в '+fmtDt(f.perDay)+' в день.</p>';
-  else if(f.state==='ok')note='<p class="sub">Прогноз по твоим тратам за последний месяц, без кредитов и переводов людям.</p>';
-  return '<section class="card" id="t-fc"><div class="label">Хватит ли '+wh+'?</div><div class="fch '+cls+'">'+esc(head)+'</div>'+rows+note+(f.pay?'':'<p class="sub"><button class="fc" data-act="data">Указать день зарплаты</button></p>')+'</section>'}
+  if(f.state==='few')note='<p class="sub">Запиши траты за 3 дня, и появится прогноз.</p>';
+  else if(f.state==='short'&&f.runOut)note='<p class="sub">Хватит до '+fmtDate(f.runOut)+'. Держись в '+fmtDt(f.perDay)+' в день.</p>';
+  else if(f.state==='ok')note='<p class="sub">Прогноз по тратам за месяц.</p>';
+  return '<section class="card" id="t-fc"><div class="label">Хватит ли '+wh+'?'+hq('forecast')+'</div><div class="fch '+cls+'">'+esc(head)+'</div>'+rows+note+(f.pay?'':'<p class="sub"><button class="fc" data-act="data">Указать день зарплаты</button></p>')+'</section>'}
 /* Скрываемые блоки главной: выбор хранится в S.hide, вернуть можно в «Данные и настройки» */
 const HIDEABLE={forecast:'План: прогноз «хватит ли»',pro:'План: пророчества',w_goals:'План: цели и копилки',w_debt:'План: долги',w_mand:'План: платежи',today:'Главная: сегодня',hero:'Главная: герой',quest:'Герой: задания',w_chr:'Герой: сокровищница',
   s_kpi:'Анализ: итоги периода',s_chart:'Анализ: доходы и расходы',s_cats:'Анализ: куда уходят деньги',s_days:'Анализ: по дням',s_hab:'Анализ: привычки',s_best:'Анализ: рекорды',
@@ -1387,7 +1391,7 @@ function hb(key,html){if(!html)return '';const nm=(HIDEABLE[key]||'').replace(/^
 function hiddenCard(){return ''}
 function viewPlan(){return scene('plan','План','Башня предсказаний',fmtDate(today()))
   +hb('forecast',forecastCard())+hb('pro',proCard())+hb('w_goals',goalsSection())+hb('w_debt',debtCard())
-  +hb('w_mand','<section class="card" id="t-mand"><h2>Обязательные платежи</h2>'+(S.mand.filter(m=>!m.debt).length?'<div class="list">'+S.mand.filter(m=>!m.debt).map(m=>'<div>'+mandRow(m,true)+'<div style="padding:0 0 8px"><button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки, кредит. Приложение посчитает, сколько денег у тебя действительно свободно.</p>')
+  +hb('w_mand','<section class="card" id="t-mand"><h2>Обязательные платежи'+hq('mand')+'</h2>'+(S.mand.filter(m=>!m.debt).length?'<div class="list">'+S.mand.filter(m=>!m.debt).map(m=>'<div>'+mandRow(m,true)+'<div style="padding:0 0 8px"><button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки.</p>')
     +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="mandnew">Добавить платёж</button></section>')}
 function viewHero(){return scene('hero','Герой','Лагерь у костра',fmtDate(today()))
   +heroCard(true)+(S.calm?'':petCard())+(S.calm?'':hb('quest',questCard()))+hb('w_chr',chronicleCard())+backupCard()
@@ -1420,12 +1424,12 @@ function viewHome(){
   const fc=forecast(),perDay=(fc.state!=='broke'&&fc.perDay>0)?'<div class="catrow dayrow"><span>Можно тратить в день</span><span class="amt">'+fmtDt(fc.perDay)+'</span></div><p class="sub dayto">до '+fmtDate(fc.until)+(fc.pay?', до зарплаты':'')+'</p>':'';
   const fresh=!S.tx.length;
   return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn())+upd
-  +'<section class="card" id="t-free"><div class="label">Банк сейчас</div><div class="big '+(fm<0?'neg':'')+'" title="'+fmt(fm)+'">'+fmtD(fm)+'</div>'+perDay+'<p class="sub">'+esc(fsub)+'</p></section>'
+  +'<section class="card" id="t-free"><div class="label">Банк сейчас'+hq('bank')+'</div><div class="big '+(fm<0?'neg':'')+'" title="'+fmt(fm)+'">'+fmtD(fm)+'</div>'+perDay+'<p class="sub">'+esc(fsub)+'</p></section>'
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
-    +(fresh?'<p class="sub">Запиши первую трату или доход. Остальное откроется по мере использования.</p>':quick)+undo
+    +(fresh?'<p class="sub">Запиши первую операцию.</p>':quick)+undo
     +(fresh?'':'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button>')+'</section>'
   +attnCard()
-  +(fresh?'':hb('today','<section class="card"><h2>Сегодня'+(hasExp?': '+fmt(tsum):'')+'</h2>'+today_+'</section>')+hb('hero',heroStrip()))}
+  +(fresh?'':hb('today','<section class="card"><h2>Сегодня'+(hasExp?': '+fmt(tsum):'')+hq('today')+'</h2>'+today_+'</section>')+hb('hero',heroStrip()))}
 function petCard(){const p=petInfo(),pet=S.pet||{food:0,xp:0,name:'Желе'};
   const mt={happy:'Сыт и доволен.',ok:'Пока не голоден.',hungry:'Проголодался.'}[p.mood];
   const prog=p.next?Math.round(p.cur/p.span*100):100;
@@ -1447,17 +1451,17 @@ function goalNote(g,i){if(i.done)return 'Нужная сумма накопле�
 function goalRow(g){const i=goalInfo(g);
   return '<button class="row" data-act="goalopen" data-v="'+g.id+'"><span class="tile">'+esc(g.icon)+'</span><span class="mid"><div class="t1">'+esc(g.name)+'</div><div class="t2">'+fmt(i.saved)+' из '+fmt(g.target)+' · '+i.pct+'%</div><div class="bar thin"><i style="width:'+i.pct+'%"></i></div></span></button>'}
 function goalCard(){const g=mainGoal();if(!g)return '';const i=goalInfo(g);
-  return '<section class="card"><h2>Ближайшая цель</h2><div class="list">'+goalRow(g)+'</div><p class="sub">'+esc(goalNote(g,i))+'</p><button class="btn small" style="margin-top:10px" data-act="contribopen" data-v="'+g.id+'">Пополнить</button></section>'}
+  return '<section class="card"><h2>Ближайшая цель'+hq('goal')+'</h2><div class="list">'+goalRow(g)+'</div><p class="sub">'+esc(goalNote(g,i))+'</p><button class="btn small" style="margin-top:10px" data-act="contribopen" data-v="'+g.id+'">Пополнить</button></section>'}
 function questCard(){if(S.questAll||S.questHidden)return '';const done=QUEST.filter(q=>S.quest[q[0]]).length;
   const go={tx:'add',mand:'mandnew',goal:'goalnew',contrib:'qcontrib',gear:'gear'};
-  return '<section class="card" id="t-quest"><h2>Путь новичка: задания</h2><p class="sub" style="margin:-4px 0 8px">Пройдено '+done+' из '+QUEST.length+'. Каждое задание учит пользоваться приложением и даёт опыт: +15 XP за шаг, +30 XP за все вместе.</p>'
+  return '<section class="card" id="t-quest"><h2>Путь новичка: задания'+hq('quest')+'</h2><p class="sub" style="margin:-4px 0 8px">Пройдено '+done+' из '+QUEST.length+'.</p>'
    +QUEST.map(q=>{const d=!!S.quest[q[0]];return '<button class="q'+(d?' done':'')+'" data-act="'+go[q[0]]+'"'+(d?' disabled':'')+'><span class="ck">'+(d?'✓':'')+'</span><span class="qt">'+esc(q[1])+'</span><span class="qxp">'+(d?'готово':'+15 XP')+'</span></button>'}).join('')
    +'<div class="chips" style="margin-top:10px"><button class="btn ghost small" data-act="tour">Показать обучение</button><button class="btn ghost small" data-act="questhide">Скрыть</button></div></section>'}
 function backupCard(){if(S.tx.length<5)return '';if(S.lastBackup&&dayDiff(S.lastBackup,today())<14)return '';
-  return '<section class="card"><h2>Копия данных</h2><p class="sub" style="margin-top:0">'+(tgCloud()?'Данные сохраняются в твоём Telegram, но копия в заметках не помешает. ':'Данные хранятся только на этом устройстве. ')+(S.lastBackup?'Последняя копия была '+fmtDate(S.lastBackup)+'.':'Копии ещё не было.')+' Сохрани её в заметки, чтобы ничего не потерять.</p><button class="btn ghost small" style="margin-top:10px" data-act="data">Сделать копию</button></section>'}
+  return '<section class="card"><h2>Копия данных'+hq('backup')+'</h2><p class="sub" style="margin-top:0">'+(S.lastBackup?'Последняя копия: '+fmtDate(S.lastBackup)+'.':'Копии ещё не было.')+'</p><button class="btn ghost small" style="margin-top:10px" data-act="data">Сделать копию</button></section>'}
 function closedRow(g){return '<button class="row" data-act="goalopen" data-v="'+g.id+'"><span class="tile">'+esc(g.icon)+'</span><span class="mid"><div class="t1">'+esc(g.name)+'</div><div class="t2">Куплено '+fmtDate(g.closedOn||today())+'</div></span><span class="amt">'+fmt(g.spent||0)+'</span></button>'}
 function goalsSection(){const a=activeGoals(),c=S.goals.filter(g=>g.closed);
-  return '<section class="card" id="t-goals"><h2>Цели и копилки</h2>'+(a.length?'<div class="list">'+a.map(goalRow).join('')+'</div>':'<p class="note">Копилка на телефон, отпуск или подушку безопасности. Отложенные деньги не считаются свободными.</p>')
+  return '<section class="card" id="t-goals"><h2>Цели и копилки'+hq('goals')+'</h2>'+(a.length?'<div class="list">'+a.map(goalRow).join('')+'</div>':'<p class="note">Телефон, отпуск, подушка.</p>')
    +(reserved()>0?'<p class="sub">Отложено в целях: '+fmt(reserved())+'</p>':'')
    +(c.length?'<div class="label" style="margin-top:12px">Куплено</div><div class="list">'+c.slice().reverse().slice(0,5).map(closedRow).join('')+'</div>':'')
    +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="goalnew">Новая цель</button></section>'}
@@ -1517,7 +1521,7 @@ function viewStats(){
   const mr=monthRecords();let best='';
   if(mr.length>=2){const worst=mr.slice().sort((a,b)=>b.exp-a.exp)[0];const top=mr.slice().sort((a,b)=>(b.inc-b.exp)-(a.inc-a.exp))[0];
     const nm=k=>MF[+k.slice(5)-1]+' '+k.slice(0,4);
-    best='<section class="card"><h2>Рекорды по месяцам</h2><div class="kpis"><div class="kpi"><span class="label">Самый затратный</span><b>'+nm(worst.k)+'</b><span class="sub">'+fmt(worst.exp)+'</span></div>'
+    best='<section class="card"><h2>Рекорды по месяцам'+hq('records')+'</h2><div class="kpis"><div class="kpi"><span class="label">Самый затратный</span><b>'+nm(worst.k)+'</b><span class="sub">'+fmt(worst.exp)+'</span></div>'
       +'<div class="kpi"><span class="label">Лучший по накоплению</span><b>'+nm(top.k)+'</b><span class="sub">'+fmt(top.inc-top.exp)+'</span></div></div></section>'}
   const chartPart=st.rec||st.ns?'<div style="overflow-x:auto">'+chartSVG(st)+'</div><div class="legend"><span><i style="background:var(--inc)"></i>Доходы</span><span><i style="background:var(--exp)"></i>Расходы</span></div>':'<p class="empty">За этот период записей нет.</p>';
   let mnav='',days='';
@@ -1526,7 +1530,7 @@ function viewStats(){
       +'<select class="inp" data-mon="1" aria-label="Месяц">'+keys.slice().reverse().map(k=>'<option value="'+k+'"'+(k===mk?' selected':'')+'>'+MF[+k.slice(5)-1]+' '+k.slice(0,4)+'</option>').join('')+'</select>'
       +'<button class="btn ghost small" data-act="monnext"'+(ix>=keys.length-1?' disabled':'')+' aria-label="Следующий месяц">›</button></div>';
     const ds=dayStats(mk);
-    days='<section class="card"><h2>По дням</h2>'+(ds.length?'<div class="list">'+ds.map(d=>{const open=UI.day===d.date;
+    days='<section class="card"><h2>По дням'+hq('days')+'</h2>'+(ds.length?'<div class="list">'+ds.map(d=>{const open=UI.day===d.date;
       const rows=open?S.tx.filter(x=>x.date===d.date).sort((a,b)=>b.ts-a.ts).map(txRow).join(''):'';
       return '<div><button class="row" data-act="statday" data-v="'+d.date+'" aria-expanded="'+open+'"><span class="tile">'+parseD(d.date).getDate()+'</span><span class="mid"><div class="t1">'+dayLabel(d.date)+', '+WD[parseD(d.date).getDay()]+'</div><div class="t2">'+d.n+' '+plural(d.n,['запись','записи','записей'])+(d.inc>0?' · доход '+fmt(d.inc):'')+'</div></span><span class="amt neg">'+(d.exp>0?'−'+fmt(d.exp):'')+'</span></button>'+(open?'<div class="list dayin">'+rows+'</div>':'')+'</div>'}).join('')+'</div>':'<p class="empty">В этом месяце записей нет.</p>')+'</section>'}
   return scene('stats','Анализ','Башня звездочёта','')
@@ -1534,22 +1538,22 @@ function viewStats(){
   +mnav
   +hb('s_kpi','<section class="card"><div class="kpis"><div class="kpi"><span class="label">Доходы</span><b class="pos">'+fmtD(st.inc,1e6)+'</b></div><div class="kpi"><span class="label">Расходы</span><b class="neg">'+fmtD(st.exp,1e6)+'</b>'+coreExpSub(st)+'</div>'
     +'<div class="kpi"><span class="label">Накоплено</span><b class="'+(net<0?'neg':'pos')+'">'+fmtD(net,1e6)+'</b></div><div class="kpi"><span class="label">Дней без трат</span><b>'+st.ns+'</b></div></div></section>')
-  +hb('s_chart','<section class="card"><h2>Доходы и расходы</h2>'+chartPart+'</section>')
-  +hb('s_cats','<section class="card"><h2>Куда уходят деньги</h2>'+(cats.length?catHtml:'<p class="empty">Расходов за период нет.</p>')+'</section>')+hb('s_days',days)+hb('s_hab',habitsCard())+hb('s_best',best)}
+  +hb('s_chart','<section class="card"><h2>Доходы и расходы'+hq('chart')+'</h2>'+chartPart+'</section>')
+  +hb('s_cats','<section class="card"><h2>Куда уходят деньги'+hq('cats')+'</h2>'+(cats.length?catHtml:'<p class="empty">Расходов за период нет.</p>')+'</section>')+hb('s_days',days)+hb('s_hab',habitsCard())+hb('s_best',best)}
 function viewWallet(){
   const accs=S.accounts.map(a=>{const ty=ACC_TYPES[a.type]||ACC_TYPES.card;const b=accBal(a);
     return '<button class="row" data-act="accedit" data-v="'+a.id+'"><span class="tile">'+ty[1]+'</span><span class="mid"><div class="t1">'+esc(a.name)+'</div><div class="t2">'+ty[0]+'</div></span><span class="amt '+(b<0?'neg':'')+'">'+(accCur(a)==='KZT'?fmtCt(b):fmtCur(accBalNative(a),accCur(a))+'<small class="amt2">≈ '+fmtCt(b)+'</small>')+'</span></button>'}).join('');
   const md=S.mand.map(m=>'<div style="display:flex;gap:8px;align-items:center">'+'<div style="flex:1;min-width:0">'+mandRow(m,true)+'</div></div>').join('');
   return scene('wallet','Счета','Сокровищница',fmtDt(totalBal(),1e6))
-  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'" title="'+fmt(totalBal())+'">'+fmtD(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'.</p>':'')+'<p class="sub">Остаток примерный. Если он разошёлся с реальным, открой счёт и поправь.</p></section>'
-  +'<section class="card" id="t-acc"><h2>Счета</h2><div class="list">'+accs+'</div>'+(S.accounts.length>1?'<div class="fchips" style="margin-top:10px">'+(S.accounts.some(a=>a.type==='deposit')?'<button class="fc" data-act="trdep" data-v="out">Снять с депозита</button><button class="fc" data-act="trdep" data-v="in">Положить на депозит</button>':'')+'<button class="fc" data-act="trdep" data-v="any">Перевод между счетами</button></div>':'')+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
+  +'<section class="card"><div class="label">Всего на счетах</div><div class="big '+(totalBal()<0?'neg':'')+'" title="'+fmt(totalBal())+'">'+fmtD(totalBal())+'</div>'+(depBal()>0?'<p class="sub">Из них на депозитах: '+fmt(depBal())+'.</p>':'')+'<p class="sub">Остаток примерный, поправь в счёте.</p></section>'
+  +'<section class="card" id="t-acc"><h2>Счета'+hq('acc')+'</h2><div class="list">'+accs+'</div>'+(S.accounts.length>1?'<div class="fchips" style="margin-top:10px">'+(S.accounts.some(a=>a.type==='deposit')?'<button class="fc" data-act="trdep" data-v="out">Снять с депозита</button><button class="fc" data-act="trdep" data-v="in">Положить на депозит</button>':'')+'<button class="fc" data-act="trdep" data-v="any">Перевод между счетами</button></div>':'')+'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="accnew">Добавить счёт</button></section>'
   +hb('w_fx',fxCard())
   +hb('w_hist',histWalletCard())
   
   }
 function fxCard(){const has=S.rates&&S.rates.r;const top=['USD','EUR','RUB','CNY'];
   const rows=has?top.filter(c=>rateOf(c)).map(c=>{const i=curInfo(c),t=tengePer(c);return '<div class="fxrow"><span class="fxc">'+i.flag+' '+i.code+'</span><b>'+fmt(t>=100?Math.round(t*10)/10:t)+'</b></div>'}).join(''):'<p class="sub">Курсы загрузятся, когда будет интернет.</p>';
-  return '<section class="card" id="t-fx"><h2>Курсы валют</h2><div class="fxgrid">'+rows+'</div>'
+  return '<section class="card" id="t-fx"><h2>Курсы валют'+hq('fx')+'</h2><div class="fxgrid">'+rows+'</div>'
    +(has?'<p class="sub fxsrc">За 1 единицу валюты · обновлено '+(S.rates.at===today()?'сегодня':dayLabel(S.rates.at).toLowerCase())+' · '+(S.rates.via==='fa'?'источник: currency-api (fawazahmed0)':'<a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates By Exchange Rate API</a>')+'</p>':'')
    +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="conv">Конвертер валют</button></section>'}
 function sheetConv(){const f=UI.form,amt=num(f.amount);const res=amt>0?convert(amt,f.from,f.to):null;
@@ -1563,13 +1567,13 @@ function sheetConv(){const f=UI.form,amt=num(f.amount);const res=amt>0?convert(a
    +'<button class="btn ghost small" data-act="ratesupd">Обновить курсы</button>'}
 function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).length;
   const k=(l,v,c)=>'<div class="kpi"><span class="label">'+l+'</span><b'+(c?' class="'+c+'"':'')+'>'+v+'</b></div>';
-  return '<section class="card"><h2>Сокровищница героя</h2><div class="kpis">'+k('Получено за всё время',fmtC(st.inc,1e6),'pos')+k('Потрачено за всё время',fmtC(st.exp,1e6),'neg')
+  return '<section class="card"><h2>Сокровищница героя'+hq('treasure')+'</h2><div class="kpis">'+k('Получено за всё время',fmtC(st.inc,1e6),'pos')+k('Потрачено за всё время',fmtC(st.exp,1e6),'neg')
    +k('Записей',st.recs)+k('Дней без трат',st.ns)+k('Лучший стрик',st.best+' '+plural(st.best,['день','дня','дней']))+k('В целях и покупках',fmtC(st.saved,1e6))+'</div>'
    +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="ach">Достижения: '+n+' из '+ACH.length+'</button></section>'}
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.34.0';
+const APP_V='0.35.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1614,13 +1618,13 @@ function sheetAdd(){const F=UI.F;
   return h}
 
 function histCard(){if(S.histHide||S.tx.length>=8||S.tx.some(x=>x.hist))return '';
-  return '<section class="card"><h2>История трат</h2><p class="sub">Загрузи выписку, и приложение сразу покажет, куда уходят деньги. Это займёт минуту, данные остаются на телефоне.</p><div class="two" style="margin-top:10px"><button class="btn" data-act="imp">Загрузить</button><button class="btn ghost" data-act="imphide">Не сейчас</button></div></section>'}
-function histWalletCard(){return '<section class="card"><h2>История трат</h2><p class="sub">Выписка Kaspi читается только на этом телефоне и никуда не отправляется.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="imp">Загрузить выписку</button></section>'}
+  return '<section class="card"><h2>История трат'+hq('hist')+'</h2><p class="sub">Выписка Kaspi покажет, куда уходят деньги.</p><div class="two" style="margin-top:10px"><button class="btn" data-act="imp">Загрузить</button><button class="btn ghost" data-act="imphide">Не сейчас</button></div></section>'}
+function histWalletCard(){return '<section class="card"><h2>История трат'+hq('hist')+'</h2><p class="sub">Читается только на этом телефоне.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="imp">Загрузить выписку</button></section>'}
 function habitsCard(){const t=today(),from=addDays(t,-29);const m={};let tot=0;
   S.tx.forEach(x=>{if(x.type!=='exp'||x.date<from||x.date>t||x.cat==='xfer'||x.cat==='credit')return;tot++;const c=m[x.cat]||(m[x.cat]={n:0,s:0,d:{}});c.n++;c.s+=x.amount;c.d[x.date]=1});
   if(tot<10)return '';
   const top=Object.keys(m).sort((a,b)=>m[b].s-m[a].s).slice(0,3);
-  return '<section class="card"><h2>Твои привычки</h2><p class="sub">Последние 30 дней, без переводов и кредитов.</p><div class="list">'+top.map(k=>{const c=m[k],ci=catInfo(k),days=Object.keys(c.d).length;
+  return '<section class="card"><h2>Твои привычки'+hq('habits')+'</h2><p class="sub">Последние 30 дней, без переводов и кредитов.</p><div class="list">'+top.map(k=>{const c=m[k],ci=catInfo(k),days=Object.keys(c.d).length;
     return '<div class="row" style="cursor:default"><span class="tile">'+ci.icon+'</span><span class="mid"><div class="t1">'+esc(ci.name)+'</div><div class="t2" style="white-space:normal">'+c.n+' '+plural(c.n,['раз','раза','раз'])+' за '+days+' '+plural(days,['день','дня','дней'])+' · в среднем '+fmt(c.s/c.n)+'</div></span><span class="amt">'+fmt(c.s)+'</span></div>'}).join('')+'</div></section>'}
 /* PDF.js: сначала своя копия в assets/pdfjs (если положена), потом три CDN по очереди */
 const PDFJS_SRC=['assets/pdfjs/','https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/','https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/','https://unpkg.com/pdfjs-dist@3.11.174/build/'];
@@ -1661,8 +1665,8 @@ function sheetImp(){const F=UI.form;
         +(F.newFor===u.key?'<div class="two" style="margin-top:8px"><div class="field"><label for="ncI">Значок</label><input id="ncI" class="inp" data-f="ncicon" maxlength="4" value="'+esc(F.ncicon||'')+'" placeholder="☕"></div><div class="field"><label for="ncN">Название</label><input id="ncN" class="inp" data-f="ncname" maxlength="20" value="'+esc(F.ncname||'')+'" placeholder="Кофе"></div></div><button class="btn small" style="margin-top:8px" data-act="impcat" data-v="'+esc(u.key)+'">Добавить категорию</button>':'')+'</div>'})}
     return h+'<button class="btn" data-act="impgo"'+(P.items.length?'':' disabled')+'>Добавить '+P.items.length+'</button><button class="btn ghost" data-act="impback">Назад</button>'}
   return shHead('Загрузить историю')
-   +'<p class="note">Файл читается только на этом телефоне и никуда не отправляется. Сохраняются только операции: дата, сумма, место. ИИН и номера счетов не читаются и не хранятся.</p>'
-   +'<p class="sub">В приложении Kaspi скачай выписку по карте в PDF, потом нажми кнопку и выбери этот файл.</p>'
+   +'<p class="note">Читается только на этом телефоне. Хранятся дата, сумма и место.</p>'
+   +'<p class="sub">Скачай в Kaspi выписку по карте в PDF и выбери файл.</p>'
    +'<div class="field"><label for="ixa">К какому счёту относится выписка</label><select id="ixa" class="inp" data-f="acc">'+accOpts(F.acc)+'</select></div>'
    +(F.busy?'<p class="sub">Читаю файл…</p>'
      :'<label class="btn" for="ixf" style="display:flex;align-items:center;justify-content:center;cursor:pointer;text-align:center">Выбрать файл выписки</label><input id="ixf" type="file" accept=".pdf,application/pdf,.txt,.csv,text/plain" data-file="1" style="position:absolute;opacity:0;width:1px;height:1px">')
@@ -1691,6 +1695,31 @@ function sheetTx(){const x=S.tx.find(t=>t.id===UI.sheet.id);if(!x)return shHead(
     +'<div class="field"><label for="en">Заметка</label><input id="en" class="inp" data-f="note" maxlength="60" value="'+esc(E.note)+'" placeholder="Что именно"></div>';
   if(E.err)h+='<p class="err">'+esc(E.err)+'</p>';
   return h+'<button class="btn" data-act="txsave">Сохранить</button>'+del}
+const HINTS={
+ bank:['Банк','Сколько денег реально твои и сколько можно тратить в день.','Смотри на «Можно тратить в день». Платежи месяца и копилки уже вычтены.','Утром видишь лимит дня и не тратишь лишнее раньше зарплаты.'],
+ today:['Сегодня','Траты за сегодня и быстрые кнопки.','Жми «Трата» или «Доход». Записи появятся тут.','К вечеру видно, не перебрал ли день.'],
+ pro:['Пророчества','Ты записываешь, что ждёшь: доход, платёж или покупку. Потом приложение сверяет с жизнью.','Нажми «+ Пророчество», когда срок придёт, отметь, сбылось ли. Растёт меткость.','Учит честно оценивать свои траты и планы заранее.'],
+ forecast:['Прогноз','Оценка, на сколько хватит денег при обычных тратах.','Считается по тратам за последний месяц, без кредитов и переводов людям.','Видно заранее, дотянешь ли до зарплаты, и сколько можно тратить в день.'],
+ goal:['Ближайшая цель','Цель, к которой ты откладываешь.','Жми «Пополнить», чтобы отложить сумму.','Копишь на конкретное: телефон, отпуск, подушку безопасности.'],
+ goals:['Цели и копилки','Деньги, отложенные на конкретное.','Создай цель, потом пополняй. Отложенные деньги не считаются свободными.','Не потратишь накопленное на мелочи: оно уже в деле.'],
+ quest:['Путь новичка','Пять заданий, которые учат пользоваться приложением.','Выполняй по порядку. +15 XP за шаг и +30 XP за все вместе.','Быстрее привыкнешь вести учёт.'],
+ backup:['Копия данных','Файл-текст со всеми твоими данными.','Жми «Сделать копию» и сохрани текст в заметки.','Не потеряешь записи, если сменишь телефон или что-то сломается.'],
+ mand:['Обязательные платежи','Аренда, интернет, подписки, всё, что платишь каждый месяц.','Добавь платёж и день месяца. Приложение напомнит и учтёт его в «Банке».','Видишь, сколько у тебя действительно свободно.'],
+ acc:['Счета','Твои кошельки: карты, наличные, депозиты.','Остаток примерный. Если разошёлся с реальным, открой счёт и поправь.','Видно, где лежат деньги и сколько всего.'],
+ fx:['Курсы валют','Курсы для записей в другой валюте.','Выбирай валюту в окне записи, пересчёт в тенге сделает приложение.','Удобно, если тратишь за границей или в долларах.'],
+ chart:['Доходы и расходы','Столбики доходов и расходов по периодам.','Переключай период сверху. Зелёный доход, красный расход.','Сразу видно, в какие месяцы тратишь больше, чем получаешь.'],
+ cats:['Куда уходят деньги','Расходы по категориям за период.','Нажми на категорию, чтобы увидеть записи.','Находишь, на чём можно сэкономить.'],
+ habits:['Твои привычки','Три самые затратные категории за 30 дней.','Появляется, когда набралось достаточно записей. Без переводов и кредитов.','Видишь повторяющиеся траты: кофе, такси, доставка.'],
+ hist:['История трат','Загрузка выписки Kaspi в PDF.','Скачай выписку в Kaspi, выбери файл. Файл читается только на этом телефоне.','Сразу получаешь картину за прошлые месяцы.'],
+ debt:['Долги и рассрочки','Кредиты и рассрочки в одном месте.','Добавь платёж, остаток и ставку. Для рассрочки без процентов ставка 0.','Видно, когда всё закроется и какой долг гасить первым.'],
+ treasure:['Сокровищница героя','Итоги за всё время: сколько получено и потрачено.','Только смотри, настраивать нечего.','Общая картина твоих денег.'],
+ records:['Рекорды по месяцам','Самые затратные и самые удачные месяцы.','Появляется, когда накопится история.','Понимаешь, что отличало удачные месяцы.'],
+ days:['По дням','Траты, разбитые по дням.','Нажми на день, чтобы раскрыть записи.','Находишь дорогие дни и их причину.'],
+ gear:['Инвентарь','Снаряжение героя: оружие и броня.','Оружие открывается с уровнем. Нажми, чтобы взять. Броня и остальные слоты в разработке.','Игровая награда за привычку вести учёт.'],
+ pets:['Компаньоны','Питомцы, которые растут вместе с тобой.','Новые открываются с уровнем. Нажми, чтобы посмотреть и взять с собой.','Лёгкая мотивация записывать каждый день.']};
+function hq(k){return HINTS[k]?'<button class="q" data-act="hint" data-v="'+k+'" aria-label="Что это?">?</button>':''}
+function sheetHint(){const h=HINTS[UI.sheet.k];if(!h)return shHead('Подсказка')+'<button class="btn" data-act="hintok">Понятно</button>';
+  return shHead(h[0])+'<div class="label">Что это</div><p class="sub">'+esc(h[1])+'</p><div class="label">Как пользоваться</div><p class="sub">'+esc(h[2])+'</p><div class="label">Зачем это в жизни</div><p class="sub">'+esc(h[3])+'</p><button class="btn" data-act="hintok">Понятно</button>'}
 function isUncat(x){return x.type!=='tr'&&(!x.cat||x.cat==='none')}
 function uncatList(){const sk=UI.fixSkip||[];return S.tx.filter(x=>isUncat(x)&&sk.indexOf(x.id)<0).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:b.ts-a.ts)}
 function sheetFix(){const l=uncatList(),n=S.tx.filter(isUncat).length;
@@ -1722,22 +1751,22 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
    +(edit?'<button class="btn ghost" data-act="manddel">Удалить платёж</button>':'')}
 const INVSLOTS=[{id:'weapon',n:'Оружие'},{id:'armor',n:'Броня'},{id:'helm',n:'Шлем'},{id:'cloak',n:'Плащ'},{id:'ring',n:'Кольцо'},{id:'amulet',n:'Амулет'}];
 function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls,cur=equippedTier('weapon',L);
-  let h=shHead('Инвентарь')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
+  let h=shHead('Инвентарь'+hq('gear'))+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
    +'<div class="inv">'+INVSLOTS.map(sl=>sl.id==='weapon'?'<div class="islot on r'+cur+'"><img class="wicon" src="assets/weapon/'+cl+'-'+(cur+1)+'.webp" alt="" draggable="false"><b>'+esc(GEAR.weapon[cur].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
-   +'<div class="slot">Оружие</div><p class="note" style="margin-top:2px">Открывается с уровнем. Нажми на открытое, чтобы взять его. Прежнее можно вернуть в любой момент. У каждого класса своё.</p>';
+   +'<div class="slot">Оружие</div><p class="note" style="margin-top:2px">Открывается с уровнем. Нажми, чтобы взять.</p>';
   Object.keys(GEAR).forEach(s=>{h+='<div class="gear">'+GEAR[s].map((g,i)=>'<button class="g r'+i+' '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl"><img class="wicon" src="assets/weapon/'+cl+'-'+(i+1)+'.webp" alt="" draggable="false"><span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cur?'в руках':g.l>L?'с '+g.l+' ур.':'взять')+'</span></button>').join('')+'</div>'});
   return h}
 function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
   return shHead('Облик героя')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
    +'<div class="slot">Раса</div><div class="pick">'+RACES.map(r=>'<button class="pk'+(r.id===h.race?' on':'')+'" data-act="setrace" data-v="'+r.id+'"><span class="pkimg">'+heroPick(r.id,h.cls)+'</span><span>'+r.n+'</span></button>').join('')+'</div>'
    +'<div class="slot">Класс</div><div class="pick">'+CLASSES.map(c=>'<button class="pk'+(c.id===h.cls?' on':'')+'" data-act="setcls" data-v="'+c.id+'"><span class="pkimg">'+heroPick(h.race,c.id)+'</span><span>'+c.n+'</span></button>').join('')+'</div>'
-   +'<p class="note">Облик ничего не меняет в расчётах денег, это только вид героя. Сменить можно когда угодно. У каждого класса своё оружие.</p>'}
+   +'<p class="note">Только вид героя, на деньги не влияет.</p>'}
 function sheetPets(){const L=levelInfo(S.xp).L,cur=petKind(),v=UI.sheet&&UI.sheet.view;
   if(v){const P=petDef(v),un=P.l<=L;
     return shHead(P.n)+'<div class="petrow">'+[0,1,2,3].map(i=>'<div class="pst"><div class="pimg">'+petImg(P.id,i,'happy',[74,84])+'</div><small>'+esc(P.st[i])+'</small></div>').join('')+'</div>'
      +(P.id===cur?'<p class="note" style="text-align:center">Сейчас он с тобой.</p>':un?'<button class="btn" style="width:100%" data-act="petpick" data-v="'+P.id+'">Взять с собой</button><p class="note">Прогресс прежнего компаньона сохранится, вернуться к нему можно когда угодно.</p>':'<p class="note" style="text-align:center">Откроется на '+P.l+' уровне. Пока можно посмотреть, как он растёт.</p>')
      +'<button class="btn ghost" style="width:100%;margin-top:8px" data-act="pets">Назад к списку</button>'}
-  return shHead('Компаньоны')+'<p class="note" style="margin-top:0">Новые компаньоны открываются с уровнем. Нажми, чтобы посмотреть, как они растут.</p><div class="plist">'
+  return shHead('Компаньоны'+hq('pets'))+'<p class="note" style="margin-top:0">Открываются с уровнем. Нажми, чтобы посмотреть.</p><div class="plist">'
    +PETS.map(P=>{const un=P.l<=L;return '<button class="prow2'+(P.id===cur?' on':'')+(un?'':' lock')+'" data-act="petview" data-v="'+P.id+'"><span class="pthumb">'+petImg(P.id,3,'happy',[64,56])+'</span><span class="pinfo"><b>'+esc(P.n)+'</b><small>'+(P.id===cur?'с тобой':un?'открыт':'с '+P.l+' ур.')+'</small></span></button>'}).join('')+'</div>'}
 function sheetLvl(){const p=UI.pendingLvl;const un=unlockedBetween(p.from,p.to);
   return shHead('Новый уровень!',true)+'<div class="herobig"><div class="hbox">'+heroArt(p.to)+'</div></div><p class="lvbig">Уровень <span class="n">'+p.to+'</span></p>'
@@ -1756,14 +1785,14 @@ function debtRow(m){const s=mandStatus(m);const inf=debtInfo(m,0);
   return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'🏦':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'</span></div>'
    +'<div class="fchips" style="padding:0 0 10px">'+((!m.closed&&!s.paid)?'<button class="btn small" data-act="pay" data-v="'+m.id+'">Оплатил</button>':'')+'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>'}
 function debtCard(){const all=debtsAll(),open=debtsOpen();
-  if(!all.length)return '<section class="card" id="t-debt"><h2>Долги и рассрочки</h2><p class="note">Добавь кредиты и рассрочки: приложение учтёт платежи в «Банке», покажет, когда всё закроется, и подскажет, какой долг гасить первым.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="debtnew">Добавить долг или рассрочку</button></section>';
+  if(!all.length)return '<section class="card" id="t-debt"><h2>Долги и рассрочки'+hq('debt')+'</h2><p class="note">Кредиты и рассрочки.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="debtnew">Добавить долг или рассрочку</button></section>';
   const adv=debtAdvice();
-  return '<section class="card" id="t-debt"><h2>Долги и рассрочки</h2>'
+  return '<section class="card" id="t-debt"><h2>Долги и рассрочки'+hq('debt')+'</h2>'
    +(open.length?'<p class="sub" style="margin-top:0">Осталось выплатить: '+fmt(debtLeft())+'. Платежей в месяц на '+fmt(debtMonthly())+'.</p>':'<p class="sub" style="margin-top:0">Все долги погашены. Это победа.</p>')
    +'<div class="list">'+all.map(debtRow).join('')+'</div>'
    +(adv.length?'<div class="label" style="margin-top:12px">Подсказки</div>'+adv.map(a=>'<p class="dadv">'+esc(a)+'</p>').join('')+'<p class="sub">Это расчёт по твоим цифрам, а не финансовая консультация.</p>':'')
    +'<div class="fchips" style="margin-top:10px"><button class="fc" data-act="debtnew">Добавить долг</button><button class="fc" data-act="aisum">Сводка для ИИ</button></div></section>'}
-function sheetAi(){return shHead('Сводка для ИИ')+'<p class="note">Скопируй текст и вставь в Claude или другой чат с ИИ, потом задай вопрос. Сводка собрана на телефоне и никуда сама не отправляется. Проверь, что тебя устраивает всё, что в ней написано.</p>'
+function sheetAi(){return shHead('Сводка для ИИ')+'<p class="note">Скопируй и вставь в чат с ИИ. Сама она никуда не отправляется.</p>'
    +'<textarea id="aix" class="inp" readonly style="min-height:260px">'+esc(aiSummary())+'</textarea><button class="btn" data-act="aicopy">Скопировать</button>'}
 function sheetData(){const f=UI.form;
   const sw=(act,on,t,sub)=>'<button class="srow" data-act="'+act+'" role="switch" aria-checked="'+!!on+'"><span class="st"><b>'+t+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</span><span class="sw'+(on?' on':'')+'"><i></i></span></button>';
@@ -1812,6 +1841,7 @@ const TOURS=[
  {tab:'list',sel:'#tabbar .tab[data-v="list"]',t:'В {y Записях} вся история, а сверху переключатель: {y Анализ} покажет, куда утекают деньги, {y Счета} покажут кошельки. Иногда больно, зато честно.'},
  {tab:'plan',sel:'#tabbar .tab[data-v="plan"]',t:'В {y Плане} живут пророчества: записываешь, что ждёшь, а я потом сверяю с жизнью. Там же платежи, цели и долги.'},
  {tab:'plan',sel:'#app .hidebtn',t:'Что-то лишнее? Жми {y скрыть}, и блок свернётся в строчку. Передумал, нажал на строчку, вернулся.'},
+ {tab:'plan',sel:'#app .q',t:'Видишь {y ?}? Нажми, и я объясню: что это, как пользоваться и зачем в жизни.'},
  {tab:'hero',sel:'#tabbar .tab[data-v="hero"]',t:'В {y Герое} лагерь, задания, достижения и настройки. Если игра начнёт отвлекать, там есть {b Спокойный режим}.'},
  {tab:'wallet',sel:'#t-acc',t:'А в {y Счетах} деньги по кошелькам и курсы валют. Есть выписка Kaspi в PDF? Загрузи, разберу сам.',btn:'Загрузить выписку'},
  {tab:'home',t:'Всё, дальше сам. Удачи, {y %n}!'}];
@@ -1883,7 +1913,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
@@ -1955,6 +1985,8 @@ function act(a,el){const v=el.dataset.v;
     case 'close':closeSheet();break;
     case 'ftype':{const F=UI.F;F.type=v;F.cat=null;F.catOpen=false;F.err='';UI.focus=true;renderSheet();break}
     case 'cat':UI.F.cat=v;UI.F.catOpen=false;UI.F.err='';renderSheet();break;
+    case 'hint':UI.hintBack=(UI.sheet&&UI.sheet.kind!=='hint')?UI.sheet:null;openSheet('hint',{k:v});break;
+    case 'hintok':if(UI.hintBack){UI.sheet=UI.hintBack;UI.hintBack=null;renderSheet()}else closeSheet();break;
     case 'fixcat':UI.fixSkip=[];openSheet('fixcat');break;
     case 'fixskip':{const l=uncatList();if(l.length){(UI.fixSkip=UI.fixSkip||[]).push(l[0].id)}renderSheet();break}
     case 'fixset':{const l=uncatList();if(!l.length)break;const x=l[0];x.cat=v;let n=0;

@@ -98,7 +98,7 @@ chk('gainXp noted for history',true);
 run(`UI.tab='home';S.tx=[];S.histHide=false;render()`);chk('home stays clean for a newcomer (no history card)',!els['#app'].innerHTML.includes('data-act="imp"'));
 run(`S.histHide=true;render()`);chk('hide works',!els['#app'].innerHTML.includes('data-act="imphide"'));
 run(`UI.tab='wallet';render()`);chk('wallet always has import button',els['#app'].innerHTML.includes('data-act="imp"'));
-act('imp');chk('import sheet step 1',els['#layer'].innerHTML.includes('Выбрать файл выписки')&&els['#layer'].innerHTML.includes('никуда не отправляется'));
+act('imp');chk('import sheet step 1',els['#layer'].innerHTML.includes('Выбрать файл выписки')&&els['#layer'].innerHTML.includes('только на этом телефоне'));
 act('impparse');chk('empty text shows error',els['#layer'].innerHTML.includes('Не нашёл операций'));
 run(`UI.form.text=__t`);act('impparse');chk('step 2 summary',els['#layer'].innerHTML.includes('Проверь список')&&els['#layer'].innerHTML.includes('Незнакомые места')&&els['#layer'].innerHTML.includes('data-act="impgo"'));
 act('imptoggle','tx');chk('toggle re-plans',els['#layer'].innerHTML.includes('Переводы людям: не считать'));

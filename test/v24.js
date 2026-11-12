@@ -13,7 +13,7 @@ run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'К�
 run("UI.tab='home';render()");let hh=app();
 chk('fresh home: bank + buttons',hh.includes('id="t-free"')&&hh.includes('data-act="add" data-v="exp"'));
 chk('fresh home: no today/hero/attention',!hh.includes('herostrip')&&!hh.includes('<h2>Сегодня')&&!hh.includes('t-attn'));
-chk('fresh home: first-step hint',hh.includes('Запиши первую трату'));
+chk('fresh home: first-step hint',hh.includes('Запиши первую операцию'));
 // после первой записи появляются сегодня и герой
 run("addTx({type:'exp',amount:1000,cat:'food',acc:'a'});render()");hh=app();
 chk('after first record: today + hero strip',hh.includes('<h2>Сегодня')&&hh.includes('herostrip'));
