@@ -580,6 +580,13 @@ button,[data-act]{cursor:pointer}
 .row .t2.wrap{white-space:normal;line-height:1.4}
 .amt .permo{display:block;font-size:11px;color:var(--mute);text-align:right}
 .pbtns{flex-wrap:nowrap}.pbtns .btn{white-space:nowrap}
+.pxi{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;background:center/contain no-repeat;image-rendering:pixelated}
+.row .tile .pxi{width:26px;height:26px;vertical-align:0}
+.cat .ci .pxi{width:36px;height:36px;vertical-align:0}
+.qi .pxi{width:22px;height:22px}
+:root{--read:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif}
+.sub,.note,.attn-w,.hint,.err{font-family:var(--read);font-size:15px;line-height:1.5;letter-spacing:0}
+.row .t2{font-family:var(--read);font-size:14px}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -740,9 +747,17 @@ function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
 try{document.addEventListener('visibilitychange',()=>{if(document.hidden)cloudPush(true);else cloudTick()});
   window.addEventListener('focus',cloudTick);setInterval(cloudTick,15000)}catch(e){}
 
-function catsFor(kind){const base=(kind==='inc'?CATS_INC:CATS_EXP).map(c=>({id:c[0],name:c[1],icon:c[2]}));
-  return base.concat(S.customCats.filter(c=>c.kind===kind))}
-function catInfo(id){const all=catsFor('exp').concat(catsFor('inc'));return all.find(c=>c.id===id)||{id:id,name:'Без категории',icon:'❔'}}
+/* Пиксельные значки категорий: строки 12x12, буква = цвет. Стили .pxi.c-<id> создаются один раз при старте */
+const ICO_PAL={k:'#2b2033',w:'#f4ecdc',r:'#d0605a',R:'#8f3a3a',o:'#e08a3a',y:'#e2b24a',Y:'#f8dc80',g:'#86b863',G:'#4f7a3a',b:'#7a5230',B:'#b0864f',u:'#5a8fd0',U:'#345a94',p:'#9a6ad0',P:'#5e3c92',s:'#c4bfd0',S:'#7d778a',n:'#f0c8a0',t:'#e87aa0'};
+const ICO_ROWS={food:'............,....kkkk....,...k....k...,...k....k...,.kkkkkkkkkk.,.kYYYYYYYYk.,.kgbgbgbgbk.,..kbgbgbgk..,..kgbgbgbk..,..kbgbgbgk..,...kkkkkk...,............',cafe:'............,...kkkkkk...,..kBBYBBBk..,.kBBBBBYBBk.,.kkkkkkkkkk.,.kgGgGgGggk.,.krrrrrrrrk.,.kkkkkkkkkk.,.kBBBBBBBBk.,..kBBBBBBk..,...kkkkkk...,............',taxi:'............,............,....kkkk....,...kuwwuk...,..kyyyyyyk..,.kyyyyyyyyk.,kyyyyyyyyyyk,kkkkkkkkkkkk,kkskkkkkkskk,.kkk....kkk.,............,............',home:'............,.....kk.....,....kRRk....,...kRRRRk...,..kRRRRRRk..,.kRRRRRRRRk.,..kBBBBBBk..,..kBwwBkBk..,..kBwwBkBk..,..kBBBBkBk..,..kkkkkkkk..,............',health:'............,...kkkkkk...,..kwwrrwwk..,..kwwrrwwk..,.kwrrrrrrwk.,.kwrrrrrrwk.,..kwwrrwwk..,..kwwrrwwk..,...kkkkkk...,............,............,............',clothes:'............,kk........kk,kuk.kkkk.kuk,kuuk....kuuk,.kuukuuukuk.,..kuuuuuuk..,..kuuuuuuk..,..kuuuuuuk..,..kuuuuuuk..,..kkkkkkkk..,............,............',fun:'............,............,..kkkkkkkk..,.kSSSSSSSSk.,kSSrSSSSgSSk,kSrrrSSSSSSk,kSSrSSSSbSSk,kSSSSSSSSSSk,.kSSkkkkSSk.,..kk....kk..,............,............',comm:'............,...kkkkkk...,..kSSSSSSk..,..kuuuuuuk..,..kuwuuuuk..,..kuuuuuuk..,..kuuuuuuk..,..kuuuuuuk..,..kSSSSSSk..,..kSSyySSk..,...kkkkkk...,............',gift:'............,...kk..kk...,..kYYkkYYk..,...kkYYkk...,.kkkkYYkkkk.,.krrrYYrrrk.,.krrrYYrrrk.,.kkkkkkkkkk.,.krrrYYrrrk.,.krrrYYrrrk.,.kkkkkkkkkk.,............',giftin:'............,...kk..kk...,..kyykkyyk..,...kkyykk...,.kkkkyykkkk.,.kgggyygggk.,.kgggyygggk.,.kkkkkkkkkk.,.kgggyygggk.,.kgggyygggk.,.kkkkkkkkkk.,............',other:'............,............,.kkkkkkkkkk.,.kBBBBBBBBk.,.kkkkkkkkkk.,.kBBBkkBBBk.,.kBBBBBBBBk.,.kBBBBBBBBk.,.kBBBBBBBBk.,.kBBBBBBBBk.,.kkkkkkkkkk.,............',credit:'............,............,.kkkkkkkkkk.,.kuuuuuuuuk.,.kkkkkkkkkk.,.kuuuuuuuuk.,.kuYYkuuuuk.,.kuYYkuuuuk.,.kuuuuuuuuk.,.kkkkkkkkkk.,............,............',xfer:'............,......g.....,......gg....,.ggggggggg..,......gg....,......g.....,............,.....y......,....yy......,..yyyyyyyyy.,....yy......,.....y......',salary:'............,....kkkk....,...kYYYYk...,..kYYkkYYk..,..kYkYYkYk..,..kYkYYkYk..,..kYYkkYYk..,...kYYYYk...,....kkkk....,............,............,............',side:'............,..kkkk......,.kSSSSk.....,.kSkkSSk....,..kk.kSSk...,......kBBk..,.......kBBk.,........kBBk,........kBBk,.........kk.,............,............',otherin:'............,..kkkkkkkk..,..kwwwwwwk..,..kwwgggwk..,..kwwgggwk..,.kwwgggggwk.,..kwwgggwk..,..kwwwgwwk..,..kkkkkkkk..,..kwwwwwwk..,..kkkkkkkk..,............'};
+(function(){let css='';for(const id in ICO_ROWS){const rows=ICO_ROWS[id].split(','),r=[];
+  rows.forEach((row,y)=>{let x=0;while(x<row.length){const ch=row[x];if(ch==='.'){x++;continue}let e=x;while(e<row.length&&row[e]===ch)e++;r.push('<rect x="'+x+'" y="'+y+'" width="'+(e-x)+'" height="1" fill="'+ICO_PAL[ch]+'"/>');x=e}});
+  css+='.pxi.c-'+id+'{background-image:url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" shape-rendering="crispEdges">'+r.join('')+'</svg>')+'")}\n'}
+  try{const st=document.createElement('style');st.id='catico';st.textContent=css;document.head.appendChild(st)}catch(e){}})();
+const icoHtml=id=>ICO_ROWS[id]?'<i class="pxi c-'+id+'" aria-hidden="true"></i>':null;
+function catsFor(kind){const base=(kind==='inc'?CATS_INC:CATS_EXP).map(c=>({id:c[0],name:c[1],icon:icoHtml(c[0])||c[2],emo:c[2]}));
+  return base.concat(S.customCats.filter(c=>c.kind===kind).map(c=>Object.assign({},c,{icon:esc(c.icon||'⭐')})))}
+function catInfo(id){const all=catsFor('exp').concat(catsFor('inc'));return all.find(c=>c.id===id)||{id:id,name:'Без категории',icon:'❔',emo:'❔'}}
 
 /* ---------- валюты: курсы к тенге (ExchangeRate-API, раз в сутки, без сети — последний сохранённый) ---------- */
 const CUR=[['KZT','₸','Тенге','🇰🇿'],['USD','$','Доллар США','🇺🇸'],['EUR','€','Евро','🇪🇺'],['RUB','₽','Рубль','🇷🇺'],['CNY','¥','Юань','🇨🇳'],['KGS','с','Сом','🇰🇬'],['UZS','сум','Сум','🇺🇿'],['TRY','₺','Лира','🇹🇷'],['AED','AED','Дирхам','🇦🇪'],['GBP','£','Фунт','🇬🇧']];
@@ -1219,7 +1234,7 @@ function sheetPro(){const f=UI.form,edit=!!UI.sheet.id;
    +'<div class="fchips"><button class="fc'+(f.type==='exp'?' on':'')+'" data-act="protype" data-v="exp">Потрачу</button><button class="fc'+(f.type==='inc'?' on':'')+'" data-act="protype" data-v="inc">Получу</button></div>'
    +'<div class="two"><div class="field"><label for="pa">Сумма, ₸</label><input id="pa" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
    +'<div class="field"><label for="pd">Когда</label><input id="pd" class="inp" type="date" data-f="date"'+(edit?'':' min="'+today()+'"')+' value="'+esc(f.date)+'"></div></div>'
-   +'<div class="two"><div class="field"><label for="pc">Категория</label><select id="pc" class="inp" data-f="cat">'+catsFor(f.type).map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'
+   +'<div class="two"><div class="field"><label for="pc">Категория</label><select id="pc" class="inp" data-f="cat">'+catsFor(f.type).map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+(c.emo||c.icon)+' '+esc(c.name)+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="pac">Счёт</label><select id="pac" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
    +'<div class="field"><label for="pn">Подпись (по желанию)</label><input id="pn" class="inp" data-f="note" maxlength="30" value="'+esc(f.note)+'" placeholder="Зарплата, ремонт, подарок"></div>'
    +'<div class="fchips"><button class="fc'+(f.rec?' on':'')+'" data-act="prorec">Повторять каждый месяц</button></div>'
@@ -1698,7 +1713,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.39.3';
+const APP_V='0.40.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1786,7 +1801,7 @@ function sheetImp(){const F=UI.form;
     if(top.length)h+='<div class="label">Куда уходят деньги</div>'+top.map(k=>{const ci=catInfo(k);return '<div class="catrow"><span>'+ci.icon+' '+esc(ci.name)+'</span><span class="amt">'+fmt(cats[k].s)+' · '+cats[k].n+'</span></div>'}).join('');
     if(P.unknown.length){h+='<div class="label">Незнакомые места</div><p class="note">Выбери категорию один раз, приложение запомнит. Остальные попадут в «Прочее».</p>';
       P.unknown.slice(0,8).forEach(u=>{h+='<div class="field"><label>'+esc(u.name)+' · '+u.n+' '+plural(u.n,['раз','раза','раз'])+' · '+fmt(u.sum)+'</label><select class="inp" data-mk="'+esc(u.key)+'" aria-label="Категория для '+esc(u.name)+'">'
-        +catsFor('exp').map(c=>'<option value="'+c.id+'"'+((F.map[u.key]||'other')===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'<option value="__new">➕ Своя категория…</option></select>'
+        +catsFor('exp').map(c=>'<option value="'+c.id+'"'+((F.map[u.key]||'other')===c.id?' selected':'')+'>'+(c.emo||c.icon)+' '+esc(c.name)+'</option>').join('')+'<option value="__new">➕ Своя категория…</option></select>'
         +(F.newFor===u.key?'<div class="two" style="margin-top:8px"><div class="field"><label for="ncI">Значок</label><input id="ncI" class="inp" data-f="ncicon" maxlength="4" value="'+esc(F.ncicon||'')+'" placeholder="☕"></div><div class="field"><label for="ncN">Название</label><input id="ncN" class="inp" data-f="ncname" maxlength="20" value="'+esc(F.ncname||'')+'" placeholder="Кофе"></div></div><button class="btn small" style="margin-top:8px" data-act="impcat" data-v="'+esc(u.key)+'">Добавить категорию</button>':'')+'</div>'})}
     return h+'<button class="btn" data-act="impgo"'+(P.items.length?'':' disabled')+'>Добавить '+P.items.length+'</button><button class="btn ghost" data-act="impback">Назад</button>'}
   return shHead('Загрузить историю')
@@ -1850,7 +1865,7 @@ function uncatList(){const sk=UI.fixSkip||[];return S.tx.filter(x=>isUncat(x)&&s
 function sheetFix(){const l=uncatList(),n=S.tx.filter(isUncat).length;
   if(!l.length)return shHead('Категории')+'<p class="sub">'+(n?'Остались только пропущенные ('+n+'). Их можно выбрать в «Записях».':'Все записи с категорией.')+'</p><button class="btn" data-act="close">Готово</button>';
   const x=l[0];
-  return shHead('Без категории: '+l.length)+'<div class="row" style="cursor:default"><span class="tile">'+(x.type==='inc'?'💰':'🧾')+'</span><span class="mid"><div class="t1">'+esc(x.note||(x.type==='inc'?'Доход':'Расход'))+'</div><div class="t2">'+dayLabel(x.date)+' · '+esc(accName(x.acc))+'</div></span><span class="amt '+(x.type==='inc'?'pos':'neg')+'">'+amtTxt(x)+'</span></div>'
+  return shHead('Без категории: '+l.length)+'<div class="row" style="cursor:default"><span class="tile">'+(x.type==='inc'?icoHtml('salary'):icoHtml('other'))+'</span><span class="mid"><div class="t1">'+esc(x.note||(x.type==='inc'?'Доход':'Расход'))+'</div><div class="t2">'+dayLabel(x.date)+' · '+esc(accName(x.acc))+'</div></span><span class="amt '+(x.type==='inc'?'pos':'neg')+'">'+amtTxt(x)+'</span></div>'
    +'<div class="cats">'+catsFor(x.type).map(c=>'<button class="cat" data-act="fixset" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')+'</div>'
    +'<button class="btn ghost" data-act="fixskip">Пропустить</button>'}
 function newE(x){return{id:x.id,amount:String(x.ocur?x.oamt:x.amount),ocur:x.ocur||null,cat:x.cat,date:x.date,acc:x.acc,note:x.note||'',more:false,custom:false,cname:'',cicon:'',all:false,err:''}}
@@ -1876,7 +1891,7 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
    +'<div class="field"><label>Первый платёж</label><button type="button" class="inp calbtn" data-act="calopen">📅 '+f.date.slice(8)+'.'+f.date.slice(5,7)+'.'+f.date.slice(0,4)+'</button></div></div>'
    +(f.calOpen?miniCal(f.date,f.calM):'')
    +(f.date.slice(0,7)<=mkey(today())&&!f.txPaid?'<div class="fchips"><button class="fc'+(f.paidNow?' on':'')+'" data-act="mpaidnow">'+(f.paidNow?'✓ ':'')+'В этом месяце уже оплачено</button></div>':'')
-   +'<div class="two"><div class="field"><label for="mc">Категория</label><select id="mc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'
+   +'<div class="two"><div class="field"><label for="mc">Категория</label><select id="mc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+(c.emo||c.icon)+' '+esc(c.name)+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="mac">Счёт</label><select id="mac" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
    +(f.debt?'<div class="two"><div class="field"><label for="ml">Остаток долга, ₸</label><input id="ml" class="inp" data-f="left" inputmode="decimal" value="'+esc(f.left)+'"></div><div class="field"><label for="mr">Ставка, % год</label><input id="mr" class="inp" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="0"></div></div><p class="note">Для рассрочки без процентов ставка 0. Остаток уменьшается при каждой оплате.</p>':'')
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="mandsave">Сохранить</button>'
@@ -1925,7 +1940,7 @@ function debtRow(m){const s=mandStatus(m);const inf=debtInfo(m,0);
   const t2=m.closed?'Погашено':(isFinite(inf.months)?'ещё '+inf.months+' '+plural(inf.months,['платёж','платежа','платежей'])+(ed?' · до '+MG[ed.getMonth()]+' '+ed.getFullYear():''):'не закрывается, платёж меньше процентов')
     +(m.closed?'':'<br>осталось '+fmt(Math.round(m.left))+((m.rate||0)>0?' · '+m.rate+'%':''))
     +(s.paid&&!m.closed?'<br><span class="pos">✓ в этом месяце оплачено</span>':'');
-  return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'🏦':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2 wrap">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'<small class="permo">в мес.</small></span></div>'
+  return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?icoHtml('credit'):icoHtml('other'))+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2 wrap">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'<small class="permo">в мес.</small></span></div>'
    +payBtns(m,s,'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'" aria-label="Изменить">✎</button>')+'</div>'}
 function debtCard(){const all=debtsAll(),open=debtsOpen();
   if(!all.length)return '<section class="card" id="t-debt"><h2>Долги и рассрочки'+hq('debt')+'</h2><p class="note">Кредиты и рассрочки.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="debtnew">Добавить долг или рассрочку</button></section>';
@@ -2040,7 +2055,7 @@ function sheetGdet(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return sh
    +(UI.confirm==='goal'?'<button class="btn danger small" data-act="goaldel" data-v="'+g.id+'">Да, удалить</button>':'<button class="btn ghost small" data-act="goaldel" data-v="'+g.id+'">Удалить цель</button>')+'</div>'
    +(UI.confirm==='goal'?'<p class="err">Удалить цель? Отложенные деньги снова станут свободными.</p>':'')}
 function sheetLimit(){const k=UI.sheet.cat,ci=catInfo(k),f=UI.form,cur=(S.limits&&S.limits[k])||0;
-  return shHead('Лимит на месяц')+'<p class="note">'+esc(ci.icon+' '+ci.name)+'. Когда траты дойдут до лимита, полоска покраснеет.</p>'
+  return shHead('Лимит на месяц')+'<p class="note">'+ci.icon+' '+esc(ci.name)+'. Когда траты дойдут до лимита, полоска покраснеет.</p>'
    +'<div class="amtwrap"><input id="lamt" class="amount" data-f="lim" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Лимит в тенге" value="'+esc(f.lim)+'"><span>₸</span></div>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="limitsave">Сохранить</button>'+(cur>0?'<button class="btn ghost" data-act="limitdel">Убрать лимит</button>':'')}
 function sheetContrib(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Взнос')+'<p>Цель не найдена.</p>';const f=UI.form,i=goalInfo(g);
@@ -2051,7 +2066,7 @@ function sheetContrib(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return
 function sheetBuy(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Покупка')+'<p>Цель не найдена.</p>';const f=UI.form;
   return shHead('Купил!')+'<p class="note">'+esc(g.icon+' '+g.name)+'. Отложенные деньги перестанут быть отложенными, а со счёта спишется сумма покупки. Опыт за это не начисляется.</p>'
    +'<div class="field"><label for="ba">Сколько заплатил, ₸</label><input id="ba" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
-   +'<div class="two"><div class="field"><label for="bc">Категория</label><select id="bc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'
+   +'<div class="two"><div class="field"><label for="bc">Категория</label><select id="bc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+(c.emo||c.icon)+' '+esc(c.name)+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="bk">Со счёта</label><select id="bk" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="buysave">Списать и закрыть цель</button><button class="btn ghost" data-act="buyprev">Уже куплено, не списывать</button>'}
 function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;

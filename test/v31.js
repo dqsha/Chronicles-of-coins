@@ -53,4 +53,14 @@ if(hasAttn){act('hide','attn');const h=app();chk('hidden attn: bar at the very e
 act('unhide','attn');chk('unhide returns card',app().includes('data-act="attn"')&&!app().includes('data-act="unhide"'));}
 else chk('attn visible for overdue payment',false);
 run("S.hide={}");
+// 0.40: пиксельные иконки категорий
+const cf=run("catsFor('exp')");
+chk('built-in categories have pixel icons',cf.filter(c=>c.id!=='x').every(c=>c.icon.includes('class="pxi c-'+c.id+'"')));
+chk('income categories too',run("catsFor('inc')").every(c=>c.icon.includes('pxi')));
+chk('emoji kept for select options',run("catsFor('exp')[0].emo")==='🛒');
+chk('unknown category falls back to emoji',run("catInfo('zzz').icon")==='❔');
+run("S.customCats=[{id:'c1',name:'Кофе',icon:'☕<b>',kind:'exp'}]");
+chk('custom icon is escaped, kept as emoji',run("catInfo('c1').icon").includes('☕&lt;b&gt;'));
+run("S.customCats=[]");
+act('add','exp');act('catopen');chk('category picker shows pixel icons',lay().includes('pxi c-food'));act('close');
 console.log(bad?'FAILED '+bad:'ALL OK');process.exit(bad?1:0);
