@@ -42,7 +42,8 @@ PY
   git add -A
   git -c user.name="Claude" -c user.email="noreply@anthropic.com" commit -q -m "$1
 
-Co-Authored-By: Claude <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01MeaYVwimRc1gMbFtLvfZNs"
   git push -q origin HEAD
   echo
   echo "ВЫЛОЖЕНО: $NEW"

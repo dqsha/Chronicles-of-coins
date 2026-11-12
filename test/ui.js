@@ -11,7 +11,7 @@ run(`S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Нал',type:'cash'
 run(`UI.tab='home';render()`);run("openSheet('camp')");chk('quest card in camp',els['#layer'].innerHTML.includes('Путь новичка'));chk('home has quick log buttons',els['#app'].innerHTML.includes('data-act="add" data-v="exp"')&&els['#app'].innerHTML.includes('data-act="add" data-v="inc"'));
 run(`addGoal({name:'Телефон',icon:'📱',target:60000,deadline:'2027-01-01'});addContrib(S.goals[0].id,15000);render()`);
 run(`UI.tab='plan';render()`);chk('goal on plan',els['#app'].innerHTML.includes('Телефон'));run(`UI.tab='home';render()`);
-chk('free money subtitle mentions reserve',els['#app'].innerHTML.includes('отложенное в целях'));
+chk('free money subtitle mentions reserve',els['#app'].innerHTML.includes('в целях отложено'));
 run(`UI.tab='plan';render()`);chk('plan goals',els['#app'].innerHTML.includes('Цели и копилки')&&els['#app'].innerHTML.includes('Телефон'));
 const gid=run('S.goals[0].id');
 for(const [k,pre] of [['goal',`UI.form={name:'',icon:'',target:'',deadline:'',err:''};`],['gdet',`UI.form={err:''};`],['contrib',`UI.form={amount:'',mode:'in',err:''};`],['buy',`UI.form={amount:'15000',acc:'a',cat:'other',err:''};`],['data',`UI.form={name:'x',import:'',err:''};`],['gear','']]){

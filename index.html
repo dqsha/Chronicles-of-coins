@@ -568,6 +568,14 @@ button,[data-act]{cursor:pointer}
 @media (prefers-reduced-motion:reduce){.wic .pxh{animation:none!important}}
 .catbtn{width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0}.catbtn.over .amt{color:var(--exp)}.catbtn.over .bar>i{background:var(--exp)}
 .plus{display:grid;place-items:center}.plus svg{display:block}
+.pbtns{padding:0 0 8px;align-items:center}.pbtns .note{margin:0}
+.calbtn{text-align:left;cursor:pointer}
+.mcal{background:var(--panel2);border-radius:12px;padding:8px;margin:0 0 12px}
+.mch{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.mch b{font-size:15px}
+.mcg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.mcw{font-size:11px;opacity:.6;padding:2px 0}
+.mcd{background:none;border:0;color:inherit;font:inherit;font-size:14px;padding:7px 0;border-radius:8px;cursor:pointer}
+.mcd.td{outline:1px solid var(--gold)}.mcd.on{background:var(--gold);color:#271c06;font-weight:700}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -804,9 +812,14 @@ function accBalNative(a){let b=Number(a.bal0)||0;
 function accBal(a){const n=accBalNative(a),c=accCur(a);if(c==='KZT')return n;const v=convert(n,c,'KZT');return v==null?0:v}
 const totalBal=()=>S.accounts.reduce((s,a)=>s+accBal(a),0);
 function dueDay(m,mk){const p=mk.split('-').map(Number);return Math.min(m.day,dim(p[0],p[1]))}
-function mandStatus(m){const mk=mkey(today());const paid=!!m.closed||!!S.paid[m.id+'|'+mk];const dd=dueDay(m,mk);const day=+today().slice(8);
-  return{paid:paid,dd:dd,overdue:!paid&&day>dd,left:dd-day}}
-const unpaidSum=()=>S.mand.reduce((s,m)=>s+(mandStatus(m).paid?0:m.amount),0);
+function mandStatus(m){const mk=mkey(today());const fut=!!(m.start&&m.start>mk);const pk=S.paid[m.id+'|'+mk];const paid=!fut&&(!!m.closed||!!pk);const dd=dueDay(m,mk);const day=+today().slice(8);
+  return{paid:paid,dd:dd,overdue:!fut&&!paid&&day>dd,left:dd-day,future:fut,manual:pk==='manual'}}
+const unpaidSum=()=>S.mand.reduce((s,m)=>{const x=mandStatus(m);return s+(x.paid||x.future?0:m.amount)},0);
+const bankNow=()=>totalBal()-reserved();
+/* «Уже оплачено»: отметка без списания со счёта, если платил до приложения или в другом месте */
+function markPaid(id,on){const m=S.mand.find(x=>x.id===id);if(!m)return;const key=id+'|'+mkey(today());
+  if(on){if(!S.paid[key])S.paid[key]='manual'}else if(S.paid[key]==='manual')delete S.paid[key]}
+function monLabel(mk){return MG[+mk.slice(5)-1]+' '+mk.slice(0,4)}
 const goalSaved=g=>g.contribs.reduce((s,c)=>s+c.amt,0);
 const activeGoals=()=>S.goals.filter(g=>!g.closed);
 const reserved=()=>activeGoals().reduce((s,g)=>s+Math.max(0,goalSaved(g)),0);
@@ -862,7 +875,7 @@ function delTx(id){const i=S.tx.findIndex(x=>x.id===id);if(i<0)return;if(!S.del)
 function noSpendToday(){const t=today();if(S.noSpend[t])return false;
   if(S.tx.some(x=>x.type==='exp'&&x.date===t)){say('Сегодня уже есть траты');return false}
   S.noSpend[t]=true;const b=markActive();gainXp(10,'Трат не было');petFood(1);if(b)gainXp(b,'Бонус дня');return true}
-function payMand(id){const m=S.mand.find(x=>x.id===id);if(!m)return;const mk=mkey(today());const key=id+'|'+mk;if(S.paid[key])return;
+function payMand(id){const m=S.mand.find(x=>x.id===id);if(!m)return;const mk=mkey(today());const key=id+'|'+mk;if(S.paid[key]||mandStatus(m).future)return;
   const onTime=!mandStatus(m).overdue;
   let amt=m.amount,dp=0,closed=false;
   if(m.debt&&m.left>0){const intr=m.left*(m.rate||0)/1200;dp=Math.max(0,Math.min(m.left,m.amount-intr));if(m.left-dp<=0.5||m.amount>=m.left+intr){amt=Math.min(m.amount,Math.round(m.left+intr));dp=m.left;closed=true}}
@@ -1437,9 +1450,13 @@ function commit(){const pv=UI.pct;checkAch();save();flush();if(S.calm)UI.pending
 
 /* ---------- views ---------- */
 function mandRow(m,showBtn){const s=mandStatus(m);const c=catInfo(m.cat);
-  const when=s.paid?'оплачено в этом месяце':s.overdue?'просрочено, срок был '+s.dd+'-го':'до '+s.dd+'-го числа';
+  const when=s.future?'с '+monLabel(m.start)+', '+m.day+'-го':s.paid?'оплачено в этом месяце':s.overdue?'просрочено, срок был '+s.dd+'-го':'до '+s.dd+'-го числа';
   return '<div class="row" style="cursor:default"><span class="tile">'+c.icon+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2'+(s.overdue?' neg':'')+'">'+when+'</div></span>'
-   +'<span class="amt">'+fmt(m.amount)+'</span>'+(showBtn&&!s.paid?'<button class="btn small" data-act="pay" data-v="'+m.id+'">Оплатил</button>':'')+'</div>'}
+   +'<span class="amt">'+fmt(m.amount)+'</span>'+'</div>'+(showBtn?payBtns(m,s):'')}
+function payBtns(m,s,extra){extra=extra||'';let h='';
+  if(!m.closed&&!s.future){if(s.paid){if(s.manual)h='<button class="btn ghost small" data-act="munpaid" data-v="'+m.id+'">Снять отметку</button>'}
+    else h='<button class="btn small" data-act="pay" data-v="'+m.id+'">Оплатить</button><button class="btn ghost small" data-act="mpaid" data-v="'+m.id+'">Уже оплачено</button>'}
+  return h||extra?'<div class="fchips pbtns">'+h+extra+'</div>':''}
 function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
   const stTxt={new:'Запиши трату, и огонь зажжётся',ok:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд',
     wait:sv.count+' '+plural(sv.count,['день','дня','дней'])+'. Запиши сегодня',
@@ -1477,7 +1494,7 @@ function hb(key,html){if(!html)return '';const nm=(HIDEABLE[key]||'').replace(/^
 function hiddenCard(){return ''}
 function viewPlan(){return scene('plan','План','Башня предсказаний',fmtDate(today()))
   +hb('forecast',forecastCard())+hb('pro',proCard())+hb('w_goals',goalsSection())+hb('w_debt',debtCard())
-  +hb('w_mand','<section class="card" id="t-mand"><h2>Обязательные платежи'+hq('mand')+'</h2>'+(S.mand.filter(m=>!m.debt).length?'<div class="list">'+S.mand.filter(m=>!m.debt).map(m=>'<div>'+mandRow(m,true)+'<div style="padding:0 0 8px"><button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки.</p>')
+  +hb('w_mand','<section class="card" id="t-mand"><h2>Обязательные платежи'+hq('mand')+'</h2>'+(S.mand.filter(m=>!m.debt).length?'<div class="list">'+S.mand.filter(m=>!m.debt).map(m=>'<div>'+mandRow(m,false)+payBtns(m,mandStatus(m),'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'" aria-label="Изменить">✎</button>')+'</div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки.</p>')
     +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="mandnew">Добавить платёж</button></section>')}
 function viewHero(){return scene('hero','Герой','Лагерь у костра',fmtDate(today()))
   +heroCard(true)+(S.calm?'':petCard())+(S.calm?'':hb('quest',questCard()))+hb('w_chr',chronicleCard())+backupCard()
@@ -1498,8 +1515,10 @@ function viewHome(){
   const todayAll=S.tx.filter(x=>x.type!=='tr'&&x.date===t).sort((a,b)=>b.ts-a.ts);
   const todayExp=todayAll.filter(x=>x.type==='exp'),tsum=todayExp.reduce((s,x)=>s+x.amount,0);
   const hasExp=todayExp.length>0,nsDone=!!S.noSpend[t];
-  const up=S.mand.filter(m=>!mandStatus(m).paid).sort((a,b)=>mandStatus(a).dd-mandStatus(b).dd).slice(0,3);
-  const fsub='На счетах '+fmtDt(totalBal())+(depBal()>0?' (из них на депозитах '+fmt(depBal())+')':'')+(unpaidSum()>0?', минус платежи месяца '+fmt(unpaidSum()):'')+(reserved()>0?', минус отложенное в целях '+fmt(reserved()):'')+'.';
+  const up=S.mand.filter(m=>{const x=mandStatus(m);return !x.paid&&!x.future}).sort((a,b)=>mandStatus(a).dd-mandStatus(b).dd).slice(0,3);
+  const bn=bankNow(),ups=unpaidSum();
+  const fsub=(reserved()>0||depBal()>0)?'На счетах '+fmtDt(totalBal())+(depBal()>0?' (на депозитах '+fmt(depBal())+')':'')+(reserved()>0?', в целях отложено '+fmt(reserved()):'')+'.':'';
+  const after=ups>0?'<div class="catrow dayrow"><span>После платежей месяца</span><span class="amt'+(fm<0?' neg':'')+'">'+fmtDt(fm)+'</span></div><p class="sub dayto">осталось оплатить '+fmt(ups)+'</p>':'';
   const rl=repeatList('exp');
   const quick=rl.length?'<div class="label" style="margin-top:12px">Быстро, одним касанием</div><div class="qgrid">'+rl.map((r,i)=>{const c=catInfo(r.cat);return '<button class="qk" data-act="quick" data-v="'+i+'"><span class="qi">'+c.icon+'</span><span class="qn">'+esc(r.note||c.name)+'</span><span class="qa">'+(r.ocur?fmtCur(r.oamt,r.ocur):fmt(r.amount))+'</span></button>'}).join('')+'</div>'
     :'';
@@ -1510,7 +1529,7 @@ function viewHome(){
   const fc=forecast(),perDay=(fc.state!=='broke'&&fc.perDay>0)?'<div class="catrow dayrow"><span>Можно тратить в день</span><span class="amt">'+fmtDt(fc.perDay)+'</span></div><p class="sub dayto">до '+fmtDate(fc.until)+(fc.pay?', до зарплаты':'')+'</p>':'';
   const fresh=!S.tx.length;
   return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn())+upd
-  +'<section class="card" id="t-free"><div class="label">Банк сейчас'+hq('bank')+'</div><div class="big '+(fm<0?'neg':'')+'" title="'+fmt(fm)+'">'+fmtD(fm)+'</div>'+perDay+'<p class="sub">'+esc(fsub)+'</p></section>'
+  +'<section class="card" id="t-free"><div class="label">Банк сейчас'+hq('bank')+'</div><div class="big '+(bn<0?'neg':'')+'" title="'+fmt(bn)+'">'+fmtD(bn)+'</div>'+after+perDay+(fsub?'<p class="sub">'+esc(fsub)+'</p>':'')+'</section>'
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
     +(fresh?'<p class="sub">Запиши первую операцию.</p>':quick)+undo
     +(fresh?'':'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button>')+'</section>'
@@ -1660,7 +1679,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.38.5';
+const APP_V='0.39.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1783,7 +1802,7 @@ function sheetTx(){const x=S.tx.find(t=>t.id===UI.sheet.id);if(!x)return shHead(
   if(E.err)h+='<p class="err">'+esc(E.err)+'</p>';
   return h+'<button class="btn" data-act="txsave">Сохранить</button>'+del}
 const HINTS={
- bank:['Банк','Сколько денег реально твои и сколько можно тратить в день.','Смотри на «Можно тратить в день». Платежи месяца и копилки уже вычтены.','Утром видишь лимит дня и не тратишь лишнее раньше зарплаты.'],
+ bank:['Банк','Сколько денег реально твои и сколько можно тратить в день.','Крупно: деньги на счетах без отложенного в целях. Ниже: сколько останется после платежей месяца и сколько можно тратить в день.','Утром видишь лимит дня и не тратишь лишнее раньше зарплаты.'],
  today:['Сегодня','Траты за сегодня и быстрые кнопки.','Жми «Трата» или «Доход». Записи появятся тут.','К вечеру видно, не перебрал ли день.'],
  pro:['Пророчества','Ты записываешь, что ждёшь: доход, платёж или покупку. Потом приложение сверяет с жизнью.','Нажми «+ Пророчество», когда срок придёт, отметь, сбылось ли. Растёт меткость.','Учит честно оценивать свои траты и планы заранее.'],
  forecast:['Прогноз','Оценка, на сколько хватит денег при обычных тратах.','Считается по тратам за последний месяц, без кредитов и переводов людям.','Видно заранее, дотянешь ли до зарплаты, и сколько можно тратить в день.'],
@@ -1791,7 +1810,7 @@ const HINTS={
  goals:['Цели и копилки','Деньги, отложенные на конкретное.','Создай цель, потом пополняй. Отложенные деньги не считаются свободными.','Не потратишь накопленное на мелочи: оно уже в деле.'],
  quest:['Путь новичка','Пять заданий, которые учат пользоваться приложением.','Выполняй по порядку. +15 XP за шаг и +30 XP за все вместе.','Быстрее привыкнешь вести учёт.'],
  backup:['Копия данных','Файл-текст со всеми твоими данными.','Жми «Сделать копию» и сохрани текст в заметки.','Не потеряешь записи, если сменишь телефон или что-то сломается.'],
- mand:['Обязательные платежи','Аренда, интернет, подписки, всё, что платишь каждый месяц.','Добавь платёж и день месяца. Приложение напомнит и учтёт его в «Банке».','Видишь, сколько у тебя действительно свободно.'],
+ mand:['Обязательные платежи','Аренда, интернет, подписки, всё, что платишь каждый месяц.','Добавь платёж и дату. «Оплатить» спишет сумму со счёта. «Уже оплачено» просто отметит, если ты платил раньше.','Видишь, сколько у тебя действительно свободно.'],
  acc:['Счета','Твои кошельки: карты, наличные, депозиты.','Остаток примерный. Если разошёлся с реальным, открой счёт и поправь.','Видно, где лежат деньги и сколько всего.'],
  fx:['Курсы валют','Курсы для записей в другой валюте.','Выбирай валюту в окне записи, пересчёт в тенге сделает приложение.','Удобно, если тратишь за границей или в долларах.'],
  chart:['Доходы и расходы','Столбики доходов и расходов по периодам.','Переключай период сверху. Зелёный доход, красный расход.','Сразу видно, в какие месяцы тратишь больше, чем получаешь.'],
@@ -1825,12 +1844,19 @@ function sheetAcc(){const f=UI.form;const edit=!!UI.sheet.id;
    +(edit?'<p class="note">Поменяешь сумму, приложение подгонит остаток под реальный.</p>':'')
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="accsave">Сохранить</button>'
    +(edit?(UI.confirm==='acc'?'<p class="err">Удалить счёт? Это возможно, только если по нему нет записей.</p><button class="btn danger" data-act="accdel">Да, удалить</button>':'<button class="btn ghost" data-act="accdel">Удалить счёт</button>'):'')}
+function miniCal(sel,mon){const y=+mon.slice(0,4),m=+mon.slice(5,7),off=(new Date(y,m-1,1).getDay()+6)%7,n=dim(y,m),t=today();
+  let h='<div class="mcal"><div class="mch"><button type="button" class="btn ghost small" data-act="calm" data-v="-1" aria-label="Прошлый месяц">‹</button><b>'+MF[m-1]+' '+y+'</b><button type="button" class="btn ghost small" data-act="calm" data-v="1" aria-label="Следующий месяц">›</button></div><div class="mcg">'
+   +['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>'<span class="mcw">'+d+'</span>').join('')+'<span></span>'.repeat(off);
+  for(let d=1;d<=n;d++){const ds=dstr(new Date(y,m-1,d));h+='<button type="button" class="mcd'+(ds===sel?' on':'')+(ds===t?' td':'')+'" data-act="calpick" data-v="'+ds+'">'+d+'</button>'}
+  return h+'</div></div>'}
 function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
   return shHead(edit?'Платёж':'Новый платёж')
    +'<div class="field"><label for="mn">Название</label><input id="mn" class="inp" data-f="name" maxlength="30" value="'+esc(f.name)+'" placeholder="Аренда, интернет, кредит"></div>'
    +'<div class="fchips"><button class="fc'+(f.debt?'':' on')+'" data-act="mdebt" data-v="0">Обычный платёж</button><button class="fc'+(f.debt?' on':'')+'" data-act="mdebt" data-v="1">Долг или рассрочка</button></div>'
    +'<div class="two"><div class="field"><label for="ma">Платёж в месяц, ₸</label><input id="ma" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
-   +'<div class="field"><label for="md">День месяца</label><input id="md" class="inp" data-f="day" inputmode="numeric" maxlength="2" value="'+esc(f.day)+'"></div></div>'
+   +'<div class="field"><label>Первый платёж</label><button type="button" class="inp calbtn" data-act="calopen">📅 '+f.date.slice(8)+'.'+f.date.slice(5,7)+'.'+f.date.slice(0,4)+'</button></div></div>'
+   +(f.calOpen?miniCal(f.date,f.calM):'')
+   +(f.date.slice(0,7)<=mkey(today())&&!f.txPaid?'<div class="fchips"><button class="fc'+(f.paidNow?' on':'')+'" data-act="mpaidnow">'+(f.paidNow?'✓ ':'')+'В этом месяце уже оплачено</button></div>':'')
    +'<div class="two"><div class="field"><label for="mc">Категория</label><select id="mc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="mac">Счёт</label><select id="mac" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
    +(f.debt?'<div class="two"><div class="field"><label for="ml">Остаток долга, ₸</label><input id="ml" class="inp" data-f="left" inputmode="decimal" value="'+esc(f.left)+'"></div><div class="field"><label for="mr">Ставка, % год</label><input id="mr" class="inp" data-f="rate" inputmode="decimal" value="'+esc(f.rate)+'" placeholder="0"></div></div><p class="note">Для рассрочки без процентов ставка 0. Остаток уменьшается при каждой оплате.</p>':'')
@@ -1878,7 +1904,7 @@ function sheetOnboard(){const f=UI.form;
 function debtRow(m){const s=mandStatus(m);const inf=debtInfo(m,0);
   const t2=m.closed?'Погашено':'остаток '+fmt(m.left)+' · '+(isFinite(inf.months)?'ещё '+inf.months+' мес.':'не закрывается')+((m.rate||0)>0?' · '+m.rate+'%':' · без процентов');
   return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'🏦':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'</span></div>'
-   +'<div class="fchips" style="padding:0 0 10px">'+((!m.closed&&!s.paid)?'<button class="btn small" data-act="pay" data-v="'+m.id+'">Оплатил</button>':'')+'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button></div></div>'}
+   +payBtns(m,s,'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button>')+'</div>'}
 function debtCard(){const all=debtsAll(),open=debtsOpen();
   if(!all.length)return '<section class="card" id="t-debt"><h2>Долги и рассрочки'+hq('debt')+'</h2><p class="note">Кредиты и рассрочки.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="debtnew">Добавить долг или рассрочку</button></section>';
   const adv=debtAdvice();
@@ -2016,7 +2042,7 @@ function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   const kbf=sh.kind==='add'&&UI.focus;
-  L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+(kbf?' kbfade':'')+(sh.kind==='add'?' addsheet':'')+(UI.kbStop!=null?' kblock':'')+'" data-lock="'+(lock?1:0)+'"'+(UI.kbStop!=null?' style="--stop:'+UI.kbStop+'px"':'')+'><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
+  L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+(kbf?' kbfade':'')+((sh.kind==='add'||/<input(?![^>]*type="(?:file|checkbox|radio)")|<textarea/.test(body))?' addsheet':'')+(UI.kbStop!=null?' kblock':'')+'" data-lock="'+(lock?1:0)+'"'+(UI.kbStop!=null?' style="--stop:'+UI.kbStop+'px"':'')+'><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
   if(sh.kind==='add'&&UI.focus){UI.focus=false;const a=$('#amt');if(a){try{a.focus({preventScroll:true})}catch(e){a.focus()}}}}
 
 /* ---------- actions ---------- */
@@ -2050,14 +2076,20 @@ function delAcc(){const id=UI.sheet.id;
   if(S.tx.some(x=>x.acc===id||x.to===id)||S.mand.some(m=>m.acc===id)){UI.form.err='По счёту есть записи или платежи, удалить нельзя';UI.confirm=null;return renderSheet()}
   tomb(id);S.accounts=S.accounts.filter(a=>a.id!==id);UI.sheet=null;commit()}
 function openMand(id,debt){const m=S.mand.find(x=>x.id===id);
-  UI.form=m?{name:m.name,amount:String(m.amount),day:String(m.day),cat:m.cat,acc:m.acc,debt:!!m.debt,left:m.left?String(m.left):'',rate:m.rate?String(m.rate):'',err:''}:{name:'',amount:'',day:'1',cat:debt?'credit':'home',acc:S.accounts[0].id,debt:!!debt,left:'',rate:'',err:''};openSheet('mand',{id:id||null})}
-function saveMand(){const f=UI.form,id=UI.sheet.id;const amount=num(f.amount),day=Math.round(num(f.day));
+  const t=today(),mk=mkey(t);
+  const dOf=(mon,day)=>dstr(new Date(+mon.slice(0,4),+mon.slice(5,7)-1,Math.min(day,dim(+mon.slice(0,4),+mon.slice(5,7)))));
+  const date=m?dOf(m.start&&m.start>mk?m.start:mk,m.day):t,pk=m?S.paid[m.id+'|'+mk]:null;
+  UI.form=m?{name:m.name,amount:String(m.amount),day:String(m.day),date:date,calM:date.slice(0,7),calOpen:false,paidNow:pk==='manual',txPaid:!!pk&&pk!=='manual',cat:m.cat,acc:m.acc,debt:!!m.debt,left:m.left?String(m.left):'',rate:m.rate?String(m.rate):'',err:''}
+    :{name:'',amount:'',day:String(+t.slice(8)),date:t,calM:t.slice(0,7),calOpen:false,paidNow:false,txPaid:false,cat:debt?'credit':'home',acc:S.accounts[0].id,debt:!!debt,left:'',rate:'',err:''};openSheet('mand',{id:id||null})}
+function saveMand(){const f=UI.form;let id=UI.sheet.id;const amount=num(f.amount),day=+f.date.slice(8);
   if(!f.name.trim()){f.err='Введите название';return renderSheet()}
   if(!(amount>0)){f.err='Введите сумму';return renderSheet()}
   if(day<1||day>31){f.err='День месяца от 1 до 31';return renderSheet()}
-  const o={name:f.name.trim(),amount:amount,day:day,cat:f.cat,acc:f.acc};
+  const mk=mkey(today()),st=f.date.slice(0,7);
+  const o={name:f.name.trim(),amount:amount,day:day,start:st>mk?st:null,cat:f.cat,acc:f.acc};
   if(f.debt){const left=num(f.left),rate=num(f.rate);if(!(left>0)){f.err='Укажите, сколько ещё осталось выплатить';return renderSheet()}if(rate<0||rate>200){f.err='Ставка от 0 до 200 процентов годовых';return renderSheet()}o.debt=true;o.left=left;o.rate=rate;o.closed=false}else{o.debt=false;o.closed=false}
-  if(id)Object.assign(S.mand.find(x=>x.id===id),o);else{S.mand.push(Object.assign({id:uid()},o));questDone('mand')}
+  if(id)Object.assign(S.mand.find(x=>x.id===id),o);else{id=uid();S.mand.push(Object.assign({id:id},o));questDone('mand')}
+  if(!f.txPaid)markPaid(id,!!f.paidNow&&!o.start);
   UI.sheet=null;commit()}
 function act(a,el){const v=el.dataset.v;
   try{const r=el.getBoundingClientRect();UI.fxOrg={x:r.left+r.width/2,y:r.top+r.height/2}}catch(e){UI.fxOrg=null}
@@ -2105,6 +2137,12 @@ function act(a,el){const v=el.dataset.v;
     case 'unhide':if(!S.hide)S.hide={};if(v==='*')S.hide={};else delete S.hide[v];save();render();renderSheet();break;
     case 'nospend':if(noSpendToday())commit();else{flush();render()}break;
     case 'pay':payMand(v);commit();break;
+    case 'mpaid':markPaid(v,true);commit();break;
+    case 'munpaid':markPaid(v,false);commit();break;
+    case 'mpaidnow':UI.form.paidNow=!UI.form.paidNow;renderSheet();break;
+    case 'calopen':UI.form.calOpen=!UI.form.calOpen;UI.form.calM=UI.form.date.slice(0,7);renderSheet();break;
+    case 'calm':{const c=UI.form.calM,d=new Date(+c.slice(0,4),+c.slice(5,7)-1+parseInt(v,10),1);UI.form.calM=dstr(d).slice(0,7);renderSheet();break}
+    case 'calpick':UI.form.date=v;UI.form.day=String(+v.slice(8));UI.form.calOpen=false;if(v.slice(0,7)>mkey(today()))UI.form.paidNow=false;renderSheet();break;
     case 'gear':questDone('gear');save();flush();render();openSheet('gear');break;
     case 'equip':{const L=levelInfo(S.xp).L;if(setEquip(el.dataset.s,+v,L)){save();render();renderSheet()}break}
     case 'lvlok':UI.pendingLvl=null;UI.sheet=null;renderSheet();maybeTour();break;
