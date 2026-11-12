@@ -574,6 +574,10 @@ button,[data-act]{cursor:pointer}
 .mcw{font-size:11px;opacity:.6;padding:2px 0}
 .mcd{background:none;border:0;color:inherit;font:inherit;font-size:14px;padding:7px 0;border-radius:8px;cursor:pointer}
 .mcd.td{outline:1px solid var(--gold)}.mcd.on{background:var(--gold);color:#271c06;font-weight:700}
+.attn-w{font-size:13px;color:var(--mute);margin:-4px 0 12px;line-height:1.35}
+.row .t2.wrap{white-space:normal;line-height:1.4}
+.amt .permo{display:block;font-size:11px;color:var(--mute);text-align:right}
+.pbtns{flex-wrap:nowrap}.pbtns .btn{white-space:nowrap}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1510,12 +1514,14 @@ function heroStrip(){const lv=levelInfo(S.xp),sv=streakView();
   return '<section class="card herostrip" data-act="tab" data-v="hero" role="button" tabindex="0" aria-label="Открыть героя"><div class="hs-art">'+heroAvatar()+'</div><div class="hs-info"><div class="hs-top"><b>'+esc(S.name)+'</b><span>Уровень '+lv.L+'</span></div>'
    +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div><div class="xpline">'+esc(days)+' · ещё '+(lv.need-lv.cur)+' XP</div></div></section>'}
 function attnCard(){const t=today(),it=[];
-  const g=proGap(60);if(g)it.push('Кассовый разрыв с '+fmtDate(g.date)+': не хватит около '+fmtDt(g.deficit));
-  const f=forecast();if(f.state==='broke')it.push('Денег до '+(f.pay?'зарплаты':'конца месяца')+' не остаётся');else if(f.state==='short')it.push('Не хватит до '+(f.pay?'зарплаты':'конца месяца')+': '+fmtDt(-f.diff));
-  const due=proWait().filter(q=>q.date<=t).length;if(due)it.push('Пророчеств ждут отметки: '+due);
-  const od=S.mand.filter(m=>{const x=mandStatus(m);return !x.paid&&x.overdue}).length;if(od)it.push('Просрочено платежей: '+od);
+  const f=forecast(),to=f.pay?'зарплаты':'конца месяца',r0=x=>fmt(Math.round(x));
+  if(f.state==='broke')it.push(['Денег до '+to+' не остаётся','После платежей месяца свободных денег нет. Новые траты уйдут в минус.']);
+  else if(f.state==='short')it.push(['До '+to+' не хватит '+r0(-f.diff),'Ты тратишь около '+r0(f.avg)+' в день. С такими тратами деньги кончатся '+fmtDate(f.runOut)+'. Чтобы дотянуть, трать не больше '+r0(f.perDay)+' в день.']);
+  const g=proGap(60);if(g)it.push(['Кассовый разрыв с '+fmtDate(g.date)+': не хватит около '+r0(g.deficit),'Это значит, что если пройдут все платежи и пророчества, в этот день денег станет меньше нуля. Отложи покупку или перенеси платёж.']);
+  const due=proWait().filter(q=>q.date<=t).length;if(due)it.push(['Пророчеств ждут отметки: '+due,'Отметь, сбылись ли они, и прогноз станет точнее.']);
+  const od=S.mand.filter(m=>{const x=mandStatus(m);return !x.paid&&x.overdue}).length;if(od)it.push(['Просрочено платежей: '+od,'Нажми «Оплатить» или «Уже оплачено» в плане.']);
   if(!it.length)return '';
-  return '<section class="card attn" id="t-attn"><div class="label">Внимание</div>'+it.slice(0,3).map(x=>'<p class="attn-i">'+esc(x)+'</p>').join('')+'<button class="btn ghost small" data-act="tab" data-v="plan">Открыть план</button></section>'}
+  return '<section class="card attn" id="t-attn"><div class="label">Внимание</div>'+it.slice(0,3).map(x=>'<p class="attn-i">'+esc(x[0])+'</p><p class="attn-w">'+esc(x[1])+'</p>').join('')+'<button class="btn ghost small" data-act="tab" data-v="plan">Открыть план</button></section>'}
 function viewHome(){
   const t=today(),fm=freeMoney(),calm=!!S.calm;
   const todayAll=S.tx.filter(x=>x.type!=='tr'&&x.date===t).sort((a,b)=>b.ts-a.ts);
@@ -1685,7 +1691,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.39.1';
+const APP_V='0.39.2';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1908,9 +1914,12 @@ function sheetOnboard(){const f=UI.form;
    +'<div class="field"><label for="ok">💳 На карте, ₸</label><input id="ok" class="inp" data-f="card" inputmode="decimal" value="'+esc(f.card)+'" placeholder="0"></div></div></div>'
    +'<p class="ohl">🔒 Данные хранятся только в твоём Telegram. Никто, кроме тебя, их не видит.</p><button class="btn big" data-act="onboard">В путь</button>'}
 function debtRow(m){const s=mandStatus(m);const inf=debtInfo(m,0);
-  const t2=m.closed?'Погашено':'остаток '+fmt(m.left)+' · '+(isFinite(inf.months)?'ещё '+inf.months+' мес.':'не закрывается')+((m.rate||0)>0?' · '+m.rate+'%':' · без процентов');
-  return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'🏦':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'</span></div>'
-   +payBtns(m,s,'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'">Изменить</button>')+'</div>'}
+  const ed=inf.end?parseD(inf.end):null;
+  const t2=m.closed?'Погашено':(isFinite(inf.months)?'ещё '+inf.months+' '+plural(inf.months,['платёж','платежа','платежей'])+(ed?' · до '+MG[ed.getMonth()]+' '+ed.getFullYear():''):'не закрывается, платёж меньше процентов')
+    +(m.closed?'':'<br>осталось '+fmt(Math.round(m.left))+((m.rate||0)>0?' · '+m.rate+'%':''))
+    +(s.paid&&!m.closed?'<br><span class="pos">✓ в этом месяце оплачено</span>':'');
+  return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'🏦':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2 wrap">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'<small class="permo">в мес.</small></span></div>'
+   +payBtns(m,s,'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'" aria-label="Изменить">✎</button>')+'</div>'}
 function debtCard(){const all=debtsAll(),open=debtsOpen();
   if(!all.length)return '<section class="card" id="t-debt"><h2>Долги и рассрочки'+hq('debt')+'</h2><p class="note">Кредиты и рассрочки.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="debtnew">Добавить долг или рассрочку</button></section>';
   const adv=debtAdvice();
