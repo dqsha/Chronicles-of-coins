@@ -539,7 +539,7 @@ button,[data-act]{cursor:pointer}
 .scrim.kblock .sheet{margin-top:var(--stop,0px);max-height:calc(var(--vvh,100%) - var(--stop,0px) - 6px)!important}
 /* клавиатура: одна плавная анимация вместо двух наложенных */
 .sheet{transition:none}
-.scrim{transition:height .22s cubic-bezier(.25,.8,.3,1)}
+.scrim{transition:none}
 .scrim.kbfade.fresh .sheet{animation:kbin .18s ease-out both}
 @keyframes kbin{from{opacity:0}}
 </style>
@@ -1597,7 +1597,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.35.2';
+const APP_V='0.35.3';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -2183,12 +2183,15 @@ function checkUpdate(){try{if(!window.fetch)return;fetch('version.json?t='+Date.
 function kbLock(t){try{const sc=t.closest('.scrim');if(!sc||UI.kbStop!=null)return;const sh=sc.querySelector('.sheet');if(!sh)return;const top=Math.max(0,Math.round(sh.getBoundingClientRect().top));UI.kbStop=top;UI.kbScroll=sh.scrollTop||0;sc.style.setProperty('--stop',top+'px');sc.classList.add('kblock')}catch(e){}}
 function kbKeepScroll(){try{const sh=document.querySelector('#layer .sheet');if(!sh||UI.kbStop==null)return;const a=document.activeElement,prev=sh.scrollTop,to=UI.kbScroll||0;const go=v=>{try{sh.scrollTo({top:v,behavior:'instant'})}catch(e){sh.scrollTop=v}};go(to);
   const r=a&&a.getBoundingClientRect?a.getBoundingClientRect():null,vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)||600;if(r&&(r.top<4||r.bottom>vh-4))go(prev)}catch(e){}}
-function kbUnlock(){try{UI.kbStop=null;const sc=document.querySelector('#layer .scrim');if(sc){sc.classList.remove('kblock');sc.style.removeProperty('--stop')}}catch(e){}}
-let vvLast=0,vvRaf=0;
-function vvSync(){try{if(vvRaf)return;vvRaf=requestAnimationFrame(()=>{vvRaf=0;try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);if(Math.abs(h-vvLast)>=2){vvLast=h;document.documentElement.style.setProperty('--vvh',h+'px');if(UI.kbStop!=null){setTimeout(kbKeepScroll,40);setTimeout(kbKeepScroll,340)}}}catch(e){}})}catch(e){}}
+function kbDoUnlock(){try{UI.kbWait=false;if(UI.kbStop==null)return;UI.kbStop=null;const sc=document.querySelector('#layer .scrim');if(!sc)return;const sh=sc.querySelector('.sheet');
+  const before=sh?sh.getBoundingClientRect().top:0;sc.classList.remove('kblock');sc.style.removeProperty('--stop');
+  if(sh){const d=before-sh.getBoundingClientRect().top;if(Math.abs(d)>1){sh.style.transition='none';sh.style.transform='translateY('+d+'px)';void sh.offsetHeight;sh.style.transition='transform .26s cubic-bezier(.25,.8,.3,1)';sh.style.transform='translateY(0)';setTimeout(()=>{try{sh.style.transition='';sh.style.transform=''}catch(e){}},320)}}}catch(e){}}
+function kbUnlock(){try{if(UI.kbStop==null)return;if(vvLast>=vvMax-2){kbDoUnlock();return}UI.kbWait=true;setTimeout(()=>{if(UI.kbWait)kbDoUnlock()},1200)}catch(e){}}
+let vvLast=0,vvMax=0,vvRaf=0;
+function vvSync(){try{if(vvRaf)return;vvRaf=requestAnimationFrame(()=>{vvRaf=0;try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);if(h>vvMax)vvMax=h;if(Math.abs(h-vvLast)>=2){vvLast=h;document.documentElement.style.setProperty('--vvh',h+'px');if(UI.kbWait&&h>=vvMax-2)kbDoUnlock();if(UI.kbStop!=null){setTimeout(kbKeepScroll,40);setTimeout(kbKeepScroll,340)}}}catch(e){}})}catch(e){}}
 function bootKb(){try{vvSync();if(window.visualViewport)window.visualViewport.addEventListener('resize',vvSync);window.addEventListener('resize',vvSync);
   document.addEventListener('focusout',()=>{setTimeout(()=>{try{const a=document.activeElement;if(!(a&&a.closest&&a.closest('.sheet')&&/INPUT|TEXTAREA/.test(a.tagName)))kbUnlock()}catch(e){}},250)});
-  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName))kbLock(t);if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))setTimeout(()=>{try{const r=t.getBoundingClientRect(),vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)||600;if(r.top<8||r.bottom>vh-8)t.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(x){}},320)})}catch(e){}}
+  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName))UI.kbWait=false;kbLock(t);if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))setTimeout(()=>{try{const r=t.getBoundingClientRect(),vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)||600;if(r.top<8||r.bottom>vh-8)t.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(x){}},320)})}catch(e){}}
 /* Свайп между вкладками. Правша: влево = следующая; левша: зеркально. Допускаем дугу большого пальца (до ~35°). */
 const TAB_ORDER=['home','list','plan','hero'];
 function swipeHint(){if(S.swipeHint||!S.onboarded||!S.tourSeen||S.tx.length<1)return;S.swipeHint=true;save();setTimeout(()=>toast(S.lefty?'Подсказка: вкладки листаются свайпом вправо и влево':'Подсказка: листай вкладки пальцем влево и вправо'),1200)}

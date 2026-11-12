@@ -25,4 +25,8 @@ chk('kblock class kept on rerender',lay().indexOf('kblock')>0&&lay().indexOf('--
 run("closeSheet()");chk('kbStop cleared on close',run('UI.kbStop')===null);
 run("UI.kbStop=null;UI.F=newF('exp');openSheet('add')");
 chk('no kblock without keyboard',lay().indexOf('kblock')<0);
+// 0.35.3: функции плавного снятия фиксации
+chk('kbDoUnlock exists',run("typeof kbDoUnlock")==='function'&&run("typeof kbUnlock")==='function');
+run("UI.kbStop=100;UI.kbWait=true;kbDoUnlock()");
+chk('kbDoUnlock clears state',run('UI.kbStop')===null&&run('UI.kbWait')===false);
 console.log(bad?'FAILED '+bad:'OK all');
