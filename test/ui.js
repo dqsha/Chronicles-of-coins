@@ -62,12 +62,12 @@ chk('home scene has two flame frames',run('SCENES.home()').includes('class="f1"'
 
 // ---- companion ----
 run(`S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Нал',type:'cash',bal0:1000}];S.tourSeen=true;NOW='2026-11-01';UI.tab='home';render()`);
-run("openSheet('camp')");chk('pet card in camp',els['#layer'].innerHTML.includes('Компаньон')&&els['#layer'].innerHTML.includes('Уголёк')&&els['#layer'].innerHTML.includes('Покормить'));chk('pet NOT on home',!els['#app'].innerHTML.includes('id="t-pet"'));
+run("openSheet('camp')");chk('pet card in camp',els['#layer'].innerHTML.includes('Компаньон')&&els['#layer'].innerHTML.includes('Желе')&&els['#layer'].innerHTML.includes('Покормить'));chk('pet NOT on home',!els['#app'].innerHTML.includes('id="t-pet"'));
 act('feed');chk('feed uses food and sets mood',run('S.pet.food')===1&&run('S.pet.xp')===1&&run('petInfo().mood')==='happy');
 act('feed');act('feed');chk('cannot feed without food',run('S.pet.food')===0&&run('S.pet.xp')===2);
 run('renderSheet()');chk('feed button disabled with no food',els['#layer'].innerHTML.includes('data-act="feed" disabled'));
-for(let st=0;st<4;st++){for(const m of ['happy','ok','hungry']){run(`petSVG(${st},'${m}')`);}}
-chk('sprites render',run(`petSVG(3,'happy')`).startsWith('<svg'));
+for(let st=0;st<4;st++){for(const m of ['happy','ok','hungry']){run(`petImg('slime',${st},'${m}')`);}}
+chk('sprites render',run(`petImg('slime',3,'happy')`).startsWith('<img'));
 
 // ---- sound settings ----
 run(`S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Нал',type:'cash',bal0:1}];S.tourSeen=true;UI.tab='home';render()`);

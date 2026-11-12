@@ -37,23 +37,30 @@ let miss=[];['human','elf','orc','goblin'].forEach(r=>['warrior','mage','ranger'
 ['warrior','mage','ranger','rogue'].forEach(c=>[1,2,3,4,5].forEach(i=>{if(!fsx.existsSync(root+'weapon/'+c+'-'+i+'.webp'))miss.push('w'+c+i)}));
 ['slime','cat','dragon','phoenix'].forEach(k=>[1,2,3,4].forEach(i=>{if(!fsx.existsSync(root+'pet/'+k+'-'+i+'.webp'))miss.push('p'+k+i)}));
 chk('all sprites exist ('+miss.join(',')+')',miss.length===0);
-// компаньоны
-chk('default pet wolf',run("petKind()")==='wolf'&&run("petInfo().stageName")==='Волчонок');
-run("S.xp=xpAtLevel(2)");chk('slime locked at L2',run("switchPet('slime')")===false&&run("petKind()")==='wolf');
-run("S.xp=xpAtLevel(3);S.pet.food=5;S.pet.xp=9");
-chk('slime unlocked at L3',run("switchPet('slime')")===true&&run("petKind()")==='slime');
-chk('food carried over, new pet starts fresh',run("S.pet.food")===5&&run("S.pet.xp")===0&&run("S.pet.name")==='Желе');
-chk('wolf progress stored',run("S.petBox.wolf.xp")===9);
-chk('slime stage names',run("petInfo().stageName")==='Капля слайма');
-run("S.pet.xp=30");chk('slime stage 3 = coin slime',run("petInfo().stageName")==='Слайм с монеткой'&&run("petImg('slime',2,'ok')").includes('assets/pet/slime-3.webp'));
-run("switchPet('wolf')");chk('back to wolf restores xp 9',run("petKind()")==='wolf'&&run("S.pet.xp")===9&&run("S.petBox.slime.xp")===30);
+// компаньоны: волка нет, первый питомец слайм
+chk('default pet slime',run("petKind()")==='slime'&&run("petInfo().stageName")==='Капля слайма'&&run("PETS.some(p=>p.id==='wolf')")===false);
+run("S.xp=xpAtLevel(4)");chk('cat locked at L4',run("switchPet('cat')")===false&&run("petKind()")==='slime');
+run("S.xp=xpAtLevel(5);S.pet.food=5;S.pet.xp=9");
+chk('cat unlocked at L5',run("switchPet('cat')")===true&&run("petKind()")==='cat');
+chk('food carried over, new pet starts fresh',run("S.pet.food")===5&&run("S.pet.xp")===0&&run("S.pet.name")==='Мрак');
+chk('slime progress stored',run("S.petBox.slime.xp")===9);
+chk('cat stage names',run("petInfo().stageName")==='Котёнок из тени');
+run("S.pet.xp=60");chk('cat stage 4 = guardian',run("petInfo().stageName")==='Страж теней'&&run("petImg('cat',3,'ok')").includes('assets/pet/cat-4.webp'));
+run("switchPet('slime')");chk('back to slime restores xp 9',run("petKind()")==='slime'&&run("S.pet.xp")===9&&run("S.petBox.cat.xp")===60);
 run("S.xp=xpAtLevel(15)");
 ['cat','dragon','phoenix'].forEach(k=>chk('switch to '+k,run("switchPet('"+k+"')")===true&&run("petKind()")===k));
-chk('wolf drawn by code',run("petImg('wolf',1,'ok')").startsWith('<svg'));
+// миграция: старое сохранение с волком становится слаймом
+const oldSave=JSON.stringify({onboarded:true,pet:{food:3,xp:12,fedOn:null,name:'Уголёк',kind:'wolf'},petBox:{wolf:{xp:1}}});
+ctx.localStorage.getItem=()=>oldSave;run("S=load()");
+chk('old wolf save migrated to slime with same progress',run("S.pet.kind==='slime'&&S.pet.xp===12&&S.pet.food===3&&S.pet.name==='Желе'&&!S.petBox.wolf"));
+const oldSave2=JSON.stringify({onboarded:true,pet:{food:1,xp:2,fedOn:null,name:'Бобик'}});
+ctx.localStorage.getItem=()=>oldSave2;run("S=load()");
+chk('custom name kept on migration',run("S.pet.name")==='Бобик'&&run("petKind()")==='slime');
+ctx.localStorage.getItem=()=>null;run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:100000}];S.xp=xpAtLevel(15)");
 run("UI.tab='hero';render()");chk('pet card has companions button',app().includes('data-act="pets"')&&app().includes('pet-img'));
-act('pets');chk('pets list shows 5',(lay().match(/data-act="petview"/g)||[]).length===5);
+act('pets');chk('pets list shows 4',(lay().match(/data-act="petview"/g)||[]).length===4);
 act('petview','dragon');chk('detail shows 4 stages',(lay().match(/class="pst"/g)||[]).length===4);
 act('close');
 // предупреждение о level-up: компаньон в списке открытий
-chk('unlock list has companion',run("unlockedBetween(2,3)").some(x=>x.includes('Слайм')));
+chk('unlock list has companion',run("unlockedBetween(4,5)").some(x=>x.includes('Теневой кот')));
 console.log(bad?'FAILED '+bad:'ALL OK');

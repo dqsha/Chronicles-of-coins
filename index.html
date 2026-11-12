@@ -571,11 +571,15 @@ const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],ban
 
 function defaults(){return{payday:null,hide:{},epoch:'',del:{},v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
   streak:{count:0,last:null,freezes:1,best:0},noSpend:{},dayRec:{},lastAcc:null,
-  goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Уголёк'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[],hero:{race:'human',cls:'warrior'},petBox:{}}}
+  goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Желе',kind:'slime'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[],hero:{race:'human',cls:'warrior'},petBox:{}}}
 let S=defaults();
 let saveFailed=false;
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r),d=defaults();
-  return Object.assign(d,o,{streak:Object.assign(d.streak,o.streak||{})})}}catch(e){}return defaults()}
+  const r2=Object.assign(d,o,{streak:Object.assign(d.streak,o.streak||{})});
+  /* волка убрали: прежний питомец становится слаймом с тем же прогрессом */
+  if(r2.pet&&(!r2.pet.kind||r2.pet.kind==='wolf')){r2.pet.kind='slime';if(!r2.pet.name||r2.pet.name==='Уголёк')r2.pet.name='Желе'}
+  if(r2.petBox&&r2.petBox.wolf)delete r2.petBox.wolf;
+  return r2}}catch(e){}return defaults()}
 function save(){try{S.savedAt=Date.now();localStorage.setItem(KEY,JSON.stringify(S));saveFailed=false}catch(e){saveFailed=true}cloudPush()}
 /* Облако Telegram: данные привязаны к аккаунту Telegram. Режем JSON на куски по 3000 символов (лимит значения 4096). */
 const CCH=3000;let cloudTimer=null,cloudN=0;
@@ -846,20 +850,19 @@ function checkAch(){if(!S.ach)S.ach={};
     if(!got)break}}
 
 /* ---------- companion ---------- */
-const PET_STAGES=[['Волчонок',0],['Молодой волк',8],['Матёрый волк',24],['Вожак стаи',60]];
-/* Компаньоны: волк рисуется кодом, остальные картинками. 4 стадии роста у каждого. */
+const PET_XP=[0,8,24,60]; /* сколько кормлений нужно до каждой из 4 стадий */
+/* Компаньоны: картинки, 4 стадии роста у каждого. Первый (слайм) доступен сразу, остальные по уровню. */
 const PETS=[
-  {id:'wolf',n:'Волк',l:1,nm:'Уголёк',st:['Волчонок','Молодой волк','Матёрый волк','Вожак стаи']},
-  {id:'slime',n:'Слайм',l:3,nm:'Желе',st:['Капля слайма','Малыш-слайм','Слайм с монеткой','Король слаймов']},
-  {id:'cat',n:'Теневой кот',l:6,nm:'Мрак',st:['Котёнок из тени','Юный теневой кот','Теневой кот-охотник','Страж теней']},
+  {id:'slime',n:'Слайм',l:1,nm:'Желе',st:['Капля слайма','Малыш-слайм','Слайм с монеткой','Король слаймов']},
+  {id:'cat',n:'Теневой кот',l:5,nm:'Мрак',st:['Котёнок из тени','Юный теневой кот','Теневой кот-охотник','Страж теней']},
   {id:'dragon',n:'Дракончик',l:10,nm:'Искра',st:['Яйцо дракона','Дракончик','Молодой дракон','Взрослый дракон']},
   {id:'phoenix',n:'Феникс',l:15,nm:'Жарик',st:['Яйцо феникса','Птенец феникса','Молодой феникс','Феникс']}];
 const PETSZ={slime:[[238,96],[213,176],[250,243],[387,340]],cat:[[119,130],[260,202],[242,261],[341,340]],dragon:[[105,143],[113,123],[248,226],[452,340]],phoenix:[[102,126],[123,129],[237,272],[445,340]]};
 function petDef(k){return PETS.find(p=>p.id===k)||PETS[0]}
-function petKind(){const k=S.pet&&S.pet.kind;return PETS.some(p=>p.id===k)?k:'wolf'}
+function petKind(){const k=S.pet&&S.pet.kind;return PETS.some(p=>p.id===k)?k:PETS[0].id}
 function petStageName(st,k){return petDef(k||petKind()).st[st]||''}
 /* Рисует питомца нужной стадии. box = [ширина, высота] области; все стадии одного питомца масштабируются одинаково, чтобы рост было видно. */
-function petImg(k,st,mood,box){if(k==='wolf')return petSVG(st,mood||'ok');
+function petImg(k,st,mood,box){
   const sz=PETSZ[k];if(!sz)return '';const bw=box?box[0]:104,bh=box?box[1]:92;
   const mw=Math.max.apply(null,sz.map(x=>x[0])),mh=Math.max.apply(null,sz.map(x=>x[1]));
   const ratio=Math.max(sz[st][0]/mw,sz[st][1]/mh),sc=Math.min(bw/sz[st][0],bh/sz[st][1])*Math.pow(ratio,0.6);
@@ -870,10 +873,10 @@ function switchPet(k){const P=petDef(k),L=levelInfo(S.xp).L;if(!P||P.id!==k||P.l
   const nx=S.petBox[k]||{xp:0,fedOn:null,name:P.nm};delete S.petBox[k];
   S.pet=Object.assign({},nx,{kind:k,food:food});return true}
 
-function petFood(n){if(!S.pet)S.pet={food:0,xp:0,fedOn:null,name:'Уголёк'};S.pet.food+=n;notes.push({k:'food',n:n})}
-function petInfo(){const p=S.pet||{food:0,xp:0,fedOn:null,name:'Уголёк'};let st=0;PET_STAGES.forEach((x,i)=>{if(p.xp>=x[1])st=i});
-  const nxt=PET_STAGES[st+1];const mood=!p.fedOn?'hungry':p.fedOn===today()?'happy':dayDiff(p.fedOn,today())<=2?'ok':'hungry';
-  return{stage:st,stageName:petStageName(st),next:nxt?nxt[1]:null,cur:p.xp-PET_STAGES[st][1],span:nxt?nxt[1]-PET_STAGES[st][1]:1,mood:mood}}
+function petFood(n){if(!S.pet)S.pet={food:0,xp:0,fedOn:null,name:'Желе',kind:'slime'};S.pet.food+=n;notes.push({k:'food',n:n})}
+function petInfo(){const p=S.pet||{food:0,xp:0,fedOn:null,name:'Желе'};let st=0;PET_XP.forEach((x,i)=>{if(p.xp>=x)st=i});
+  const nxt=PET_XP[st+1];const mood=!p.fedOn?'hungry':p.fedOn===today()?'happy':dayDiff(p.fedOn,today())<=2?'ok':'hungry';
+  return{stage:st,stageName:petStageName(st),next:nxt!=null?nxt:null,cur:p.xp-PET_XP[st],span:nxt!=null?nxt-PET_XP[st]:1,mood:mood}}
 function feedPet(){if(!S.pet||S.pet.food<1)return false;const b=petInfo().stage;S.pet.food--;S.pet.xp++;S.pet.fedOn=today();
   const a=petInfo().stage;say(S.pet.name+' поел и доволен');
   if(a>b){say(S.pet.name+' вырос: '+petStageName(a));gainXp(10,'Компаньон вырос')}return true}
@@ -1419,20 +1422,7 @@ function viewHome(){
     +(fresh?'':'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button>')+'</section>'
   +attnCard()
   +(fresh?'':hb('today','<section class="card"><h2>Сегодня'+(hasExp?': '+fmt(tsum):'')+'</h2>'+today_+'</section>')+hb('hero',heroStrip()))}
-function petSVG(st,mood){let o='';const r=(x,y,w,h,c)=>{o+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+c+'"/>'};
-  const g='#6b6878',dk='#46435a',lt='#a7a3b8',ink='#1a1620';const eye=mood==='hungry'?ink:st>=3?'#e0832b':'#f6d25a';
-  r(3,14,10,1,'rgba(0,0,0,.35)');
-  if(st===0){r(2,9,2,1,dk);r(1,8,1,1,dk);r(4,8,6,4,g);r(5,11,4,1,lt);r(4,12,2,2,dk);r(8,12,2,2,dk);
-    r(8,4,5,4,g);r(12,6,3,2,lt);r(14,6,1,1,ink);r(8,3,2,1,dk);r(8,2,1,1,dk);r(11,3,2,1,dk);r(12,2,1,1,dk);r(10,5,1,1,eye)}
-  else if(st===1){r(1,6,2,1,dk);r(2,5,1,1,dk);r(3,7,7,4,g);r(4,10,5,1,lt);r(3,11,2,3,dk);r(8,11,2,3,dk);r(6,11,1,2,dk);
-    r(8,5,2,3,g);r(9,3,4,4,g);r(13,5,2,2,lt);r(14,5,1,1,ink);r(9,1,1,2,dk);r(12,1,1,2,dk);r(11,4,1,1,eye)}
-  else{r(0,4,2,1,dk);r(1,5,2,1,dk);r(2,6,2,1,dk);r(3,6,8,4,g);r(4,9,6,1,lt);r(3,10,2,4,g);r(5,10,1,3,dk);r(8,10,1,3,dk);r(10,10,2,4,g);
-    r(9,4,2,4,g);r(10,3,4,4,g);r(14,5,2,2,lt);r(15,5,1,1,ink);r(10,1,1,2,dk);r(13,1,1,2,dk);r(12,4,1,1,eye);
-    if(st===2)r(11,3,1,2,'#c9d1db');
-    if(st>=3){r(8,3,2,3,'#e0832b');r(9,2,1,1,'#f6d25a');r(7,5,1,2,'#e0832b');r(9,7,3,1,'#e2b24a');r(13,4,1,1,'#f6d25a')}}
-  if(mood==='happy')r(14,1,1,1,'#f6d25a');
-  return '<svg viewBox="0 0 16 15" shape-rendering="crispEdges" role="img" aria-label="Компаньон">'+o+'</svg>'}
-function petCard(){const p=petInfo(),pet=S.pet||{food:0,xp:0,name:'Уголёк'};
+function petCard(){const p=petInfo(),pet=S.pet||{food:0,xp:0,name:'Желе'};
   const mt={happy:'Сыт и доволен.',ok:'Пока не голоден.',hungry:'Проголодался.'}[p.mood];
   const prog=p.next?Math.round(p.cur/p.span*100):100;
   return '<section class="card" id="t-pet"><div class="pet"><div class="pet-art m-'+p.mood+'">'+petImg(petKind(),p.stage,p.mood)+'</div><div class="pet-info"><div class="label">Компаньон</div><div class="pet-name">'+esc(pet.name)+'</div>'
@@ -1574,7 +1564,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.33.2';
+const APP_V='0.33.3';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -2056,8 +2046,8 @@ function act(a,el){const v=el.dataset.v;
       const bal=accBal(S.accounts.find(a=>a.id===f.acc)||{bal0:0});
       if(amt>bal&&UI.confirm!=='buy'){UI.confirm='buy';f.err='На этом счёте '+fmt(bal)+', этого не хватит. Нажми ещё раз, чтобы списать всё равно.';return renderSheet()}
       const g=S.goals.find(x=>x.id===UI.sheet.id);closeGoal(UI.sheet.id,{amount:amt,acc:f.acc,cat:f.cat});UI.sheet=null;commit();toast('Куплено: '+(g?g.name:''));break}
-    case 'data':UI.form={name:S.name,pet:(S.pet&&S.pet.name)||'Уголёк',payday:S.payday?String(S.payday):'',import:'',err:''};openSheet('data');break;
-    case 'namesave':{const pdv=parseInt(UI.form.payday,10);S.payday=(pdv>=1&&pdv<=31)?pdv:null}S.name=(UI.form.name||'').trim()||'Странник';if(!S.pet)S.pet={food:0,xp:0,fedOn:null,name:'Уголёк'};S.pet.name=(UI.form.pet||'').trim()||'Уголёк';save();render();toast('Имена сохранены');break;
+    case 'data':UI.form={name:S.name,pet:(S.pet&&S.pet.name)||'Желе',payday:S.payday?String(S.payday):'',import:'',err:''};openSheet('data');break;
+    case 'namesave':{const pdv=parseInt(UI.form.payday,10);S.payday=(pdv>=1&&pdv<=31)?pdv:null}S.name=(UI.form.name||'').trim()||'Странник';if(!S.pet)S.pet={food:0,xp:0,fedOn:null,name:'Желе',kind:'slime'};S.pet.name=(UI.form.pet||'').trim()||petDef(petKind()).nm;save();render();toast('Имена сохранены');break;
     case 'copy':{S.lastBackup=today();save();const txt=JSON.stringify(S);const sel=()=>{const t=$('#dx');if(t){t.focus();t.select()}toast('Выдели и скопируй текст вручную')};
       try{navigator.clipboard.writeText(txt).then(()=>toast('Копия в буфере обмена')).catch(sel)}catch(e){sel()}break}
     case 'import':{const raw=(UI.form.import||'').trim();try{const o=JSON.parse(raw);if(!o||!Array.isArray(o.tx)||!Array.isArray(o.accounts)||!o.accounts.length)throw 0;
