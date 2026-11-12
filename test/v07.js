@@ -28,7 +28,7 @@ act('ecustomsave');chk('custom needs a name',run('UI.E.err').includes('назв�
 run(`UI.E.cname='Парикмахер';UI.E.cicon='💈'`);act('ecustomsave');
 chk('custom category created and selected',run(`S.customCats.length`)===1&&run('UI.E.cat')===run('S.customCats[0].id')&&run('S.customCats[0].kind')==='exp');
 act('txsave');chk('record uses the new category',run(`S.tx.find(x=>x.id==='h3').cat`)===run('S.customCats[0].id'));
-chk('new category appears in add form',(()=>{act('add');return els['#layer'].innerHTML.includes('Парикмахер')})());
+chk('new category appears in add form',(()=>{act('add');act('catopen');return els['#layer'].innerHTML.includes('Парикмахер')})());
 run('UI.sheet=null');
 // apply to all similar
 run(`S.tx.find(x=>x.id==='h0').cat='other';S.tx.find(x=>x.id==='h1').cat='other'`);

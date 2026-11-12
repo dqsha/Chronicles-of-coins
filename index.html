@@ -511,6 +511,10 @@ button,[data-act]{cursor:pointer}
 .gear .g{border-left:5px solid var(--rc,var(--line))}.gear .g .gr{display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap}.gear .g .gr small{font-size:10px;color:var(--rc);text-transform:uppercase;letter-spacing:.05em}
 .gear .g.on{border-color:var(--rc,var(--gold));border-left-width:5px}
 @media (prefers-reduced-motion:reduce){.wslot,.wslot .wsl-glow{animation:none!important}}
+/* окно добавления: свёрнутая категория */
+.catsel{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;text-align:left;border-radius:18px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.02));color:inherit;font:inherit;cursor:pointer}
+.catsel .ci{font-size:20px}.catsel .chev{margin-left:auto;color:var(--mute)}
+.catsel:active{transform:scale(.98)}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1486,6 +1490,7 @@ function viewList(){
     html+='<button class="row" data-act="txopen" data-v="'+x.id+'"><span class="tile">'+c.icon+'</span><span class="mid"><div class="t1">'+esc(t1)+'</div><div class="t2">'+esc(t2)+'</div></span>'
       +'<span class="amt '+cls+'">'+amtTxt(x)+'</span></button>'});
   return scene('list','Записи','Архив хроник',S.tx.length+' '+plural(S.tx.length,['запись','записи','записей']))
+  +(S.tx.some(isUncat)?'<button class="fc on" style="align-self:flex-start" data-act="fixcat">❔ Без категории: '+S.tx.filter(isUncat).length+' · разобрать</button>':'')
   +'<div class="fchips">'+fl.map(f=>'<button class="fc '+(UI.filter===f[0]?'on':'')+'" data-act="filter" data-v="'+f[0]+'">'+f[1]+'</button>').join('')+'</div>'
   +'<section class="card">'+(items.length?'<div class="list">'+html+'</div>'+(items.length>shown.length?'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="more">Показать ещё</button>':''):'<p class="empty">Записей пока нет. Нажми «+», чтобы добавить первую.</p>')+'</section>'}
 function chartSVG(st){
@@ -1564,7 +1569,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.33.3';
+const APP_V='0.34.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1590,12 +1595,15 @@ function shHead(t,lock){return '<div class="sh-head"><h2>'+t+'</h2>'+(lock?'':'<
 function sheetAdd(){const F=UI.F;
   const types=[['exp','Расход'],['inc','Доход'],['tr','Перевод']];
   let h=shHead('Новая запись')+'<div class="seg">'+types.map(t=>'<button class="'+(F.type===t[0]?'on':'')+'" data-act="ftype" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'
-   +'<div class="amtwrap"><input id="amt" class="amount" data-f="amount" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0" aria-label="Сумма" data-live="addcur" value="'+esc(F.amount)+'"><button class="curbtn glass" data-act="curopen" aria-label="Валюта: '+curInfo(F.cur).name+'">'+curInfo(F.cur).sym+' ▾</button></div>'+curPicker(F)+'<p class="sub curhint" id="addconv">'+curHint(F)+'</p>';
+   +'<div class="amtwrap"><input id="amt" class="amount" data-f="amount" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0" aria-label="Сумма" data-live="addcur" value="'+esc(F.amount)+'"><button class="curbtn glass" data-act="curopen" aria-label="Валюта: '+curInfo(F.cur).name+'">'+curInfo(F.cur).sym+' ▾</button></div>'+curPicker(F)+'<p class="sub curhint" id="addconv">'+curHint(F)+'</p>'
+   +(F.err?'<p class="err">'+esc(F.err)+'</p>':'')+'<button class="btn" data-act="save">Записать</button>';
   UI.rep=F.type==='tr'?[]:repeatList(F.type);
   if(UI.rep.length)h+='<div class="label">Повторить</div><div class="fchips">'+UI.rep.map((r,i)=>{const c=catInfo(r.cat);return '<button class="fc" data-act="rep" data-v="'+i+'">'+c.icon+' '+esc(c.name)+' · '+(r.ocur?fmtCur(r.oamt,r.ocur):fmtCt(r.amount))+'</button>'}).join('')+'</div>';
   if(F.type==='tr'){h+='<div class="two"><div class="field"><label for="facc">Откуда</label><select id="facc" class="inp" data-f="acc">'+accOpts(F.acc)+'</select></div>'
      +'<div class="field"><label for="fto">Куда</label><select id="fto" class="inp" data-f="to">'+accOpts(F.to)+'</select></div></div>'}
-  else{h+='<div class="cats">'+catsFor(F.type).map(c=>'<button class="cat '+(F.cat===c.id?'on':'')+'" data-act="cat" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')
+  else{const cc=F.cat&&F.cat!=='none'?catInfo(F.cat):null;
+    if(!F.catOpen&&!F.custom)h+='<button class="catsel" data-act="catopen"><span class="ci">'+(cc?cc.icon:'❔')+'</span><span>'+(cc?esc(cc.name):'Категория (необязательно)')+'</span><span class="chev">▾</span></button>';
+    else h+='<div class="cats">'+catsFor(F.type).map(c=>'<button class="cat '+(F.cat===c.id?'on':'')+'" data-act="cat" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')
      +'<button class="cat dashed" data-act="customtoggle"><span class="ci">+</span><span>Своя</span></button></div>';
     if(F.custom)h+='<div class="two"><div class="field"><label for="fci">Значок</label><input id="fci" class="inp" data-f="cicon" maxlength="4" value="'+esc(F.cicon)+'" placeholder="☕"></div>'
       +'<div class="field"><label for="fcn">Название</label><input id="fcn" class="inp" data-f="cname" maxlength="20" value="'+esc(F.cname)+'" placeholder="Кофе"></div></div><button class="btn ghost small" data-act="customsave">Добавить категорию</button>';
@@ -1603,8 +1611,7 @@ function sheetAdd(){const F=UI.F;
   h+='<button class="fc" style="align-self:flex-start" data-act="more2">'+(F.more?'Скрыть дату и заметку':'Дата и заметка')+'</button>';
   if(F.more)h+='<div class="fchips"><button class="fc'+(F.date===today()?' on':'')+'" data-act="dayset" data-v="0">Сегодня</button><button class="fc'+(F.date===addDays(today(),-1)?' on':'')+'" data-act="dayset" data-v="1">Вчера</button></div><div class="two"><div class="field"><label for="fd">Дата</label><input id="fd" class="inp" type="date" data-f="date" max="'+today()+'" value="'+esc(F.date)+'"></div>'
     +'<div class="field"><label for="fn">Заметка</label><input id="fn" class="inp" data-f="note" maxlength="60" value="'+esc(F.note)+'" placeholder="Что именно"></div></div>';
-  if(F.err)h+='<p class="err">'+esc(F.err)+'</p>';
-  return h+'<button class="btn" data-act="save">Записать</button>'}
+  return h}
 
 function histCard(){if(S.histHide||S.tx.length>=8||S.tx.some(x=>x.hist))return '';
   return '<section class="card"><h2>История трат</h2><p class="sub">Загрузи выписку, и приложение сразу покажет, куда уходят деньги. Это займёт минуту, данные остаются на телефоне.</p><div class="two" style="margin-top:10px"><button class="btn" data-act="imp">Загрузить</button><button class="btn ghost" data-act="imphide">Не сейчас</button></div></section>'}
@@ -1684,6 +1691,14 @@ function sheetTx(){const x=S.tx.find(t=>t.id===UI.sheet.id);if(!x)return shHead(
     +'<div class="field"><label for="en">Заметка</label><input id="en" class="inp" data-f="note" maxlength="60" value="'+esc(E.note)+'" placeholder="Что именно"></div>';
   if(E.err)h+='<p class="err">'+esc(E.err)+'</p>';
   return h+'<button class="btn" data-act="txsave">Сохранить</button>'+del}
+function isUncat(x){return x.type!=='tr'&&(!x.cat||x.cat==='none')}
+function uncatList(){const sk=UI.fixSkip||[];return S.tx.filter(x=>isUncat(x)&&sk.indexOf(x.id)<0).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:b.ts-a.ts)}
+function sheetFix(){const l=uncatList(),n=S.tx.filter(isUncat).length;
+  if(!l.length)return shHead('Категории')+'<p class="sub">'+(n?'Остались только пропущенные ('+n+'). Их можно выбрать в «Записях».':'Все записи с категорией.')+'</p><button class="btn" data-act="close">Готово</button>';
+  const x=l[0];
+  return shHead('Без категории: '+l.length)+'<div class="row" style="cursor:default"><span class="tile">'+(x.type==='inc'?'💰':'🧾')+'</span><span class="mid"><div class="t1">'+esc(x.note||(x.type==='inc'?'Доход':'Расход'))+'</div><div class="t2">'+dayLabel(x.date)+' · '+esc(accName(x.acc))+'</div></span><span class="amt '+(x.type==='inc'?'pos':'neg')+'">'+amtTxt(x)+'</span></div>'
+   +'<div class="cats">'+catsFor(x.type).map(c=>'<button class="cat" data-act="fixset" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')+'</div>'
+   +'<button class="btn ghost" data-act="fixskip">Пропустить</button>'}
 function newE(x){return{id:x.id,amount:String(x.ocur?x.oamt:x.amount),ocur:x.ocur||null,cat:x.cat,date:x.date,acc:x.acc,note:x.note||'',more:false,custom:false,cname:'',cicon:'',all:false,err:''}}
 function sheetAcc(){const f=UI.form;const edit=!!UI.sheet.id;
   return shHead(edit?'Счёт':'Новый счёт')
@@ -1868,7 +1883,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
@@ -1884,7 +1899,7 @@ function saveTxForm(){const F=UI.F;const oamt=num(F.amount),cur=F.cur||'KZT';
   const amount=cur==='KZT'?oamt:convert(oamt,cur,'KZT');
   if(amount==null){F.err='Нет курса '+cur+'. Подключись к интернету или выбери тенге';return renderSheet()}
   if(amount>MAXAMT){F.err='Слишком большая сумма: максимум 999 млрд ₸';return renderSheet()}
-  if(F.type!=='tr'&&!F.cat){F.err='Выберите категорию';return renderSheet()}
+  if(F.type!=='tr'&&!F.cat)F.cat='none';
   if(F.type==='tr'&&(!F.to||F.acc===F.to)){F.err=S.accounts.length<2?'Для перевода нужно два счёта':'Выберите два разных счёта';return renderSheet()}
   if(!F.date||F.date>today()){F.err='Дата не может быть в будущем';return renderSheet()}
   addTx({type:F.type,amount:Math.round(amount*100)/100,cat:F.cat,acc:F.acc,to:F.type==='tr'?F.to:null,date:F.date,note:F.note,ocur:cur==='KZT'?null:cur,oamt:cur==='KZT'?null:oamt});
@@ -1938,13 +1953,19 @@ function act(a,el){const v=el.dataset.v;
       if(i>=0&&i<keys.length){UI.mon=keys[i]===keys[keys.length-1]?null:keys[i];UI.day=null;render()}break}
     case 'statday':UI.day=UI.day===v?null:v;render();break;
     case 'close':closeSheet();break;
-    case 'ftype':{const F=UI.F;F.type=v;F.cat=null;F.err='';UI.focus=true;renderSheet();break}
-    case 'cat':UI.F.cat=v;UI.F.err='';renderSheet();break;
+    case 'ftype':{const F=UI.F;F.type=v;F.cat=null;F.catOpen=false;F.err='';UI.focus=true;renderSheet();break}
+    case 'cat':UI.F.cat=v;UI.F.catOpen=false;UI.F.err='';renderSheet();break;
+    case 'fixcat':UI.fixSkip=[];openSheet('fixcat');break;
+    case 'fixskip':{const l=uncatList();if(l.length){(UI.fixSkip=UI.fixSkip||[]).push(l[0].id)}renderSheet();break}
+    case 'fixset':{const l=uncatList();if(!l.length)break;const x=l[0];x.cat=v;let n=0;
+      similarTx(x).forEach(t=>{if(isUncat(t)){t.cat=v;n++}});
+      save();render();renderSheet();toast(n?'Готово. Похожих тоже: '+n:'Готово',true);break}
+    case 'catopen':UI.F.catOpen=true;renderSheet();break;
     case 'customtoggle':UI.F.custom=!UI.F.custom;renderSheet();break;
     case 'impcat':{const F=UI.form;const nm=(F.ncname||'').trim();if(!nm){toast('Введите название категории');break}
       const c={id:'c'+uid(),name:nm,icon:(F.ncicon||'⭐').trim(),kind:'exp'};S.customCats.push(c);F.map[v]=c.id;F.newFor=null;F.ncname='';F.ncicon='';save();renderSheet();toast('Категория добавлена');break}
     case 'customsave':{const F=UI.F;if(!F.cname.trim()){F.err='Введите название категории';return renderSheet()}
-      const c={id:'c'+uid(),name:F.cname.trim(),icon:(F.cicon||'⭐').trim(),kind:F.type};S.customCats.push(c);F.cat=c.id;F.custom=false;F.cname='';F.cicon='';F.err='';save();renderSheet();break}
+      const c={id:'c'+uid(),name:F.cname.trim(),icon:(F.cicon||'⭐').trim(),kind:F.type};S.customCats.push(c);F.cat=c.id;F.custom=false;F.catOpen=false;F.cname='';F.cicon='';F.err='';save();renderSheet();break}
     case 'dayset':UI.F.date=addDays(today(),-(+v));renderSheet();break;
     case 'more2':UI.F.more=!UI.F.more;renderSheet();break;
     case 'save':saveTxForm();break;
