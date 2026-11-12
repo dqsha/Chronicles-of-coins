@@ -524,12 +524,19 @@ button,[data-act]{cursor:pointer}
  text-shadow:0 1px 2px rgba(0,0,0,.5);animation:qmfloat 4.5s ease-in-out infinite}
 .qm::after{content:'';position:absolute;inset:-10px;border-radius:50%}
 .qm:active{transform:scale(.92)}
+.qm.seen{animation:none;color:var(--mute);border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.05);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;text-shadow:none;font-weight:400}
 @keyframes qmfloat{0%,100%{box-shadow:inset 0 1px 1px rgba(255,255,255,.55),inset 0 -2px 4px rgba(226,178,74,.22),0 2px 8px rgba(0,0,0,.35),0 0 8px rgba(226,178,74,.12)}50%{box-shadow:inset 0 1px 1px rgba(255,255,255,.65),inset 0 -2px 4px rgba(226,178,74,.3),0 2px 8px rgba(0,0,0,.35),0 0 15px rgba(226,178,74,.34)}}
 @media (prefers-reduced-motion:reduce){.qm{animation:none}}
 /* мягкое свечение у кнопок «Трата» и «Доход» */
 .logbtns .btn.big{position:relative;isolation:isolate}
 .logbtns .btn.big.exp{box-shadow:0 0 18px rgba(224,103,90,.35),0 0 42px rgba(224,103,90,.18)}
 .logbtns .btn.big.inc{box-shadow:0 0 18px rgba(106,196,110,.35),0 0 42px rgba(106,196,110,.18)}
+/* окно записи выше, чтобы «Записать» было видно над клавиатурой */
+.scrim.addsheet .sheet{min-height:min(92%,660px)}
+/* клавиатура: верх окна стоит на месте */
+.scrim.kblock{align-items:flex-start!important}
+.scrim.kblock .sheet>*,.scrim.addsheet .sheet>*{flex-shrink:0}
+.scrim.kblock .sheet{margin-top:var(--stop,0px);max-height:calc(var(--vvh,100%) - var(--stop,0px) - 6px)!important}
 /* клавиатура: одна плавная анимация вместо двух наложенных */
 .sheet{transition:none}
 .scrim{transition:height .22s cubic-bezier(.25,.8,.3,1)}
@@ -677,6 +684,7 @@ function mergeStates(a,b){const na=(a.savedAt||0)>=(b.savedAt||0),nw=na?a:b,od=n
   ['paid','noSpend','dayRec'].forEach(k=>{out[k]=Object.assign({},od[k]||{},nw[k]||{})});
   ['accounts','mand','goals','customCats'].forEach(k=>{const m={},arr=[];(nw[k]||[]).concat(od[k]||[]).forEach(x=>{if(!x||!x.id||m[x.id]||del[x.id])return;m[x.id]=1;arr.push(x)});out[k]=arr});
   out.ach=Object.assign({},od.ach||{},nw.ach||{});
+  out.hintSeen=Object.assign({},od.hintSeen||{},nw.hintSeen||{});
   const pm={};(od.pro||[]).concat(nw.pro||[]).forEach(q=>{if(!q||!q.id||del[q.id])return;const c=pm[q.id];if(!c||(q.u||0)>=(c.u||0))pm[q.id]=q});out.pro=Object.keys(pm).map(k=>pm[k]);
   out.xp=Math.max(a.xp||0,b.xp||0);out.savedAt=Math.max(a.savedAt||0,b.savedAt||0);return out}
 function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
@@ -1589,7 +1597,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.35.1';
+const APP_V='0.35.2';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1608,7 +1616,7 @@ function render(){
 /* ---------- sheets ---------- */
 function accOpts(sel,skip){return S.accounts.filter(a=>a.id!==skip).map(a=>'<option value="'+a.id+'"'+(a.id===sel?' selected':'')+'>'+esc(a.name)+'</option>').join('')}
 function openSheet(kind,data){UI.sheet=Object.assign({kind:kind},data||{});UI.confirm=null;renderSheet()}
-function closeSheet(){UI.sheet=null;UI.confirm=null;if(UI.syncDirty){UI.syncDirty=false;try{render()}catch(e){}}let sc=null;try{sc=!S.calm&&document.querySelector('#layer .scrim')}catch(e){}
+function closeSheet(){UI.sheet=null;UI.confirm=null;UI.kbStop=null;if(UI.syncDirty){UI.syncDirty=false;try{render()}catch(e){}}let sc=null;try{sc=!S.calm&&document.querySelector('#layer .scrim')}catch(e){}
   if(sc&&sc.classList&&sc.classList.add){sc.classList.add('closing');setTimeout(()=>{if(!UI.sheet)renderSheet();if(UI.pendingLvl&&!UI.sheet)openSheet('lvl')},190);try{document.body.classList.remove('lock')}catch(e){}return}
   renderSheet();if(UI.pendingLvl)openSheet('lvl')}
 function shHead(t,lock){return '<div class="sh-head"><h2>'+t+'</h2>'+(lock?'':'<button class="x" data-act="close" aria-label="Закрыть">×</button>')+'</div>'}
@@ -1733,7 +1741,7 @@ const HINTS={
  days:['По дням','Траты, разбитые по дням.','Нажми на день, чтобы раскрыть записи.','Находишь дорогие дни и их причину.'],
  gear:['Инвентарь','Снаряжение героя: оружие и броня.','Оружие открывается с уровнем. Нажми, чтобы взять. Броня и остальные слоты в разработке.','Игровая награда за привычку вести учёт.'],
  pets:['Компаньоны','Питомцы, которые растут вместе с тобой.','Новые открываются с уровнем. Нажми, чтобы посмотреть и взять с собой.','Лёгкая мотивация записывать каждый день.']};
-function hq(k){return HINTS[k]?'<button class="qm" data-act="hint" data-v="'+k+'" aria-label="Что это?">?</button>':''}
+function hq(k){return HINTS[k]?'<button class="qm'+((S.hintSeen||{})[k]?' seen':'')+'" data-act="hint" data-v="'+k+'" aria-label="Что это?">?</button>':''}
 function sheetHint(){const h=HINTS[UI.sheet.k];if(!h)return shHead('Подсказка')+'<button class="btn" data-act="hintok">Понятно</button>';
   return shHead(h[0])+'<div class="label">Что это</div><p class="sub">'+esc(h[1])+'</p><div class="label">Как пользоваться</div><p class="sub">'+esc(h[2])+'</p><div class="label">Зачем это в жизни</div><p class="sub">'+esc(h[3])+'</p><button class="btn" data-act="hintok">Понятно</button>'}
 function isUncat(x){return x.type!=='tr'&&(!x.cat||x.cat==='none')}
@@ -1933,7 +1941,7 @@ function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   const kbf=sh.kind==='add'&&UI.focus;
-  L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+(kbf?' kbfade':'')+'" data-lock="'+(lock?1:0)+'"><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
+  L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+(kbf?' kbfade':'')+(sh.kind==='add'?' addsheet':'')+(UI.kbStop!=null?' kblock':'')+'" data-lock="'+(lock?1:0)+'"'+(UI.kbStop!=null?' style="--stop:'+UI.kbStop+'px"':'')+'><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
   if(sh.kind==='add'&&UI.focus){UI.focus=false;const a=$('#amt');if(a){try{a.focus({preventScroll:true})}catch(e){a.focus()}}}}
 
 /* ---------- actions ---------- */
@@ -2002,7 +2010,7 @@ function act(a,el){const v=el.dataset.v;
     case 'close':closeSheet();break;
     case 'ftype':{const F=UI.F;F.type=v;F.cat=null;F.catOpen=false;F.err='';UI.focus=true;renderSheet();break}
     case 'cat':UI.F.cat=v;UI.F.catOpen=false;UI.F.err='';renderSheet();break;
-    case 'hint':UI.hintBack=(UI.sheet&&UI.sheet.kind!=='hint')?UI.sheet:null;openSheet('hint',{k:v});break;
+    case 'hint':if(!S.hintSeen)S.hintSeen={};if(!S.hintSeen[v]){S.hintSeen[v]=1;save();try{render()}catch(e){}}UI.hintBack=(UI.sheet&&UI.sheet.kind!=='hint')?UI.sheet:null;openSheet('hint',{k:v});break;
     case 'hintok':if(UI.hintBack){UI.sheet=UI.hintBack;UI.hintBack=null;renderSheet()}else closeSheet();break;
     case 'fixcat':UI.fixSkip=[];openSheet('fixcat');break;
     case 'fixskip':{const l=uncatList();if(l.length){(UI.fixSkip=UI.fixSkip||[]).push(l[0].id)}renderSheet();break}
@@ -2171,10 +2179,16 @@ function tgInit(){try{const w=window.Telegram&&window.Telegram.WebApp;if(!w||!w.
 function errCard(){const l=(window.__errlog&&window.__errlog())||[];if(!l.length)return '';
   return '<p class="note">Журнал ошибок: '+l.length+' '+plural(l.length,['запись','записи','записей'])+'. <button class="btn ghost small" data-act="errcopy">Скопировать для разработчика</button> <button class="btn ghost small" data-act="errclear">Очистить</button></p>'}
 function checkUpdate(){try{if(!window.fetch)return;fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{if(j&&j.v&&j.v!==APP_V){UI.upd=j.v;if(!UI.sheet&&UI.tab==='home')render()}}).catch(()=>{})}catch(e){}}
+/* Клавиатура: окно остаётся на месте (верх фиксируем), клавиатура просто закрывает его низ */
+function kbLock(t){try{const sc=t.closest('.scrim');if(!sc||UI.kbStop!=null)return;const sh=sc.querySelector('.sheet');if(!sh)return;const top=Math.max(0,Math.round(sh.getBoundingClientRect().top));UI.kbStop=top;UI.kbScroll=sh.scrollTop||0;sc.style.setProperty('--stop',top+'px');sc.classList.add('kblock')}catch(e){}}
+function kbKeepScroll(){try{const sh=document.querySelector('#layer .sheet');if(!sh||UI.kbStop==null)return;const a=document.activeElement,prev=sh.scrollTop,to=UI.kbScroll||0;const go=v=>{try{sh.scrollTo({top:v,behavior:'instant'})}catch(e){sh.scrollTop=v}};go(to);
+  const r=a&&a.getBoundingClientRect?a.getBoundingClientRect():null,vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)||600;if(r&&(r.top<4||r.bottom>vh-4))go(prev)}catch(e){}}
+function kbUnlock(){try{UI.kbStop=null;const sc=document.querySelector('#layer .scrim');if(sc){sc.classList.remove('kblock');sc.style.removeProperty('--stop')}}catch(e){}}
 let vvLast=0,vvRaf=0;
-function vvSync(){try{if(vvRaf)return;vvRaf=requestAnimationFrame(()=>{vvRaf=0;try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);if(Math.abs(h-vvLast)>=2){vvLast=h;document.documentElement.style.setProperty('--vvh',h+'px')}}catch(e){}})}catch(e){}}
+function vvSync(){try{if(vvRaf)return;vvRaf=requestAnimationFrame(()=>{vvRaf=0;try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);if(Math.abs(h-vvLast)>=2){vvLast=h;document.documentElement.style.setProperty('--vvh',h+'px');if(UI.kbStop!=null){setTimeout(kbKeepScroll,40);setTimeout(kbKeepScroll,340)}}}catch(e){}})}catch(e){}}
 function bootKb(){try{vvSync();if(window.visualViewport)window.visualViewport.addEventListener('resize',vvSync);window.addEventListener('resize',vvSync);
-  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))setTimeout(()=>{try{const r=t.getBoundingClientRect(),vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)||600;if(r.top<8||r.bottom>vh-8)t.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(x){}},320)})}catch(e){}}
+  document.addEventListener('focusout',()=>{setTimeout(()=>{try{const a=document.activeElement;if(!(a&&a.closest&&a.closest('.sheet')&&/INPUT|TEXTAREA/.test(a.tagName)))kbUnlock()}catch(e){}},250)});
+  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName))kbLock(t);if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))setTimeout(()=>{try{const r=t.getBoundingClientRect(),vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)||600;if(r.top<8||r.bottom>vh-8)t.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(x){}},320)})}catch(e){}}
 /* Свайп между вкладками. Правша: влево = следующая; левша: зеркально. Допускаем дугу большого пальца (до ~35°). */
 const TAB_ORDER=['home','list','plan','hero'];
 function swipeHint(){if(S.swipeHint||!S.onboarded||!S.tourSeen||S.tx.length<1)return;S.swipeHint=true;save();setTimeout(()=>toast(S.lefty?'Подсказка: вкладки листаются свайпом вправо и влево':'Подсказка: листай вкладки пальцем влево и вправо'),1200)}
