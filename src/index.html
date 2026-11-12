@@ -564,6 +564,7 @@ button,[data-act]{cursor:pointer}
 .wslot.r3 .wic .pxh,.wslot.r4 .wic .pxh{animation-duration:2.2s;filter:drop-shadow(0 0 4px rgba(var(--rg),.8))}
 @keyframes wfloat{0%,100%{transform:translateY(1px) rotate(-5deg)}50%{transform:translateY(-3px) rotate(5deg)}}
 @media (prefers-reduced-motion:reduce){.wic .pxh{animation:none!important}}
+.catbtn{width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:0}.catbtn.over .amt{color:var(--exp)}.catbtn.over .bar>i{background:var(--exp)}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -623,7 +624,7 @@ const CATS_INC=[['salary','Зарплата','💰'],['side','Подработк
 const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],bank:['Счёт или депозит','🏦'],save:['Накопления','🐷'],deposit:['Депозит','🏛️']};
 
 function defaults(){return{payday:null,hide:{},epoch:'',del:{},v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
-  streak:{count:0,last:null,freezes:1,best:0},visit:{count:0,last:null,best:0,total:0},noSpend:{},dayRec:{},lastAcc:null,
+  streak:{count:0,last:null,freezes:1,best:0},visit:{count:0,last:null,best:0,total:0},limits:{},noSpend:{},dayRec:{},lastAcc:null,
   goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Желе',kind:'slime'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[],hero:{race:'human',cls:'warrior'},petBox:{}}}
 let S=defaults();
 let saveFailed=false;
@@ -705,7 +706,7 @@ function mergeStates(a,b){const na=(a.savedAt||0)>=(b.savedAt||0),nw=na?a:b,od=n
   const seen={},tx=[];(nw.tx||[]).concat(od.tx||[]).forEach(x=>{if(!x||!x.id||seen[x.id]||del[x.id])return;seen[x.id]=1;tx.push(x)});out.tx=tx;
   ['paid','noSpend','dayRec'].forEach(k=>{out[k]=Object.assign({},od[k]||{},nw[k]||{})});
   ['accounts','mand','goals','customCats'].forEach(k=>{const m={},arr=[];(nw[k]||[]).concat(od[k]||[]).forEach(x=>{if(!x||!x.id||m[x.id]||del[x.id])return;m[x.id]=1;arr.push(x)});out[k]=arr});
-  out.ach=Object.assign({},od.ach||{},nw.ach||{});
+  out.ach=Object.assign({},od.ach||{},nw.ach||{});out.limits=Object.assign({},od.limits||{},nw.limits||{});
   out.hintSeen=Object.assign({},od.hintSeen||{},nw.hintSeen||{});
   const pm={};(od.pro||[]).concat(nw.pro||[]).forEach(q=>{if(!q||!q.id||del[q.id])return;const c=pm[q.id];if(!c||(q.u||0)>=(c.u||0))pm[q.id]=q});out.pro=Object.keys(pm).map(k=>pm[k]);
   {const va=a.visit||{},vb=b.visit||{},w=((va.last||'')>(vb.last||'')||((va.last||'')===(vb.last||'')&&(va.count||0)>=(vb.count||0)))?va:vb;out.visit=Object.assign({count:0,last:null,best:0,total:0},w,{best:Math.max(va.best||0,vb.best||0),total:Math.max(va.total||0,vb.total||0)})}
@@ -1511,6 +1512,7 @@ function viewHome(){
     +(fresh?'<p class="sub">Запиши первую операцию.</p>':quick)+undo
     +(fresh?'':'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button>')+'</section>'
   +attnCard()
+  +(S.tx.some(isUncat)?'<button class="fc on" style="align-self:flex-start;margin:0 0 10px" data-act="fixcat">❔ Без категории: '+S.tx.filter(isUncat).length+' · разобрать</button>':'')
   +(fresh?'':hb('today','<section class="card"><h2>Сегодня'+(hasExp?': '+fmt(tsum):'')+hq('today')+'</h2>'+today_+'</section>')+hb('hero',heroStrip()))}
 function petCard(){const p=petInfo(),pet=S.pet||{food:0,xp:0,name:'Желе'};
   const mt={happy:'Сыт.',ok:'Не голоден.',hungry:'Голоден.'}[p.mood];
@@ -1598,7 +1600,8 @@ function viewStats(){
   const st=buckets(UI.period,UI.mon);const net=st.inc-st.exp;
   const cats=Object.keys(st.cats).map(k=>[k,st.cats[k]]).sort((a,b)=>b[1]-a[1]);
   const catHtml=cats.slice(0,8).map(c=>{const ci=catInfo(c[0]);const p=st.exp?c[1]/st.exp:0;
-    return '<div class="catrow"><span>'+ci.icon+' '+esc(ci.name)+'</span><span class="amt">'+fmt(c[1])+' · '+Math.round(p*100)+'%</span><div class="bar"><i style="width:'+Math.round(p*100)+'%"></i></div></div>'}).join('');
+    const lm=(S.limits&&S.limits[c[0]])||0,lp=(lm>0&&UI.period==='month')?c[1]/lm:null;
+    return '<button class="catrow catbtn'+(lp!=null&&lp>1?' over':'')+'" data-act="limitopen" data-v="'+esc(c[0])+'"><span>'+ci.icon+' '+esc(ci.name)+'</span><span class="amt">'+fmt(c[1])+(lp!=null?' из '+fmt(lm):' · '+Math.round(p*100)+'%')+'</span><div class="bar"><i style="width:'+Math.min(100,Math.round((lp!=null?lp:p)*100))+'%"></i></div></button>'}).join('');
   const mr=monthRecords();let best='';
   if(mr.length>=2){const worst=mr.slice().sort((a,b)=>b.exp-a.exp)[0];const top=mr.slice().sort((a,b)=>(b.inc-b.exp)-(a.inc-a.exp))[0];
     const nm=k=>MF[+k.slice(5)-1]+' '+k.slice(0,4);
@@ -1654,7 +1657,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.38.1';
+const APP_V='0.38.3';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1985,6 +1988,10 @@ function sheetGdet(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return sh
    +'<div class="two"><button class="btn ghost small" data-act="goaledit" data-v="'+g.id+'">Изменить</button>'
    +(UI.confirm==='goal'?'<button class="btn danger small" data-act="goaldel" data-v="'+g.id+'">Да, удалить</button>':'<button class="btn ghost small" data-act="goaldel" data-v="'+g.id+'">Удалить цель</button>')+'</div>'
    +(UI.confirm==='goal'?'<p class="err">Удалить цель? Отложенные деньги снова станут свободными.</p>':'')}
+function sheetLimit(){const k=UI.sheet.cat,ci=catInfo(k),f=UI.form,cur=(S.limits&&S.limits[k])||0;
+  return shHead('Лимит на месяц')+'<p class="note">'+esc(ci.icon+' '+ci.name)+'. Когда траты дойдут до лимита, полоска покраснеет.</p>'
+   +'<div class="amtwrap"><input id="lamt" class="amount" data-f="lim" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Лимит в тенге" value="'+esc(f.lim)+'"><span>₸</span></div>'
+   +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="limitsave">Сохранить</button>'+(cur>0?'<button class="btn ghost" data-act="limitdel">Убрать лимит</button>':'')}
 function sheetContrib(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Взнос')+'<p>Цель не найдена.</p>';const f=UI.form,i=goalInfo(g);
   return shHead('Взнос')+'<p class="note">'+esc(g.icon+' '+g.name)+': отложено '+fmt(i.saved)+' из '+fmt(g.target)+'. Деньги остаются на твоих счетах, но считаются отложенными и не входят в «Банк».</p>'
    +'<div class="seg" style="grid-template-columns:1fr 1fr"><button class="'+(f.mode==='in'?'on':'')+'" data-act="cmode" data-v="in">Отложить</button><button class="'+(f.mode==='out'?'on':'')+'" data-act="cmode" data-v="out">Забрать</button></div>'
@@ -2002,7 +2009,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,limit:sheetLimit,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   const kbf=sh.kind==='add'&&UI.focus;
@@ -2166,6 +2173,9 @@ function act(a,el){const v=el.dataset.v;
     case 'tourend':endTour();break;
     case 'tourimp':endTour();act('imp',el);break;
     case 'goalnew':UI.form={name:'',icon:'',target:'',deadline:'',err:''};openSheet('goal',{id:null});break;
+    case 'limitopen':{const cur=(S.limits&&S.limits[v])||0;UI.form={lim:cur?String(cur):'',err:''};openSheet('limit',{cat:v});break}
+    case 'limitsave':{const n=num(UI.form.lim);if(!(n>0)){UI.form.err='Введи сумму больше нуля';renderSheet();break}if(!S.limits)S.limits={};S.limits[UI.sheet.cat]=Math.round(n);S.savedAt=Date.now();save();closeSheet();render();break}
+    case 'limitdel':{if(S.limits)S.limits[UI.sheet.cat]=0;S.savedAt=Date.now();save();closeSheet();render();break}
     case 'goalopen':UI.form={err:''};openSheet('gdet',{id:v});break;
     case 'goaledit':{const g=S.goals.find(x=>x.id===v);if(!g)break;UI.form={name:g.name,icon:g.icon,target:String(g.target),deadline:g.deadline||'',err:''};openSheet('goal',{id:v});break}
     case 'goalsave':{const f=UI.form,id=UI.sheet.id;const target=num(f.target);
