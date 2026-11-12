@@ -1437,17 +1437,17 @@ function mandRow(m,showBtn){const s=mandStatus(m);const c=catInfo(m.cat);
   return '<div class="row" style="cursor:default"><span class="tile">'+c.icon+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2'+(s.overdue?' neg':'')+'">'+when+'</div></span>'
    +'<span class="amt">'+fmt(m.amount)+'</span>'+(showBtn&&!s.paid?'<button class="btn small" data-act="pay" data-v="'+m.id+'">Оплатил</button>':'')+'</div>'}
 function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
-  const stTxt={new:'Запиши первую трату, чтобы зажечь огонь',ok:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд',
-    wait:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд. Запиши что-нибудь сегодня',
-    frozen:'Пропущено дней: '+sv.missed+'. Заморозка сохранит серию, если запишешь сегодня',broken:'Серия прервалась, ничего страшного. Начни новую сегодня'}[sv.state];
+  const stTxt={new:'Запиши трату, и огонь зажжётся',ok:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд',
+    wait:sv.count+' '+plural(sv.count,['день','дня','дней'])+'. Запиши сегодня',
+    frozen:'Пропущено: '+sv.missed+'. Запиши сегодня',broken:'Серия прервалась. Начни новую'}[sv.state];
   return '<section class="card hero'+(full?'':' herom')+'"'+(full?'':' data-act="camp" role="button" tabindex="0" aria-label="Открыть лагерь героя"')+'><div class="hero-col"><div class="hero-art">'+heroArt(lv.L)+'</div>'+(full?weaponSlot(lv.L):'')+'</div><div class="hero-info">'
     +'<div class="lvl">Уровень <span class="n">'+lv.L+'</span></div><div class="name">'+esc(S.name)+'</div>'
     +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div>'
-    +'<div class="xpline">'+(full?lv.cur+' / '+lv.need+' XP · ':'')+'До уровня '+(lv.L+1)+': ещё '+(lv.need-lv.cur)+' XP</div>'
+    +'<div class="xpline">'+(lv.need-lv.cur)+' XP до '+(lv.L+1)+' ур.</div>'
     +'<div class="streak"><span class="ic">'+flame(3)+'<span>'+esc(full?stTxt:(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь')+'</span></span>'+(full?'<span class="ic">'+snow(3)+'<span>Заморозки: '+S.streak.freezes+' из 3</span></span><span class="ic">📅<span>Заходов подряд: '+visitView().count+'</span></span>':'')+'</div>'
     +(full?'<div class="chips"><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
 function sheetCamp(){const lv=levelInfo(S.xp),nx=nextUnlock(lv.L);
-  return shHead('Лагерь героя')+heroCard(true)+((nx&&!S.calm)?'<p class="note">Следующая вещь: '+esc(nx.n)+' на '+nx.l+' уровне.</p>':'')+(S.calm?'':petCard()+questCard())}
+  return shHead('Лагерь героя')+heroCard(true)+((nx&&!S.calm)?'<p class="note">Дальше: '+esc(nx.n)+', '+nx.l+' ур.</p>':'')+(S.calm?'':petCard()+questCard())}
 function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const wh=f.pay?'до зарплаты':'до конца месяца';
   let head,cls='';
   if(f.state==='broke'){head='Денег до '+(f.pay?'зарплаты':'конца месяца')+' не остаётся';cls='neg'}
@@ -1513,13 +1513,12 @@ function viewHome(){
   +attnCard()
   +(fresh?'':hb('today','<section class="card"><h2>Сегодня'+(hasExp?': '+fmt(tsum):'')+hq('today')+'</h2>'+today_+'</section>')+hb('hero',heroStrip()))}
 function petCard(){const p=petInfo(),pet=S.pet||{food:0,xp:0,name:'Желе'};
-  const mt={happy:'Сыт и доволен.',ok:'Пока не голоден.',hungry:'Проголодался.'}[p.mood];
+  const mt={happy:'Сыт.',ok:'Не голоден.',hungry:'Голоден.'}[p.mood];
   const prog=p.next?Math.round(p.cur/p.span*100):100;
   return '<section class="card" id="t-pet"><div class="pet"><div class="pet-art m-'+p.mood+'">'+petImg(petKind(),p.stage,p.mood)+'</div><div class="pet-info"><div class="label">Компаньон</div><div class="pet-name">'+esc(pet.name)+'</div>'
-   +'<div class="note">'+p.stageName+'. '+mt+'</div><div class="bar thin"><i style="width:'+prog+'%"></i></div>'
-   +'<div class="xpline">'+(p.next?'Кормлений до роста: '+(p.span-p.cur):'Достиг вершины')+'</div></div></div>'
-   +'<div class="chips" style="margin-top:10px;align-items:center"><button class="btn small" data-act="feed"'+(pet.food<1?' disabled':'')+'>Покормить</button><span class="ic">Корм: <b class="n">'+pet.food+'</b></span><button class="btn ghost small" data-act="pets">Компаньоны</button></div>'
-   +'<p class="sub">Корм дают за взносы в цели, дни без трат, достижения и новые уровни.</p></section>'}
+   +'<div class="note">'+p.stageName+' · '+mt+'</div><div class="bar thin"><i style="width:'+prog+'%"></i></div>'
+   +'<div class="xpline">'+(p.next?'До роста: '+(p.span-p.cur):'Вершина')+'</div></div></div>'
+   +'<div class="chips" style="margin-top:10px;align-items:center"><button class="btn small" data-act="feed"'+(pet.food<1?' disabled':'')+'>Покормить</button><span class="ic">Корм: <b class="n">'+pet.food+'</b></span><button class="btn ghost small" data-act="pets">Компаньоны</button></div>'+'</section>'}
 const COIN=['..ooo..','.oyyyo.','oyyoyyo','oyoyyyo','oyyoyyo','.oyyyo.','..ooo..'];
 const fmtDateY=d=>fmtDate(d)+(d.slice(0,4)!==today().slice(0,4)?' '+d.slice(0,4):'');
 function mainGoal(){const a=activeGoals();if(!a.length)return null;const nd=a.filter(g=>!goalInfo(g).done);const pool=nd.length?nd:a;
@@ -1655,7 +1654,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.38.0';
+const APP_V='0.38.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1836,7 +1835,7 @@ function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls,cw=equippedTier
   const ic=(sl,i)=>sl==='weapon'?weaponIcon(cl,i,3):armorIcon(cl,i,3);
   let h=shHead('Инвентарь'+hq('gear'))+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
    +'<div class="inv">'+INVSLOTS.map(sl=>(sl.id==='weapon'||sl.id==='armor')?'<div class="islot on r'+(sl.id==='weapon'?cw:ca)+'">'+ic(sl.id,sl.id==='weapon'?cw:ca)+'<b>'+esc(GEAR[sl.id][sl.id==='weapon'?cw:ca].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
-   +'<p class="note" style="margin-top:6px">Открывается с уровнем. Нажми, чтобы взять.</p>';
+   +'<p class="note" style="margin-top:6px">Нажми, чтобы взять.</p>';
   ['weapon','armor'].forEach(s=>{const cur=s==='weapon'?cw:ca;h+='<div class="slot">'+SLOTN[s]+'</div><div class="gear">'+GEAR[s].map((g,i)=>'<button class="g r'+i+' '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl">'+ic(s,i)+'<span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cur?(s==='weapon'?'в руках':'надето'):g.l>L?'с '+g.l+' ур.':(s==='weapon'?'взять':'надеть'))+'</span></button>').join('')+'</div>'});
   return h}
 function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
@@ -1848,13 +1847,13 @@ function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
    +'<div class="slot">Цвет волос</div>'+sw(HCOLS,h.hcol,'sethcol')
    +'<div class="slot">Борода</div><div class="hgrid"><button class="pk'+(h.beard===-1?' on':'')+'" data-act="setbeard" data-v="-1">'+beardIcon(-1,h.hcol)+'<span>Нет</span></button>'+[0,1,2,3].map(i=>'<button class="pk'+(h.beard===i?' on':'')+'" data-act="setbeard" data-v="'+i+'" aria-label="Борода '+(i+1)+'">'+beardIcon(i,h.hcol)+'</button>').join('')+'</div>'
    +'<div class="slot">Класс</div><div class="pick">'+CLASSES.map(c=>'<button class="pk'+(c.id===h.cls?' on':'')+'" data-act="setcls" data-v="'+c.id+'"><span class="pkimg">'+weaponIcon(c.id,0,4)+'</span><span>'+c.n+'</span></button>').join('')+'</div>'
-   +'<p class="note">Только вид героя, на деньги не влияет. Графика: Kenney.nl, CC0.</p>'}
+   +'<p class="note">Графика: Kenney.nl, CC0.</p>'}
 function sheetPets(){const L=levelInfo(S.xp).L,cur=petKind(),v=UI.sheet&&UI.sheet.view;
   if(v){const P=petDef(v),un=P.l<=L;
     return shHead(P.n)+'<div class="petrow">'+[0,1,2,3].map(i=>'<div class="pst"><div class="pimg">'+petImg(P.id,i,'happy',[74,84])+'</div><small>'+esc(P.st[i])+'</small></div>').join('')+'</div>'
      +(P.id===cur?'<p class="note" style="text-align:center">Сейчас он с тобой.</p>':un?'<button class="btn" style="width:100%" data-act="petpick" data-v="'+P.id+'">Взять с собой</button><p class="note">Прогресс прежнего компаньона сохранится, вернуться к нему можно когда угодно.</p>':'<p class="note" style="text-align:center">Откроется на '+P.l+' уровне. Пока можно посмотреть, как он растёт.</p>')
      +'<button class="btn ghost" style="width:100%;margin-top:8px" data-act="pets">Назад к списку</button>'}
-  return shHead('Компаньоны'+hq('pets'))+'<p class="note" style="margin-top:0">Открываются с уровнем. Нажми, чтобы посмотреть.</p><div class="plist">'
+  return shHead('Компаньоны'+hq('pets'))+'<div class="plist">'
    +PETS.map(P=>{const un=P.l<=L;return '<button class="prow2'+(P.id===cur?' on':'')+(un?'':' lock')+'" data-act="petview" data-v="'+P.id+'"><span class="pthumb">'+petImg(P.id,3,'happy',[64,56])+'</span><span class="pinfo"><b>'+esc(P.n)+'</b><small>'+(P.id===cur?'с тобой':un?'открыт':'с '+P.l+' ур.')+'</small></span></button>'}).join('')+'</div>'}
 function sheetLvl(){const p=UI.pendingLvl;const un=unlockedBetween(p.from,p.to);
   return shHead('Новый уровень!',true)+'<div class="herobig"><div class="hbox">'+heroArt(p.to)+'</div></div><p class="lvbig">Уровень <span class="n">'+p.to+'</span></p>'
