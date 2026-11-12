@@ -1113,11 +1113,19 @@ function payHorizon(t){const d=parseD(t),y=d.getFullYear(),m=d.getMonth(),pd=S.p
   if(c<=t)c=dstr(new Date(y,m+1,cl(y,m+1)));
   return{date:c,days:dayDiff(t,c),pay:true}}
 function avgDaily(t){const from=addDays(t,-30);
-  const ex=S.tx.filter(x=>x.type==='exp'&&x.cat!=='credit'&&x.cat!=='xfer'&&x.date>=from&&x.date<t);
+  const ex=S.tx.filter(x=>x.type==='exp'&&!x.mid&&x.cat!=='credit'&&x.cat!=='xfer'&&x.date>=from&&x.date<t);
   if(ex.length<3)return null;let first=t;ex.forEach(x=>{if(x.date<first)first=x.date});
   const span=Math.min(30,dayDiff(first,t));if(span<3)return null;
   return ex.reduce((q,x)=>q+x.amount,0)/span}
-function forecast(){const t=today(),h=payHorizon(t),bank=freeMoney(),avg=avgDaily(t);
+/* Обязательные платежи будущих месяцев (текущий месяц уже в unpaidSum) */
+function mandEvents(from,end){const out=[],cur=mkey(today());
+  S.mand.forEach(m=>{if(m.closed)return;let left=m.debt?(m.left||0):Infinity;
+    let d=parseD(cur+'-01');d.setMonth(d.getMonth()+1);
+    for(let i=0;i<36&&left>0;i++){const mk=dstr(d).slice(0,7);const ds=mk+'-'+String(dueDay(m,mk)).padStart(2,'0');
+      if(ds>end)break;if(!(m.start&&m.start>mk)){const a=Math.min(m.amount,m.debt?Math.ceil(left):m.amount);if(ds>=from)out.push({date:ds,amount:a,type:'exp',cat:m.cat,mand:m.id});left-=a}
+      d.setMonth(d.getMonth()+1)}});
+  return out}
+function forecast(){const t=today(),h=payHorizon(t),bank=freeMoney()-mandEvents(t,h.date).reduce((q,e)=>q+e.amount,0),avg=avgDaily(t);
   const per=h.days>0?bank/h.days:0;const r={days:h.days,until:h.date,pay:h.pay,bank:bank,perDay:Math.max(0,Math.floor(per)),avg:avg};
   if(bank<=0){r.state='broke';return r}
   if(avg==null){r.state='few';return r}
@@ -1128,7 +1136,7 @@ function forecast(){const t=today(),h=payHorizon(t),bank=freeMoney(),avg=avgDail
 /* ---------- пророчества: ожидаемые доходы и расходы, сверка с жизнью ---------- */
 const proList=()=>S.pro||(S.pro=[]);
 const proWait=()=>proList().filter(p=>p.st==='wait').sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-const proEvents=(t,end)=>proWait().filter(p=>p.date>=t&&p.date<=end);
+const proEvents=(t,end)=>proWait().filter(p=>p.date>=t&&p.date<=end).concat(mandEvents(t,end)).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
 /* Остаток к дате = свободные деньги + ожидаемые доходы - ожидаемые расходы (только то, что записано пророчествами) */
 function proBalanceAt(end){let b=freeMoney();proEvents(today(),end).forEach(p=>{b+=p.type==='inc'?p.amount:-p.amount});return b}
 /* Кассовый разрыв: первая дата, когда остаток уходит в минус, и насколько глубоко он падает после этого */
@@ -1679,7 +1687,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.39.0';
+const APP_V='0.39.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -2031,7 +2039,7 @@ function sheetBuy(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shH
    +'<div class="field"><label for="ba">Сколько заплатил, ₸</label><input id="ba" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
    +'<div class="two"><div class="field"><label for="bc">Категория</label><select id="bc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="bk">Со счёта</label><select id="bk" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
-   +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="buysave">Списать и закрыть цель</button>'}
+   +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="buysave">Списать и закрыть цель</button><button class="btn ghost" data-act="buyprev">Уже куплено, не списывать</button>'}
 function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
   return shHead('Достижения')+'<p class="note">Открыто '+n+' из '+ACH.length+'. За каждое награда: 20 XP.</p><div class="list">'
    +ACH.map(a=>{const d=S.ach[a[0]];return '<div class="row" style="cursor:default;opacity:'+(d?1:.5)+'"><span class="tile">'+(d?a[3]:'🔒')+'</span><span class="mid"><div class="t1">'+esc(a[1])+'</div><div class="t2">'+esc(a[2])+(d?' · '+fmtDate(d):'')+'</div></span></div>'}).join('')+'</div>'}
@@ -2236,6 +2244,7 @@ function act(a,el){const v=el.dataset.v;
     case 'cdel':{if(delContrib(el.dataset.g,v)){save();render();renderSheet()}else{UI.form.err='Нельзя удалить: в цели станет меньше нуля';renderSheet()}break}
     case 'buyopen':{const g=S.goals.find(x=>x.id===v);if(!g)break;const acc=S.accounts.find(a=>a.id===S.lastAcc)?S.lastAcc:S.accounts[0].id;
       UI.form={amount:String(Math.max(0,goalSaved(g))||g.target),acc:acc,cat:'other',err:''};openSheet('buy',{id:v});break}
+    case 'buyprev':{const g=S.goals.find(x=>x.id===UI.sheet.id);closeGoal(UI.sheet.id,{amount:0});UI.sheet=null;commit();toast('Цель закрыта: '+(g?g.name:''));break}
     case 'buysave':{const f=UI.form,amt=num(f.amount);if(!(amt>0)){f.err='Введите сумму покупки';return renderSheet()}
       const bal=accBal(S.accounts.find(a=>a.id===f.acc)||{bal0:0});
       if(amt>bal&&UI.confirm!=='buy'){UI.confirm='buy';f.err='На этом счёте '+fmt(bal)+', этого не хватит. Нажми ещё раз, чтобы списать всё равно.';return renderSheet()}

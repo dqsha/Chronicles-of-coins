@@ -35,4 +35,15 @@ run("NOW='2026-11-12'");
 act('mandnew');run("UI.form.name='Интернет';UI.form.amount='5000'");act('mpaidnow');act('mandsave');
 chk('created as already paid this month',run("S.paid[S.mand.find(m=>m.name==='Интернет').id+'|2026-11']")==='manual');
 act('limitopen','food');chk('limit sheet is tall too',lay().includes('addsheet'));act('close');
+// аудит 0.39.1
+run("NOW='2026-11-12';S.mand=[{id:'r',name:'Аренда',amount:100000,day:5,cat:'home',acc:'a',debt:false,closed:false},{id:'d',name:'Рассрочка',amount:30000,day:10,cat:'credit',acc:'a',debt:true,left:45000,rate:0,closed:false}];S.paid={'r|2026-11':'manual','d|2026-11':'manual'};S.payday=null");
+const ev=JSON.parse(run("JSON.stringify(mandEvents('2026-11-12','2027-02-28'))"));
+chk('next-month payments in events',ev.some(e=>e.date==='2026-12-05'&&e.amount===100000));
+chk('debt events stop when paid off',ev.filter(e=>e.mand==='d').map(e=>e.amount).join()==='30000,15000');
+run("S.payday=10");chk('forecast subtracts payments before payday',run("forecast().bank")===run("freeMoney()")-100000-30000);
+run("S.tx=[{id:'p1',type:'exp',amount:50000,cat:'home',acc:'a',date:'2026-11-01',mid:'r',ts:1},{id:'e1',type:'exp',amount:3000,cat:'food',acc:'a',date:'2026-11-01',ts:2},{id:'e2',type:'exp',amount:3000,cat:'food',acc:'a',date:'2026-11-03',ts:3},{id:'e3',type:'exp',amount:3000,cat:'food',acc:'a',date:'2026-11-05',ts:4}]");
+chk('average spend ignores mandatory payments',Math.round(run("avgDaily('2026-11-12')"))===Math.round(9000/11));
+run("S.goals=[];addGoal({name:'Велик',icon:'🚲',target:50000,deadline:'2027-05-01'});addContrib(S.goals[0].id,50000)");
+const txn=run("S.tx.length");act('buyopen',run("S.goals[0].id"));chk('buy sheet has already-bought',lay().includes('data-act="buyprev"'));
+act('buyprev');chk('goal closed without expense',run("S.goals[0].closed")===true&&run("S.tx.length")===txn);
 console.log(bad?'FAILED '+bad:'ALL OK');process.exit(bad?1:0);
