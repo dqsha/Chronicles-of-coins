@@ -182,7 +182,7 @@ textarea.inp[readonly]{font-size:12px;line-height:1.4}
 @keyframes dlgblink{50%{transform:translateY(3px);opacity:.5}}
 
 /* 0.13.1 плавность */
-.scrim{top:0;bottom:auto;height:var(--vvh,100%);transition:height .28s cubic-bezier(.2,.8,.2,1)}
+.scrim{top:0;bottom:auto;height:100%}
 .scrim.fresh{animation:scrimin .22s ease-out both}
 .scrim.fresh .sheet{animation:sheetin .32s cubic-bezier(.2,.9,.25,1) both}
 .scrim.mid.fresh .sheet{animation:midin .3s cubic-bezier(.2,.9,.25,1) both}
@@ -1595,7 +1595,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.35.3';
+const APP_V='0.35.4';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -2184,7 +2184,7 @@ function kbKeepScroll(){try{const sh=document.querySelector('#layer .sheet');if(
 function kbDoUnlock(){try{UI.kbWait=false;if(UI.kbStop==null)return;UI.kbStop=null;const sc=document.querySelector('#layer .scrim');if(!sc)return;const sh=sc.querySelector('.sheet');
   const before=sh?sh.getBoundingClientRect().top:0;sc.classList.remove('kblock');sc.style.removeProperty('--stop');
   if(sh){const d=before-sh.getBoundingClientRect().top;if(Math.abs(d)>1){sh.style.transition='none';sh.style.transform='translateY('+d+'px)';void sh.offsetHeight;sh.style.transition='transform .26s cubic-bezier(.25,.8,.3,1)';sh.style.transform='translateY(0)';setTimeout(()=>{try{sh.style.transition='';sh.style.transform=''}catch(e){}},320)}}}catch(e){}}
-function kbUnlock(){try{if(UI.kbStop==null)return;if(vvLast>=vvMax-2){kbDoUnlock();return}UI.kbWait=true;setTimeout(()=>{if(UI.kbWait)kbDoUnlock()},1200)}catch(e){}}
+function kbUnlock(){try{if(UI.kbStop==null)return;kbDoUnlock()}catch(e){}}
 let vvLast=0,vvMax=0,vvRaf=0;
 function vvSync(){try{if(vvRaf)return;vvRaf=requestAnimationFrame(()=>{vvRaf=0;try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);if(h>vvMax)vvMax=h;if(Math.abs(h-vvLast)>=2){vvLast=h;document.documentElement.style.setProperty('--vvh',h+'px');if(UI.kbWait&&h>=vvMax-2)kbDoUnlock();if(UI.kbStop!=null){setTimeout(kbKeepScroll,40);setTimeout(kbKeepScroll,340)}}}catch(e){}})}catch(e){}}
 function bootKb(){try{vvSync();if(window.visualViewport)window.visualViewport.addEventListener('resize',vvSync);window.addEventListener('resize',vvSync);
