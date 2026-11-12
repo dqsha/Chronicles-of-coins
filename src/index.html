@@ -1657,7 +1657,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.38.3';
+const APP_V='0.38.4';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1670,7 +1670,7 @@ function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;con
 function render(){
   const v={home:viewHome,list:viewList,stats:viewStats,wallet:viewWallet,plan:viewPlan,hero:viewHero}[UI.tab]();
   $('#app').innerHTML=v;if(UI.shown&&UI.shown!==UI.tab&&!S.calm){try{const a=document.getElementById('app');a.classList.remove('swap','swl','swr');void a.offsetWidth;a.classList.add(UI.swipeDir>0?'swl':UI.swipeDir<0?'swr':'swap');UI.swipeDir=0}catch(e){}}UI.shown=UI.tab;document.body.dataset.tab=UI.tab;document.body.classList.toggle('lefty',!!S.lefty);bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
-  const tabs=[['home','Главная','home'],['list','Записи','records'],null,['plan','План','stats'],['hero','Герой','wallet']];
+  const tabs=[['home','Главная','home'],['list','Записи','records'],null,['plan','План','plan'],['hero','Герой','hero']];
   $('#tabbar').innerHTML='<div class="tdots glass" role="tablist" aria-label="Экраны">'+TAB_ORDER.map(t=>'<button class="dot'+(t===tabGroup(UI.tab)?' on':'')+'" data-act="tab" data-v="'+t+'" role="tab" aria-selected="'+(t===tabGroup(UI.tab))+'" aria-label="'+({home:'Главная',list:'Записи',plan:'План',hero:'Герой'})[t]+'"><i></i></button>').join('')+'</div><div class="tabbar-in">'+tabs.map(t=>t?'<button class="tab" data-act="tab" data-v="'+t[0]+'" aria-current="'+(tabGroup(UI.tab)===t[0])+'"><img class="ti" src="assets/tab-'+t[2]+'.webp" alt="" onerror="this.remove()">'+t[1]+'</button>':'<button class="plus" data-act="add" aria-label="Новая запись">+</button>').join('')+'</div>'}
 
 /* ---------- sheets ---------- */
