@@ -623,7 +623,7 @@ const CATS_INC=[['salary','Зарплата','💰'],['side','Подработк
 const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],bank:['Счёт или депозит','🏦'],save:['Накопления','🐷'],deposit:['Депозит','🏛️']};
 
 function defaults(){return{payday:null,hide:{},epoch:'',del:{},v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
-  streak:{count:0,last:null,freezes:1,best:0},noSpend:{},dayRec:{},lastAcc:null,
+  streak:{count:0,last:null,freezes:1,best:0},visit:{count:0,last:null,best:0,total:0},noSpend:{},dayRec:{},lastAcc:null,
   goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Желе',kind:'slime'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[],hero:{race:'human',cls:'warrior'},petBox:{}}}
 let S=defaults();
 let saveFailed=false;
@@ -708,6 +708,7 @@ function mergeStates(a,b){const na=(a.savedAt||0)>=(b.savedAt||0),nw=na?a:b,od=n
   out.ach=Object.assign({},od.ach||{},nw.ach||{});
   out.hintSeen=Object.assign({},od.hintSeen||{},nw.hintSeen||{});
   const pm={};(od.pro||[]).concat(nw.pro||[]).forEach(q=>{if(!q||!q.id||del[q.id])return;const c=pm[q.id];if(!c||(q.u||0)>=(c.u||0))pm[q.id]=q});out.pro=Object.keys(pm).map(k=>pm[k]);
+  {const va=a.visit||{},vb=b.visit||{},w=((va.last||'')>(vb.last||'')||((va.last||'')===(vb.last||'')&&(va.count||0)>=(vb.count||0)))?va:vb;out.visit=Object.assign({count:0,last:null,best:0,total:0},w,{best:Math.max(va.best||0,vb.best||0),total:Math.max(va.total||0,vb.total||0)})}
   out.xp=Math.max(a.xp||0,b.xp||0);out.savedAt=Math.max(a.savedAt||0,b.savedAt||0);return out}
 function cloudSync(done){const cs=tgCloud();if(!cs){done();return}
   let fin=false;const end=()=>{if(!fin){fin=true;done()}};setTimeout(end,3500);
@@ -825,6 +826,15 @@ function markActive(){const st=S.streak,t=today();if(st.last===t)return 0;
   st.last=t;st.best=Math.max(st.best,st.count);
   if(st.count%7===0&&st.freezes<3){st.freezes++;say('Неделя подряд: получена заморозка стрика')}
   return 5+Math.min(st.count,20)}
+/* Серия заходов: считаются дни, когда ты открыл приложение. Это очки для будущей гонки с друзьями */
+function visitTick(){if(!S.visit||typeof S.visit!=='object')S.visit={count:0,last:null,best:0,total:0};const v=S.visit,t=today();if(v.last===t)return false;
+  const d=v.last?dayDiff(v.last,t):0;
+  if(!v.last||d>1)v.count=1;else if(d===1)v.count++;else return false;
+  v.last=t;v.best=Math.max(v.best||0,v.count);v.total=(v.total||0)+1;
+  gainXp(2+Math.min(v.count,10),'visit');
+  if(v.count>1&&v.count%7===0)say('Заходов подряд: '+v.count+'. Так держать!');
+  return true}
+function visitView(){const v=S.visit||{count:0,last:null,best:0},d=v.last?dayDiff(v.last,today()):99;return{count:d<=1?v.count:0,best:v.best||0}}
 function streakView(){const st=S.streak;if(!st.last)return{count:0,state:'new'};const d=dayDiff(st.last,today());
   if(d<=0)return{count:st.count,state:'ok'};if(d===1)return{count:st.count,state:'wait'};
   const missed=d-1;return st.freezes>=missed?{count:st.count,state:'frozen',missed:missed}:{count:0,state:'broken'}}
@@ -1434,7 +1444,7 @@ function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
     +'<div class="lvl">Уровень <span class="n">'+lv.L+'</span></div><div class="name">'+esc(S.name)+'</div>'
     +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div>'
     +'<div class="xpline">'+(full?lv.cur+' / '+lv.need+' XP · ':'')+'До уровня '+(lv.L+1)+': ещё '+(lv.need-lv.cur)+' XP</div>'
-    +'<div class="streak"><span class="ic">'+flame(3)+'<span>'+esc(full?stTxt:(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь')+'</span></span>'+(full?'<span class="ic">'+snow(3)+'<span>Заморозки: '+S.streak.freezes+' из 3</span></span>':'')+'</div>'
+    +'<div class="streak"><span class="ic">'+flame(3)+'<span>'+esc(full?stTxt:(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь')+'</span></span>'+(full?'<span class="ic">'+snow(3)+'<span>Заморозки: '+S.streak.freezes+' из 3</span></span><span class="ic">📅<span>Заходов подряд: '+visitView().count+'</span></span>':'')+'</div>'
     +(full?'<div class="chips"><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
 function sheetCamp(){const lv=levelInfo(S.xp),nx=nextUnlock(lv.L);
   return shHead('Лагерь героя')+heroCard(true)+((nx&&!S.calm)?'<p class="note">Следующая вещь: '+esc(nx.n)+' на '+nx.l+' уровне.</p>':'')+(S.calm?'':petCard()+questCard())}
@@ -1645,7 +1655,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.37.1';
+const APP_V='0.38.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1850,9 +1860,11 @@ function sheetLvl(){const p=UI.pendingLvl;const un=unlockedBetween(p.from,p.to);
   return shHead('Новый уровень!',true)+'<div class="herobig"><div class="hbox">'+heroArt(p.to)+'</div></div><p class="lvbig">Уровень <span class="n">'+p.to+'</span></p>'
    +(un.length?'<div><div class="label">Открыто</div>'+un.map(u=>'<p>'+esc(u)+'</p>').join('')+'</div>':'<p class="note" style="text-align:center">Новые вещи ждут на следующих уровнях.</p>')
    +(p.fz?'<p class="ic">'+snow(3)+'<span>Получена заморозка стрика</span></p>':'')+'<button class="btn" data-act="lvlok">Продолжить</button>'}
+function swRow(arr,cur,act){return '<div class="swrow">'+arr.map((c,i)=>'<button class="sw'+(i===cur?' on':'')+'" style="--sc:'+c[0]+'" data-act="'+act+'" data-v="'+i+'" aria-label="'+c[1]+'"></button>').join('')+'</div>'}
 function sheetOnboard(){const f=UI.form;
   return '<div class="obanner"><img src="assets/loc-home.webp" alt="" onerror="this.remove()"><div class="obt">Хроника Монет</div></div>'
    +'<h2 class="otitle">Давай знакомиться</h2><p class="otext">'+kw('Пара вопросов, и в путь. Всё можно {y поменять потом}.')+'</p>'
+   +'<div class="obox"><span class="olab">Твой герой</span><div class="herobig"><div class="hbox">'+heroArt(1)+'</div></div>'+swRow(SKINS,heroLook().skin,'setskin')+swRow(HCOLS,heroLook().hcol,'sethcol')+'<div class="pick">'+CLASSES.map(c=>'<button class="pk'+(c.id===heroLook().cls?' on':'')+'" data-act="setcls" data-v="'+c.id+'"><span class="pkimg">'+weaponIcon(c.id,0,4)+'</span><span>'+c.n+'</span></button>').join('')+'</div><small class="osub">Остальное в «Облике» позже.</small></div>'
    +'<div class="obox"><label class="olab" for="on">Как тебя записать в хронику?</label><input id="on" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'" placeholder="Имя или прозвище"></div>'
    +'<div class="obox"><span class="olab">Сколько у тебя сейчас денег?</span><small class="osub">Примерно. Точность до копейки не нужна.</small>'
    +'<div class="two"><div class="field"><label for="oc">💵 Наличные, ₸</label><input id="oc" class="inp" data-f="cash" inputmode="decimal" value="'+esc(f.cash)+'" placeholder="0"></div>'
@@ -2189,8 +2201,8 @@ function act(a,el){const v=el.dataset.v;
     case 'synclocal':cloudAsk=null;setSynced();UI.sheet=null;S.savedAt=Date.now();cloudWrite();commit();toast('Данные этого устройства ушли в облако');break;
     case 'syncmerge':{const c=cloudAsk;cloudAsk=null;setSynced();if(c){const mg=mergeStates(c,Object.assign({},S,{epoch:c.epoch||''})),d=defaults();S=Object.assign(d,mg,{streak:Object.assign(d.streak,mg.streak||{})})}UI.sheet=null;cloudWrite();commit();toast('Объединил');break}
     case 'look':openSheet('look');break;
-    case 'setskin':case 'setbody':case 'sethair':case 'sethcol':case 'setbeard':{const key={setskin:'skin',setbody:'body',sethair:'hair',sethcol:'hcol',setbeard:'beard'}[a];S.hero=Object.assign(heroLook(),{[key]:parseInt(v,10)});save();render();renderSheet();break}
-    case 'setcls':{S.hero=Object.assign(heroLook(),{cls:v});if(S.equip){delete S.equip.weapon;delete S.equip.armor}save();render();renderSheet();break}
+    case 'setskin':case 'setbody':case 'sethair':case 'sethcol':case 'setbeard':{const key={setskin:'skin',setbody:'body',sethair:'hair',sethcol:'hcol',setbeard:'beard'}[a];S.hero=Object.assign(heroLook(),{[key]:parseInt(v,10)});save();if(S.onboarded)render();renderSheet();break}
+    case 'setcls':{S.hero=Object.assign(heroLook(),{cls:v});if(S.equip){delete S.equip.weapon;delete S.equip.armor}save();if(S.onboarded)render();renderSheet();break}
     case 'pets':openSheet('pets');break;
     case 'petview':openSheet('pets',{view:v});break;
     case 'petpick':if(switchPet(v)){say(S.pet.name+' теперь с тобой');save();UI.sheet=null;commit()}break;
@@ -2205,6 +2217,7 @@ document.addEventListener('click',e=>{
   if(S.sound&&S.sound.music&&!SND.timer)musicSync();
   if(['music','sfxtoggle','musictoggle'].indexOf(el.dataset.act)<0){playSfx('tap');tgHaptic()}
   act(el.dataset.act,el)});
+document.addEventListener('visibilitychange',()=>{try{if(!document.hidden&&S.onboarded&&visitTick()){commit();}}catch(e){}});
 document.addEventListener('visibilitychange',()=>{try{if(!SND.ctx)return;if(document.hidden)rz(SND.ctx.suspend());else if(S.sound&&(S.sound.music||S.sound.sfx))rz(SND.ctx.resume())}catch(e){}});
 try{['gesturestart','gesturechange','gestureend'].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
 let lt=0;document.addEventListener('touchend',e=>{const t=Date.now();if(t-lt<350&&!(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)))e.preventDefault();lt=t},{passive:false})}catch(e){}
@@ -2274,7 +2287,7 @@ function bootDots(){let on=false,rect=null;
   const end=()=>{if(on){on=false;try{window.scrollTo(0,0)}catch(e){}}};document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end)}
 function boot(){bootKb();try{bootSwipe();bootDots()}catch(e){}tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);setTimeout(()=>fetchRates(),2500);try{swipeHint()}catch(e){}if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};startIntro()}else renderSheet();
-  if(S.onboarded){checkAch();if(notes.length)commit()}
+  if(S.onboarded){visitTick();checkAch();if(notes.length)commit();else save()}
   if(cloudAsk&&S.onboarded)openSheet('syncask');else maybeTour();
   if(saveFailed)toast('Браузер не даёт сохранять данные. Сделай резервную копию')}
 function showFatal(e){let raw='';try{raw=localStorage.getItem(KEY)||''}catch(x){}

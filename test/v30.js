@@ -1,0 +1,27 @@
+// 0.38: серия заходов и выбор героя при знакомстве
+const fs=require('fs');const h=fs.readFileSync(process.argv[2],'utf8');
+const m=h.match(/<script>([\s\S]*?)<\/script>/);let bad=0;const chk=(n,c)=>{if(!c){bad++;console.log('FAIL',n)}else console.log('ok  ',n)};
+const src=m[1].replace(/try\{start\(\)\}catch\(e\)\{showFatal\(e\)\}\s*$/,'');
+const vm=require('vm');const els={};const mk=()=>({focus(){},innerHTML:'',classList:{add(){},remove(){},toggle(){}},dataset:{},style:{setProperty(){}},querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}});
+const ctx={console,setTimeout,clearTimeout,clearInterval,setInterval:()=>1,localStorage:{getItem(){return null},setItem(){}},document:{body:mk(),documentElement:mk(),getElementById:i=>els[i]||(els[i]=mk()),querySelector:s=>els[s]||(els[s]=mk()),querySelectorAll:()=>[],addEventListener(){},createElement:()=>mk()},window:{addEventListener(){},scrollTo(){},matchMedia:()=>({matches:false})},Date,Math,JSON,Intl,Image:function(){},navigator:{},performance:{now:()=>0},requestAnimationFrame(){},fetch:undefined};
+ctx.window.document=ctx.document;ctx.self=ctx.window;vm.createContext(ctx);vm.runInContext(src,ctx);
+const run=c=>vm.runInContext(c,ctx);const app=()=>els['#app'].innerHTML,lay=()=>els['#layer'].innerHTML;
+const act=(a,v)=>{ctx.__el={dataset:{v},disabled:false};run(`act('${a}',__el)`)};
+const near=(a,b)=>Math.abs(a-b)<0.01;
+run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:100000}];NOW='2026-11-11'");
+
+let day='2026-11-11';run("NOW='"+day+"'");
+chk('first visit: count 1',run("visitTick()")===true&&run("S.visit.count")===1&&run("S.visit.total")===1);
+chk('same day: no double count',run("visitTick()")===false&&run("S.visit.count")===1);
+run("NOW='2026-11-12'");chk('next day: count 2',run("visitTick()")===true&&run("S.visit.count")===2);
+run("NOW='2026-11-13'");run("visitTick()");chk('3 days in a row',run("S.visit.count")===3&&run("visitView().count")===3);
+run("NOW='2026-11-16'");chk('missed days: view 0 before visit',run("visitView().count")===0);
+run("visitTick()");chk('after gap: restart at 1, best kept',run("S.visit.count")===1&&run("S.visit.best")===3&&run("S.visit.total")===4);
+chk('merge: newer visit wins, best/total max',run("mergeStates({epoch:'e',savedAt:5,visit:{count:5,last:'2026-11-16',best:5,total:9}},{epoch:'e',savedAt:9,visit:{count:1,last:'2026-11-10',best:3,total:4}}).visit.count")===5&&run("mergeStates({epoch:'e',savedAt:5,visit:{count:5,last:'2026-11-16',best:5,total:9}},{epoch:'e',savedAt:9,visit:{count:1,last:'2026-11-10',best:3,total:4}}).visit.total")===9);
+chk('camp card shows visit streak',(run("heroCard(true)")).includes('Заходов подряд'));
+run("S.onboarded=false;UI.form={name:'',cash:'',card:''}");
+act('setcls','mage');act('setskin','2');
+chk('onboarding: hero picked',run("S.hero.cls")==='mage'&&run("S.hero.skin")===2);
+chk('onboarding sheet has hero preview + class picker',run("sheetOnboard()").includes('data-act="setcls"')&&run("sheetOnboard()").includes('pxh'));
+chk('old gemini assets removed from app',!h.includes('assets/hero/')&&!h.includes('assets/avatar/')&&!h.includes('assets/weapon/'));
+console.log(bad?'FAILED '+bad:'ALL OK');process.exit(bad?1:0);
