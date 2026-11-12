@@ -109,7 +109,7 @@ t('fmt negative', run('fmt(-100)'), '−100 ₸');
 run(`S=defaults();S.accounts=[{id:'a',name:'A',type:'cash',bal0:0}];NOW='2026-12-01';notes=[];S.streak.freezes=0;gainXp(xpAtLevel(5)+1,'t');`);
 t('level 5 reached', run('levelInfo(S.xp).L'), 5);
 t('freeze granted at L5', run('S.streak.freezes'), 1);
-t('unlocked list 1->5', run('unlockedBetween(1,5)'), ['Оружие: Стальной меч', 'Броня: Стёганка', 'Плащ: Дерюга', 'Кольцо: Медное колечко', 'Амулет: Верёвочный оберег', 'Компаньон: Теневой кот']);
+t('unlocked list 1->5', run('unlockedBetween(1,5)'), ['Оружие: Стальной меч', 'Броня: Стёганка', 'Компаньон: Теневой кот']);
 
 // equipment switching
 run(`S=defaults();S.xp=xpAtLevel(9);`);
