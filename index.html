@@ -542,6 +542,25 @@ button,[data-act]{cursor:pointer}
 .scrim{transition:none}
 .scrim.kbfade.fresh .sheet{animation:kbin .18s ease-out both}
 @keyframes kbin{from{opacity:0}}
+/* герой из частей (Kenney, CC0) */
+.pxh{--k:6;position:relative;display:block;flex:none;width:calc(16px*var(--k));height:calc(16px*var(--k));image-rendering:pixelated}
+.pxh i{position:absolute;inset:0;background:url(assets/kenney/roguelike.png) no-repeat;background-size:calc(918px*var(--k)) calc(203px*var(--k));background-position:calc(var(--x)*var(--k)*-1px) calc(var(--y)*var(--k)*-1px);image-rendering:pixelated}
+.hero-art .pxh{--k:6;margin:0 auto;animation:heroidle 3.4s ease-in-out infinite;position:relative;z-index:1}
+.herom .hero-art .pxh{--k:4}
+.herobig .pxh{--k:12;margin:0 auto}
+.pxav{display:block;width:100%;height:100%;overflow:hidden;position:relative}
+.pxav .pxh{position:absolute;left:50%;top:0;margin-left:calc(-8px*var(--k))}
+.wic,.aic,.hic{display:block;flex:none;overflow:hidden}
+.wic{width:48px;height:48px}.aic{width:48px;height:38px}.aic .pxh{margin-top:-4px}.hic{width:48px;height:34px}.hic .pxh{margin-top:-3px}
+.wslot .wsl-img{display:flex;justify-content:center;align-items:center}
+.islot .wic,.islot .aic{margin:0 auto}
+.swrow{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0}
+.sw{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);background:var(--sc);cursor:pointer;padding:0}
+.sw.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(226,178,74,.4)}
+.hgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px}
+.hgrid .pk{padding:4px 2px;align-items:center;justify-content:center;min-height:50px}
+.hgrid .pk .hic{margin:0 auto}
+.pkimg{height:auto;min-height:52px;align-items:center}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -728,19 +747,37 @@ function fetchRates(force){try{if(!window.fetch||(!force&&!ratesStale()))return 
 const req=L=>40+15*(L-1);
 function xpAtLevel(L){let s=0;for(let k=1;k<L;k++)s+=req(k);return s}
 function levelInfo(xp){let L=1,rem=xp;while(rem>=req(L)&&L<99){rem-=req(L);L++}return{L:L,cur:rem,need:req(L)}}
-/* Облик героя: раса и класс. Оружие своё у каждого класса, 5 штук, открываются с уровнем. */
-const RACES=[{id:'human',n:'Человек'},{id:'elf',n:'Эльф'},{id:'orc',n:'Орк'},{id:'goblin',n:'Гоблин'}];
+/* Герой собирается из частей (набор Kenney Roguelike Characters, CC0): тело, штаны, одежда или броня, причёска, борода, шлем, оружие, щит.
+   Лист assets/kenney/roguelike.png, клетки 16x16 с зазором 1px; [колонка, строка]. */
 const CLASSES=[{id:'warrior',n:'Воин'},{id:'mage',n:'Маг'},{id:'ranger',n:'Следопыт'},{id:'rogue',n:'Плут'}];
 const WLV=[1,5,10,16,24];
 const WEAPONS={warrior:['Тренировочный меч','Стальной меч','Боевая секира','Двуручный молот','Клинок Легенды'],
-  mage:['Посох ученика','Жезл искр','Гримуар','Посох звёздного света','Скипетр Архимага'],
-  ranger:['Короткий лук','Охотничий лук','Арбалет','Эльфийский длинный лук','Лук Рассвета'],
-  rogue:['Ржавый кинжал','Парные кинжалы','Ядовитый стилет','Связка метательных ножей','Клинок Теней']};
+  mage:['Посох ученика','Жезл искр','Посох леса','Посох звёздного света','Скипетр Архимага'],
+  ranger:['Короткий лук','Охотничий лук','Тисовый лук','Эльфийский длинный лук','Лук Рассвета'],
+  rogue:['Ржавый кинжал','Бронзовый кинжал','Стальной кинжал','Золотой кинжал','Клинок Теней']};
+const WTILE={warrior:[[42,6],[44,6],[51,5],[47,5],[46,6]],mage:[[42,0],[44,2],[42,3],[43,4],[48,8]],ranger:[[52,0],[53,0],[52,3],[52,2],[53,4]],rogue:[[42,7],[43,7],[44,7],[45,7],[46,7]]};
+const ARMORS={warrior:['Лохмотья','Стёганка','Кожаный доспех','Стальные латы','Доспех Легенды'],
+  mage:['Рваная ряса','Ряса ученика','Мантия мага','Мантия звёзд','Одеяние Архимага'],
+  ranger:['Лохмотья','Куртка охотника','Кожаная броня','Броня лесного стража','Облачение Рассвета'],
+  rogue:['Рваная рубаха','Тёмная рубаха','Кожаная броня плута','Броня теней','Доспех Ночи']};
+/* top: одежда, helm: шлем, sh: щит; pants: строка штанов в листе */
+const ARMOR_LOOK={
+ warrior:{pants:1,t:[{top:[10,6]},{top:[10,5],sh:[33,1]},{top:[7,4],helm:[28,3],sh:[34,1]},{top:[12,4],helm:[28,6],sh:[38,1]},{top:[12,9],helm:[30,0],sh:[38,7]}]},
+ mage:{pants:7,t:[{top:[14,1]},{top:[14,0]},{top:[15,2],helm:[28,8]},{top:[11,2],helm:[29,8]},{top:[17,0],helm:[30,8]}]},
+ ranger:{pants:8,t:[{top:[6,6]},{top:[6,5]},{top:[7,7],helm:[31,5]},{top:[8,9],helm:[31,3]},{top:[6,9],helm:[31,1]}]},
+ rogue:{pants:0,t:[{top:[14,6]},{top:[14,5]},{top:[15,7],helm:[28,2]},{top:[14,9]},{top:[16,9],helm:[30,7]}]}};
+const SKINS=[['#f0c8a0','Светлая'],['#d9a679','Смуглая'],['#9a7040','Тёмная'],['#3f9a4d','Зелёная']];
+const HCOLS=[['#8a5a2b','Каштановые'],['#c0652a','Рыжие'],['#dcc58a','Светлые'],['#4a4a52','Чёрные'],['#e6e6ea','Седые']];
+const HAIRB=[[19,0],[23,0],[19,4],[23,4],[19,8]];
 const RARITY=['Обычное','Необычное','Редкое','Эпическое','Легендарное'];
-function heroLook(){const h=S.hero||{};return{race:RACES.some(r=>r.id===h.race)?h.race:'human',cls:CLASSES.some(c=>c.id===h.cls)?h.cls:'warrior'}}
+function heroLook(){const h=S.hero||{};const cls=CLASSES.some(c=>c.id===h.cls)?h.cls:'warrior';
+  let skin=h.skin;if(skin==null)skin=({human:0,elf:1,orc:3,goblin:3})[h.race];
+  const cl=(v,a,b,d)=>(Number.isInteger(v)&&v>=a&&v<=b)?v:d;
+  return{cls:cls,skin:cl(skin,0,3,0),body:cl(h.body,0,1,0),hair:cl(h.hair,-1,11,(h.race==='orc'||h.race==='goblin')?-1:0),hcol:cl(h.hcol,0,4,0),beard:cl(h.beard,-1,3,-1)}}
 const GEAR={};
 Object.defineProperty(GEAR,'weapon',{enumerable:true,get(){return WEAPONS[heroLook().cls].map((n,i)=>({n:n,l:WLV[i]}))}});
-const SLOTN={weapon:'Оружие'};
+Object.defineProperty(GEAR,'armor',{enumerable:true,get(){return ARMORS[heroLook().cls].map((n,i)=>({n:n,l:WLV[i]}))}});
+const SLOTN={weapon:'Оружие',armor:'Броня'};
 function tier(slot,L){let t=0;GEAR[slot].forEach((g,i)=>{if(g.l<=L)t=i});return t}
 function equippedTier(slot,L){const e=S.equip&&S.equip[slot];return(e!=null&&GEAR[slot][e]&&GEAR[slot][e].l<=L)?e:tier(slot,L)}
 function setEquip(slot,i,L){if(!GEAR[slot]||!GEAR[slot][i]||GEAR[slot][i].l>L)return false;
@@ -1211,12 +1248,19 @@ function pix(rows,pal,px){const h=rows.length,w=rows[0].length;let o='<svg viewB
 const flame=px=>pix(FLAME,{o:'#e0832b',y:'#f6d25a'},px);
 const snow=px=>pix(SNOW,{c:'#8fd3ef'},px);
 
-function heroArt(L){const h=heroLook();return '<img class="hero-img" src="assets/hero/'+h.race+'-'+h.cls+'.webp" alt="Герой" draggable="false">'}
-function heroAvatar(){const h=heroLook();return '<img class="avatar-img" src="assets/avatar/'+h.race+'-'+h.cls+'.webp" alt="Герой" draggable="false">'}
+function pxL(layers,k){return '<span class="pxh"'+(k?' style="--k:'+k+'"':'')+'>'+layers.filter(Boolean).map(l=>'<i style="--x:'+(l[0]*17)+';--y:'+(l[1]*17)+'"></i>').join('')+'</span>'}
+function heroLayers(L,o){o=o||{};const h=heroLook(),wt=equippedTier('weapon',L),at=equippedTier('armor',L),A=ARMOR_LOOK[h.cls],a=A.t[at],hb=HAIRB[h.hcol];
+  return [[h.body,h.skin],[3,A.pants],a.top,h.beard>=0?[hb[0]+h.beard,hb[1]+3]:null,h.hair>=0?[hb[0]+h.hair%4,hb[1]+((h.hair/4)|0)]:null,a.helm||null,o.noWeapon?null:WTILE[h.cls][wt],o.noWeapon?null:(a.sh||null)]}
+function heroArt(L,k){return pxL(heroLayers(L),k)}
+function heroAvatar(){const L=levelInfo(S.xp).L;return '<span class="pxav">'+pxL(heroLayers(L,{noWeapon:true}),7)+'</span>'}
+function pxTile(t,k){return pxL([t],k)}
+function weaponIcon(cls,i,k){return '<span class="wic">'+pxTile(WTILE[cls][i],k||3)+'</span>'}
+function armorIcon(cls,i,k){const A=ARMOR_LOOK[cls],a=A.t[i];return '<span class="aic">'+pxL([[0,heroLook().skin],[3,A.pants],a.top,a.helm||null],k||3)+'</span>'}
+function headIcon(hair,col,k){const hb=HAIRB[col];return '<span class="hic">'+pxL([[heroLook().body,heroLook().skin],hair>=0?[hb[0]+hair%4,hb[1]+((hair/4)|0)]:null],k||3)+'</span>'}
+function beardIcon(j,col,k){const hb=HAIRB[col];return '<span class="hic">'+pxL([[heroLook().body,heroLook().skin],j>=0?[hb[0]+j,hb[1]+3]:null],k||3)+'</span>'}
 /* Слот оружия под героем: подсветка по редкости (чем позже открыто оружие, тем реднее) */
 function weaponSlot(L){const cl=heroLook().cls,cur=equippedTier('weapon',L),g=GEAR.weapon[cur];
-  return '<button class="wslot r'+cur+'" data-act="gear" aria-label="Оружие: '+esc(g.n)+'. Открыть инвентарь"><span class="wsl-glow"></span><img class="wsl-img" src="assets/weapon/'+cl+'-'+(cur+1)+'.webp" alt="" draggable="false"><span class="wsl-n">'+esc(g.n)+'</span><span class="wsl-r">'+RARITY[cur]+'</span></button>'}
-function heroPick(race,cls){return '<img class="hero-img" src="assets/hero/'+race+'-'+cls+'.webp" alt="" draggable="false">'}
+  return '<button class="wslot r'+cur+'" data-act="gear" aria-label="Оружие: '+esc(g.n)+'. Открыть инвентарь"><span class="wsl-glow"></span><span class="wsl-img">'+weaponIcon(cl,cur,3)+'</span><span class="wsl-n">'+esc(g.n)+'</span><span class="wsl-r">'+RARITY[cur]+'</span></button>'}
 function heroSVG(L){
   const t={w:equippedTier('weapon',L),a:equippedTier('armor',L),h:equippedTier('helm',L),c:equippedTier('cloak',L)};let o='';
   const r=(x,y,w,h,c)=>{o+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+c+'"/>'};
@@ -1597,7 +1641,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.35.4';
+const APP_V='0.36.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1774,17 +1818,23 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="mandsave">Сохранить</button>'
    +(edit?'<button class="btn ghost" data-act="manddel">Удалить платёж</button>':'')}
 const INVSLOTS=[{id:'weapon',n:'Оружие'},{id:'armor',n:'Броня'},{id:'helm',n:'Шлем'},{id:'cloak',n:'Плащ'},{id:'ring',n:'Кольцо'},{id:'amulet',n:'Амулет'}];
-function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls,cur=equippedTier('weapon',L);
+function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls,cw=equippedTier('weapon',L),ca=equippedTier('armor',L);
+  const ic=(sl,i)=>sl==='weapon'?weaponIcon(cl,i,3):armorIcon(cl,i,3);
   let h=shHead('Инвентарь'+hq('gear'))+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
-   +'<div class="inv">'+INVSLOTS.map(sl=>sl.id==='weapon'?'<div class="islot on r'+cur+'"><img class="wicon" src="assets/weapon/'+cl+'-'+(cur+1)+'.webp" alt="" draggable="false"><b>'+esc(GEAR.weapon[cur].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
-   +'<div class="slot">Оружие</div><p class="note" style="margin-top:2px">Открывается с уровнем. Нажми, чтобы взять.</p>';
-  Object.keys(GEAR).forEach(s=>{h+='<div class="gear">'+GEAR[s].map((g,i)=>'<button class="g r'+i+' '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl"><img class="wicon" src="assets/weapon/'+cl+'-'+(i+1)+'.webp" alt="" draggable="false"><span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cur?'в руках':g.l>L?'с '+g.l+' ур.':'взять')+'</span></button>').join('')+'</div>'});
+   +'<div class="inv">'+INVSLOTS.map(sl=>(sl.id==='weapon'||sl.id==='armor')?'<div class="islot on r'+(sl.id==='weapon'?cw:ca)+'">'+ic(sl.id,sl.id==='weapon'?cw:ca)+'<b>'+esc(GEAR[sl.id][sl.id==='weapon'?cw:ca].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
+   +'<p class="note" style="margin-top:6px">Открывается с уровнем. Нажми, чтобы взять.</p>';
+  ['weapon','armor'].forEach(s=>{const cur=s==='weapon'?cw:ca;h+='<div class="slot">'+SLOTN[s]+'</div><div class="gear">'+GEAR[s].map((g,i)=>'<button class="g r'+i+' '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl">'+ic(s,i)+'<span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cur?(s==='weapon'?'в руках':'надето'):g.l>L?'с '+g.l+' ур.':(s==='weapon'?'взять':'надеть'))+'</span></button>').join('')+'</div>'});
   return h}
 function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
+  const sw=(arr,cur,act)=>'<div class="swrow">'+arr.map((c,i)=>'<button class="sw'+(i===cur?' on':'')+'" style="--sc:'+c[0]+'" data-act="'+act+'" data-v="'+i+'" aria-label="'+c[1]+'"></button>').join('')+'</div>';
   return shHead('Облик героя')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
-   +'<div class="slot">Раса</div><div class="pick">'+RACES.map(r=>'<button class="pk'+(r.id===h.race?' on':'')+'" data-act="setrace" data-v="'+r.id+'"><span class="pkimg">'+heroPick(r.id,h.cls)+'</span><span>'+r.n+'</span></button>').join('')+'</div>'
-   +'<div class="slot">Класс</div><div class="pick">'+CLASSES.map(c=>'<button class="pk'+(c.id===h.cls?' on':'')+'" data-act="setcls" data-v="'+c.id+'"><span class="pkimg">'+heroPick(h.race,c.id)+'</span><span>'+c.n+'</span></button>').join('')+'</div>'
-   +'<p class="note">Только вид героя, на деньги не влияет.</p>'}
+   +'<div class="slot">Кожа</div>'+sw(SKINS,h.skin,'setskin')
+   +'<div class="slot">Телосложение</div><div class="swrow"><button class="fc'+(h.body===0?' on':'')+'" data-act="setbody" data-v="0">Обычное</button><button class="fc'+(h.body===1?' on':'')+'" data-act="setbody" data-v="1">Другое</button></div>'
+   +'<div class="slot">Причёска</div><div class="hgrid"><button class="pk'+(h.hair===-1?' on':'')+'" data-act="sethair" data-v="-1">'+headIcon(-1,h.hcol)+'<span>Нет</span></button>'+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>'<button class="pk'+(h.hair===i?' on':'')+'" data-act="sethair" data-v="'+i+'" aria-label="Причёска '+(i+1)+'">'+headIcon(i,h.hcol)+'</button>').join('')+'</div>'
+   +'<div class="slot">Цвет волос</div>'+sw(HCOLS,h.hcol,'sethcol')
+   +'<div class="slot">Борода</div><div class="hgrid"><button class="pk'+(h.beard===-1?' on':'')+'" data-act="setbeard" data-v="-1">'+beardIcon(-1,h.hcol)+'<span>Нет</span></button>'+[0,1,2,3].map(i=>'<button class="pk'+(h.beard===i?' on':'')+'" data-act="setbeard" data-v="'+i+'" aria-label="Борода '+(i+1)+'">'+beardIcon(i,h.hcol)+'</button>').join('')+'</div>'
+   +'<div class="slot">Класс</div><div class="pick">'+CLASSES.map(c=>'<button class="pk'+(c.id===h.cls?' on':'')+'" data-act="setcls" data-v="'+c.id+'"><span class="pkimg">'+weaponIcon(c.id,0,4)+'</span><span>'+c.n+'</span></button>').join('')+'</div>'
+   +'<p class="note">Только вид героя, на деньги не влияет. Графика: Kenney.nl, CC0.</p>'}
 function sheetPets(){const L=levelInfo(S.xp).L,cur=petKind(),v=UI.sheet&&UI.sheet.view;
   if(v){const P=petDef(v),un=P.l<=L;
     return shHead(P.n)+'<div class="petrow">'+[0,1,2,3].map(i=>'<div class="pst"><div class="pimg">'+petImg(P.id,i,'happy',[74,84])+'</div><small>'+esc(P.st[i])+'</small></div>').join('')+'</div>'
@@ -2135,8 +2185,8 @@ function act(a,el){const v=el.dataset.v;
     case 'synclocal':cloudAsk=null;setSynced();UI.sheet=null;S.savedAt=Date.now();cloudWrite();commit();toast('Данные этого устройства ушли в облако');break;
     case 'syncmerge':{const c=cloudAsk;cloudAsk=null;setSynced();if(c){const mg=mergeStates(c,Object.assign({},S,{epoch:c.epoch||''})),d=defaults();S=Object.assign(d,mg,{streak:Object.assign(d.streak,mg.streak||{})})}UI.sheet=null;cloudWrite();commit();toast('Объединил');break}
     case 'look':openSheet('look');break;
-    case 'setrace':{const h=heroLook();S.hero={race:v,cls:h.cls};save();render();renderSheet();break}
-    case 'setcls':{const h=heroLook();S.hero={race:h.race,cls:v};if(S.equip)delete S.equip.weapon;save();render();renderSheet();break}
+    case 'setskin':case 'setbody':case 'sethair':case 'sethcol':case 'setbeard':{const key={setskin:'skin',setbody:'body',sethair:'hair',sethcol:'hcol',setbeard:'beard'}[a];S.hero=Object.assign(heroLook(),{[key]:parseInt(v,10)});save();render();renderSheet();break}
+    case 'setcls':{S.hero=Object.assign(heroLook(),{cls:v});if(S.equip){delete S.equip.weapon;delete S.equip.armor}save();render();renderSheet();break}
     case 'pets':openSheet('pets');break;
     case 'petview':openSheet('pets',{view:v});break;
     case 'petpick':if(switchPet(v)){say(S.pet.name+' теперь с тобой');save();UI.sheet=null;commit()}break;

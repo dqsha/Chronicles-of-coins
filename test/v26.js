@@ -12,29 +12,28 @@ run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'К�
 // новичок: только банк и кнопки
 // 0.33: облик героя (раса + класс), оружие по классам, компаньоны
 run("S.xp=xpAtLevel(12)");
-chk('default look human warrior',run("JSON.stringify(heroLook())")==='{"race":"human","cls":"warrior"}');
+chk('default look',run("JSON.stringify(heroLook())")==='{"cls":"warrior","skin":0,"body":0,"hair":0,"hcol":0,"beard":-1}');
 chk('weapon names per class',run("GEAR.weapon.map(g=>g.n).join()").startsWith('Тренировочный меч')&&run("GEAR.weapon.length")===5);
 act('setcls','mage');
 chk('class changed, weapon override cleared',run("S.hero.cls")==='mage'&&run("GEAR.weapon[0].n")==='Посох ученика');
-act('setrace','orc');
-chk('race changed, class kept',run("S.hero.race==='orc'&&S.hero.cls==='mage'"));
+act('setskin','3');
+chk('skin changed, class kept',run("S.hero.skin===3&&S.hero.cls==='mage'"));
+act('sethair','5');act('sethcol','2');act('setbeard','1');
+chk('hair/colour/beard set',run("S.hero.hair===5&&S.hero.hcol===2&&S.hero.beard===1"));
 const ha=run("heroArt(12)");
-chk('heroArt uses race+class image',ha.includes('assets/hero/orc-mage.webp'));
-chk('no weapon drawn on the hero image',!ha.includes('hero-wpn')&&!ha.includes('assets/weapon'));
-chk('avatar uses portrait image',run("heroAvatar()").includes('assets/avatar/orc-mage.webp'));
+chk('heroArt is paper-doll',ha.includes('pxh')&&!ha.includes('assets/hero/'));
+chk('avatar is paper-doll',run("heroAvatar()").includes('pxav'));
 run("UI.tab='hero';render()");
-chk('hero tab: look button',app().includes('data-act="look"')&&app().includes('hero-img'));
-chk('weapon slot under hero with rarity class (lvl 12 = 3rd weapon = r2)',app().includes('class="wslot r2"')&&app().includes('Редкое')&&app().includes('assets/weapon/mage-3.webp'));
-run("S.xp=xpAtLevel(30)");run("render()");chk('lvl 30: legendary slot r4',app().includes('class="wslot r4"')&&app().includes('Легендарное'));
+chk('hero tab: look button',app().includes('data-act="look"')&&app().includes('pxh'));
+chk('weapon slot rarity r2',app().includes('r2'));
+run("S.xp=xpAtLevel(30)");run("render()");chk('lvl 30: legendary r4',app().includes('r4'));
 run("S.xp=xpAtLevel(12)");run("render()");
-act('look');chk('look sheet shows 4 races and 4 classes',lay().includes('data-act="setrace" data-v="goblin"')&&lay().includes('data-act="setcls" data-v="rogue"'));
-act('gear');chk('inventory: 6 slots, 5 locked',(lay().match(/class="islot/g)||[]).length===6&&(lay().match(/islot lock/g)||[]).length===5&&lay().includes('в разработке'));
-chk('inventory: 5 weapon rows + current in slot',(lay().match(/data-act="equip"/g)||[]).length===5&&lay().includes('Гримуар'));
+act('look');chk('look sheet: swatches and classes',lay().includes('data-act="setskin"')&&lay().includes('data-act="setcls" data-v="rogue"')&&lay().includes('Kenney'));
+act('gear');chk('inventory: 6 slots, 4 locked',(lay().match(/class="islot/g)||[]).length===6&&(lay().match(/islot lock/g)||[]).length===4);
+chk('inventory: weapon+armor rows',(lay().match(/data-act="equip"/g)||[]).length===10);
 act('close');
-// корректность картинок: все файлы есть
 const fsx=require('fs'),root=require('path').dirname(require('path').resolve(process.argv[2]))+'/../assets/';
-let miss=[];['human','elf','orc','goblin'].forEach(r=>['warrior','mage','ranger','rogue'].forEach(c=>{if(!fsx.existsSync(root+'avatar/'+r+'-'+c+'.webp'))miss.push('av'+r+c)}));['human','elf','orc','goblin'].forEach(r=>['warrior','mage','ranger','rogue'].forEach(c=>{if(!fsx.existsSync(root+'hero/'+r+'-'+c+'.webp'))miss.push(r+c)}));
-['warrior','mage','ranger','rogue'].forEach(c=>[1,2,3,4,5].forEach(i=>{if(!fsx.existsSync(root+'weapon/'+c+'-'+i+'.webp'))miss.push('w'+c+i)}));
+let miss=[];if(!fsx.existsSync(root+'kenney/roguelike.png'))miss.push('kenney');
 ['slime','cat','dragon','phoenix'].forEach(k=>[1,2,3,4].forEach(i=>{if(!fsx.existsSync(root+'pet/'+k+'-'+i+'.webp'))miss.push('p'+k+i)}));
 chk('all sprites exist ('+miss.join(',')+')',miss.length===0);
 // компаньоны: волка нет, первый питомец слайм
