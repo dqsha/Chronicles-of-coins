@@ -566,6 +566,11 @@ button,[data-act]{cursor:pointer}
 .wslot.r3 .wic .pxh,.wslot.r4 .wic .pxh{animation-duration:2.2s;filter:drop-shadow(0 0 4px rgba(var(--rg),.8))}
 @keyframes wfloat{0%,100%{transform:translateY(1px) rotate(-5deg)}50%{transform:translateY(-3px) rotate(5deg)}}
 @media (prefers-reduced-motion:reduce){.wic .pxh{animation:none!important}}
+.pxh .cloak{position:absolute;inset:0;width:100%;height:100%}
+.oic{display:flex;width:48px;height:48px;align-items:center;justify-content:center;flex:none}
+.islot .oic{margin:0 auto}
+.wslot .oic,.islot.on .oic{animation:wfloat 2.8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.oic{animation:none!important}}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -782,7 +787,13 @@ function heroLook(){const h=S.hero||{};const cls=CLASSES.some(c=>c.id===h.cls)?h
 const GEAR={};
 Object.defineProperty(GEAR,'weapon',{enumerable:true,get(){return WEAPONS[heroLook().cls].map((n,i)=>({n:n,l:WLV[i]}))}});
 Object.defineProperty(GEAR,'armor',{enumerable:true,get(){return ARMORS[heroLook().cls].map((n,i)=>({n:n,l:WLV[i]}))}});
-const SLOTN={weapon:'Оружие',armor:'Броня'};
+const SLOTN={weapon:'Оружие',armor:'Броня',cloak:'Плащ',ring:'Кольцо',amulet:'Амулет'};
+const XSLOTS=['cloak','ring','amulet'];
+const XLV={cloak:[3,8,14,20,28],ring:[4,9,15,22,30],amulet:[5,11,17,25,35]};
+const XNAMES={cloak:['Дерюга','Дорожный плащ','Плащ следопыта','Бархатная мантия','Плащ Легенды'],ring:['Медное колечко','Серебряное кольцо','Кольцо удачи','Кольцо с рубином','Кольцо Вечности'],amulet:['Верёвочный оберег','Костяной амулет','Амулет лунного света','Амулет дракона','Сердце Хроники']};
+const XCOL=[['#8a7a5a','#4a3f2c','#cfc3a0'],['#b0722f','#5a3516','#6ecbff'],['#3f9f68','#1f4a30','#7dff9a'],['#8a56c8','#3c2463','#e08cff'],['#e6b53a','#8a5f10','#ff5a5a']];
+XSLOTS.forEach(sl=>Object.defineProperty(GEAR,sl,{enumerable:true,get(){return XNAMES[sl].map((n,i)=>({n:n,l:XLV[sl][i]}))}}));
+function curTier(sl,L){return(XSLOTS.indexOf(sl)>=0&&GEAR[sl][0].l>L)?-1:equippedTier(sl,L)}
 function tier(slot,L){let t=0;GEAR[slot].forEach((g,i)=>{if(g.l<=L)t=i});return t}
 function equippedTier(slot,L){const e=S.equip&&S.equip[slot];return(e!=null&&GEAR[slot][e]&&GEAR[slot][e].l<=L)?e:tier(slot,L)}
 function setEquip(slot,i,L){if(!GEAR[slot]||!GEAR[slot][i]||GEAR[slot][i].l>L)return false;
@@ -1253,11 +1264,20 @@ function pix(rows,pal,px){const h=rows.length,w=rows[0].length;let o='<svg viewB
 const flame=px=>pix(FLAME,{o:'#e0832b',y:'#f6d25a'},px);
 const snow=px=>pix(SNOW,{c:'#8fd3ef'},px);
 
-function pxL(layers,k){return '<span class="pxh"'+(k?' style="--k:'+k+'"':'')+'>'+layers.filter(Boolean).map(l=>'<i style="--x:'+(l[0]*17)+';--y:'+(l[1]*17)+'"></i>').join('')+'</span>'}
+function pxL(layers,k){return '<span class="pxh"'+(k?' style="--k:'+k+'"':'')+'>'+layers.filter(Boolean).map(l=>typeof l==='string'?l:'<i style="--x:'+(l[0]*17)+';--y:'+(l[1]*17)+'"></i>').join('')+'</span>'}
 function heroLayers(L,o){o=o||{};const h=heroLook(),wt=equippedTier('weapon',L),at=equippedTier('armor',L),A=ARMOR_LOOK[h.cls],a=A.t[at],hb=HAIRB[h.hcol];
-  return [[h.body,h.skin],[3,A.pants],a.top,h.beard>=0?[hb[0]+h.beard,hb[1]+3]:null,h.hair>=0?[hb[0]+h.hair%4,hb[1]+((h.hair/4)|0)]:null,a.helm||null,o.noWeapon?null:WTILE[h.cls][wt],o.noWeapon?null:(a.sh||null)]}
+  const ct=o.noWeapon?-1:curTier('cloak',L);
+  return [[h.body,h.skin],[3,A.pants],a.top,ct>=0?cloakSvg(ct):null,h.beard>=0?[hb[0]+h.beard,hb[1]+3]:null,h.hair>=0?[hb[0]+h.hair%4,hb[1]+((h.hair/4)|0)]:null,a.helm||null,o.noWeapon?null:WTILE[h.cls][wt],o.noWeapon?null:(a.sh||null)]}
 function heroArt(L,k){return pxL(heroLayers(L),k)}
 function heroAvatar(){const L=levelInfo(S.xp).L;return '<span class="pxav">'+pxL(heroLayers(L,{noWeapon:true}),7)+'</span>'}
+function cloakRects(i){const c=XCOL[i];return [[4,7,8,1,c[0]],[3,8,10,1,c[0]],[7,8,2,1,c[2]],[3,9,2,5,c[0]],[11,9,2,5,c[0]],[5,9,1,4,c[1]],[10,9,1,4,c[1]],[3,14,2,1,c[1]],[11,14,2,1,c[1]]].map(r=>'<rect x="'+r[0]+'" y="'+r[1]+'" width="'+r[2]+'" height="'+r[3]+'" fill="'+r[4]+'"/>').join('')}
+function cloakSvg(i){return '<svg class="cloak" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">'+cloakRects(i)+'</svg>'}
+const RING_ROWS=['....ww....','...wWWw...','....bb....','..bbbbbb..','.bb....bb.','.b......b.','.b......b.','.bb....bb.','..bbbbbb..','...bbbb...'];
+const AMU_ROWS=['b.........b','.b.......b.','..b.....b..','...b...b...','....bbb....','....bdb....','...ddddd...','..ddwWWdd..','..dWWWWWd..','...dWWWd...','....ddd....'];
+function extraIcon(sl,i){const c=XCOL[i];
+  if(sl==='cloak')return '<span class="oic"><svg viewBox="2 6 12 9" width="48" height="36" shape-rendering="crispEdges" aria-hidden="true">'+cloakRects(i)+'</svg></span>';
+  if(sl==='ring')return '<span class="oic">'+pix(RING_ROWS,{b:c[0],w:'#fff',W:c[2]},4)+'</span>';
+  return '<span class="oic">'+pix(AMU_ROWS,{b:'#cfcfcf',d:c[0],w:'#fff',W:c[2]},4)+'</span>'}
 function pxTile(t,k){return pxL([t],k)}
 const WOFF={"42,6":[6,0],"44,6":[6,0],"51,5":[4,0],"47,5":[4,1],"46,6":[6,0],"42,0":[6,0],"44,2":[6,0],"42,3":[6,0],"43,4":[6,-2],"48,8":[6,-2],"52,0":[6,0],"53,0":[6,0],"52,3":[6,0],"52,2":[6,0],"53,4":[6,0],"42,7":[6,-1],"43,7":[6,-1],"44,7":[6,-1],"45,7":[6,-1],"46,7":[6,-1]};
 function weaponIcon(cls,i,k){const t=WTILE[cls][i],o=WOFF[t[0]+','+t[1]]||[0,0];return '<span class="wic" style="--dx:'+o[0]+';--dy:'+o[1]+'">'+pxTile(t,k||3)+'</span>'}
@@ -1647,7 +1667,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.36.1';
+const APP_V='0.37.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1789,7 +1809,7 @@ const HINTS={
  treasure:['Сокровищница героя','Итоги за всё время: сколько получено и потрачено.','Только смотри, настраивать нечего.','Общая картина твоих денег.'],
  records:['Рекорды по месяцам','Самые затратные и самые удачные месяцы.','Появляется, когда накопится история.','Понимаешь, что отличало удачные месяцы.'],
  days:['По дням','Траты, разбитые по дням.','Нажми на день, чтобы раскрыть записи.','Находишь дорогие дни и их причину.'],
- gear:['Инвентарь','Снаряжение героя: оружие и броня.','Оружие открывается с уровнем. Нажми, чтобы взять. Броня и остальные слоты в разработке.','Игровая награда за привычку вести учёт.'],
+ gear:['Инвентарь','Снаряжение героя: оружие, броня, плащ, кольцо и амулет.','Оружие открывается с уровнем. Нажми, чтобы взять. Шлем в разработке.','Игровая награда за привычку вести учёт.'],
  pets:['Компаньоны','Питомцы, которые растут вместе с тобой.','Новые открываются с уровнем. Нажми, чтобы посмотреть и взять с собой.','Лёгкая мотивация записывать каждый день.']};
 function hq(k){return HINTS[k]?'<button class="qm'+((S.hintSeen||{})[k]?' seen':'')+'" data-act="hint" data-v="'+k+'" aria-label="Что это?">?</button>':''}
 function sheetHint(){const h=HINTS[UI.sheet.k];if(!h)return shHead('Подсказка')+'<button class="btn" data-act="hintok">Понятно</button>';
@@ -1825,11 +1845,12 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
    +(edit?'<button class="btn ghost" data-act="manddel">Удалить платёж</button>':'')}
 const INVSLOTS=[{id:'weapon',n:'Оружие'},{id:'armor',n:'Броня'},{id:'helm',n:'Шлем'},{id:'cloak',n:'Плащ'},{id:'ring',n:'Кольцо'},{id:'amulet',n:'Амулет'}];
 function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls,cw=equippedTier('weapon',L),ca=equippedTier('armor',L);
-  const ic=(sl,i)=>sl==='weapon'?weaponIcon(cl,i,3):armorIcon(cl,i,3);
+  const ic=(sl,i)=>sl==='weapon'?weaponIcon(cl,i,3):sl==='armor'?armorIcon(cl,i,3):extraIcon(sl,i);
+  const cur=sl=>sl==='weapon'?cw:sl==='armor'?ca:GEAR[sl]?curTier(sl,L):-1;
   let h=shHead('Инвентарь'+hq('gear'))+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
-   +'<div class="inv">'+INVSLOTS.map(sl=>(sl.id==='weapon'||sl.id==='armor')?'<div class="islot on r'+(sl.id==='weapon'?cw:ca)+'">'+ic(sl.id,sl.id==='weapon'?cw:ca)+'<b>'+esc(GEAR[sl.id][sl.id==='weapon'?cw:ca].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
+   +'<div class="inv">'+INVSLOTS.map(sl=>{const t=cur(sl.id);return GEAR[sl.id]&&t>=0?'<div class="islot on r'+t+'">'+ic(sl.id,t)+'<b>'+esc(GEAR[sl.id][t].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>'+(GEAR[sl.id]?'с '+GEAR[sl.id][0].l+' ур.':'в разработке')+'</small></div>'}).join('')+'</div>'
    +'<p class="note" style="margin-top:6px">Открывается с уровнем. Нажми, чтобы взять.</p>';
-  ['weapon','armor'].forEach(s=>{const cur=s==='weapon'?cw:ca;h+='<div class="slot">'+SLOTN[s]+'</div><div class="gear">'+GEAR[s].map((g,i)=>'<button class="g r'+i+' '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl">'+ic(s,i)+'<span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cur?(s==='weapon'?'в руках':'надето'):g.l>L?'с '+g.l+' ур.':(s==='weapon'?'взять':'надеть'))+'</span></button>').join('')+'</div>'});
+  ['weapon','armor','cloak','ring','amulet'].forEach(s=>{const cr=cur(s);if(cr<0&&GEAR[s][0].l>L&&XSLOTS.indexOf(s)>=0&&false)return;h+='<div class="slot">'+SLOTN[s]+'</div><div class="gear">'+GEAR[s].map((g,i)=>'<button class="g r'+i+' '+(i===cr?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl">'+ic(s,i)+'<span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cr?(s==='weapon'?'в руках':'надето'):g.l>L?'с '+g.l+' ур.':(s==='weapon'?'взять':'надеть'))+'</span></button>').join('')+'</div>'});
   return h}
 function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
   const sw=(arr,cur,act)=>'<div class="swrow">'+arr.map((c,i)=>'<button class="sw'+(i===cur?' on':'')+'" style="--sc:'+c[0]+'" data-act="'+act+'" data-v="'+i+'" aria-label="'+c[1]+'"></button>').join('')+'</div>';
