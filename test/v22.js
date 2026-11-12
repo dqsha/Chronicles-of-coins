@@ -21,7 +21,7 @@ chk('two prophecies',run("S.pro.length")===2);
 chk('balance at 20th',near(run("proBalanceAt('2026-11-20')"),350000));
 // разрыв: 100000 - 150000 < 0 с 13-го, дно -50000
 const g=run("proGap(60)");chk('gap found on 13th, deficit 50000',g&&g.date==='2026-11-13'&&g.deficit===50000);
-chk('home warns about gap',/t-attn/.test(app())&&/Кассовый разрыв/.test(app()));run("UI.tab='plan';render()");chk('plan shows prophecies and gap',/Пророчества/.test(app())&&/Кассовый разрыв/.test(app()));run("UI.tab='home';render()");
+chk('home warns about gap',/t-attn/.test(app())&&!/Кассовый разрыв/.test(app()));act('attn');chk('attention sheet explains gap',/Кассовый разрыв/.test(lay()));act('close');run("UI.tab='plan';render()");chk('plan shows prophecies and gap',/Пророчества/.test(app())&&/Кассовый разрыв/.test(app()));run("UI.tab='home';render()");
 // срок наступил: 13-го ремонт «сбылся иначе» на 180000
 run("NOW='2026-11-13'");
 const id2=run("S.pro.find(p=>p.note==='Ремонт').id");

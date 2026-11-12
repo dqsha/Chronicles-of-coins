@@ -46,4 +46,11 @@ chk('average spend ignores mandatory payments',Math.round(run("avgDaily('2026-11
 run("S.goals=[];addGoal({name:'Велик',icon:'🚲',target:50000,deadline:'2027-05-01'});addContrib(S.goals[0].id,50000)");
 const txn=run("S.tx.length");act('buyopen',run("S.goals[0].id"));chk('buy sheet has already-bought',lay().includes('data-act="buyprev"'));
 act('buyprev');chk('goal closed without expense',run("S.goals[0].closed")===true&&run("S.tx.length")===txn);
+// скрытые блоки уходят вниз
+run("S.hide={};S.mand=[{id:'o',name:'Долг',amount:1000,day:1,cat:'home',acc:'a',debt:false,closed:false}];S.paid={};UI.tab='home';render()");
+const hasAttn=app().includes('t-attn');
+if(hasAttn){act('hide','attn');const h=app();chk('hidden attn: bar at the very end',h.lastIndexOf('data-act="unhide"')>h.lastIndexOf('<section')&&!h.includes('data-act="attn"'));
+act('unhide','attn');chk('unhide returns card',app().includes('data-act="attn"')&&!app().includes('data-act="unhide"'));}
+else chk('attn visible for overdue payment',false);
+run("S.hide={}");
 console.log(bad?'FAILED '+bad:'ALL OK');process.exit(bad?1:0);

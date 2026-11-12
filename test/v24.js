@@ -21,7 +21,7 @@ chk('daily allowance on bank card',hh.includes('Можно тратить в д�
 // блок «Внимание» только когда есть что показать
 chk('no attention when all calm',!hh.includes('t-attn'));
 run("S.pro.push({id:'p1',type:'exp',cat:'food',acc:'a',amount:500000,date:'2026-11-11',note:'',rec:'none',st:'wait',fact:null,c:'2026-11-01',u:1});render()");
-chk('attention shows gap and due prophecy',app().includes('t-attn')&&app().includes('Кассовый разрыв')&&app().includes('Пророчеств ждут'));
+chk('attention card compact',app().includes('t-attn')&&app().includes('data-act="attn"')&&!app().includes('Пророчеств ждут'));act('attn');chk('attention sheet shows gap and due prophecy',lay().includes('Кассовый разрыв')&&lay().includes('Пророчеств ждут'));act('close');
 act('tab','plan');chk('attention button leads to plan',run('UI.tab')==='plan'&&app().includes('t-pro'));
 // группы вкладок
 chk('tab groups',run("tabGroup('stats')")==='list'&&run("tabGroup('wallet')")==='list'&&run("tabGroup('plan')")==='plan');
