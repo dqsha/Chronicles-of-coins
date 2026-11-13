@@ -293,9 +293,9 @@ input[type=range]{width:100%;accent-color:var(--gold);min-height:32px}
 .q.done .ck{background:var(--inc);border-color:var(--inc)}
 .q.done .qt{color:var(--mute);text-decoration:line-through}
 .q:disabled{cursor:default}
-.tv-block{position:fixed;inset:0;z-index:70;touch-action:none}
+.tv-block{position:fixed;inset:0;z-index:70;touch-action:none;cursor:pointer}
 .tv-dim{position:fixed;inset:0;z-index:70;background:rgba(8,6,12,.45);pointer-events:none}
-.tv-spot{position:fixed;z-index:71;border:2px solid var(--gold);box-shadow:0 0 0 9999px rgba(8,6,12,.8);pointer-events:none;animation:tvp 1s steps(2) infinite}
+.tv-spot{position:fixed;z-index:71;border:2px solid var(--gold);box-shadow:0 0 0 9999px rgba(8,6,12,.8);pointer-events:auto;cursor:pointer;animation:tvp 1s steps(2) infinite}
 @keyframes tvp{50%{border-color:var(--gold-d)}}
 .tv-box{position:fixed;z-index:72;left:0;right:0;bottom:0;height:52vh;min-height:330px;max-width:480px;margin:0 auto;background:var(--panel);border:2px solid var(--gold-d);border-bottom:0;box-shadow:0 -4px 0 var(--shadow);padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:10px}
 .tv-box .tv-mage{width:84px}
@@ -706,6 +706,37 @@ html.lock,body.lock{overflow:hidden!important;overscroll-behavior:none}
 .dlg-name{background:var(--acc-glass)!important;color:var(--acc-ink)!important;border:1px solid var(--acc-edge)!important}
 .tv-spot{border-radius:22px!important;box-shadow:0 0 0 9999px rgba(5,3,6,.68),0 0 0 2px var(--acc),0 0 24px var(--acc-glow)!important}
 .tv-skip,.tv-back{border-radius:999px!important;border:1px solid var(--edge)!important;background:rgba(255,255,255,.07)!important;color:var(--ink)!important}
+
+/* --- 0.44 --- */
+.sheet>*{flex-shrink:0}
+.card.hero:not(.herom){display:grid!important;grid-template-columns:auto minmax(0,1fr);column-gap:12px;align-items:start}
+.herobtns{grid-column:1/-1}
+.herobtns{flex:1 1 100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.herobtns .btn{min-height:40px!important;padding:6px 4px!important;font-size:12.5px!important;white-space:nowrap}
+.scene{margin-top:6px}
+.scene .r{line-height:1.25!important;padding:6px 12px 5px!important;white-space:nowrap}
+.scene .cap h1{line-height:1.3;padding-top:2px}
+.mbtn{display:inline-flex!important;align-items:center;justify-content:center;padding:0!important;line-height:1!important;font:600 17px/1 system-ui,-apple-system,sans-serif!important}
+/* фильтры записей: всегда влезают в одну строку */
+.fchips.flt{display:grid!important;grid-template-columns:repeat(4,1fr);gap:6px}
+.fchips.flt>.fc{min-width:0;padding-left:4px!important;padding-right:4px!important;font-size:13px!important;text-align:center;white-space:nowrap}
+/* периоды: простые кнопки без капли, все видны */
+.pseg{display:flex!important;justify-content:space-between;overflow:visible!important;padding:4px!important}
+.pseg>.fc{flex:1 1 auto;padding:7px 4px!important;font-size:12.5px!important;text-align:center}
+.pseg>.fc.on{background:var(--acc-glass)!important;color:var(--acc-ink)!important;border-radius:999px!important}
+/* обучение: кнопка возврата */
+.tourback{position:fixed;z-index:80;left:50%;transform:translateX(-50%);top:calc(10px + max(env(safe-area-inset-top,0px),var(--tg-safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px));padding:10px 18px;border-radius:999px;border:1px solid var(--acc-edge);background:var(--acc-glass);color:var(--acc-ink);font:600 14px system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 18px var(--acc-glow)}
+.tv-spot{animation:none!important}
+/* компаньон */
+.growbtn{display:block;width:100%;margin-top:8px;padding:8px 12px;border-radius:14px;border:1px solid var(--edge);background:rgba(255,255,255,.06);color:var(--ink);font:13px system-ui,sans-serif;text-align:left;cursor:pointer}
+.pst .pimg{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:84px;border-radius:16px}
+.pst.now .pimg{box-shadow:0 0 0 2px var(--acc),0 0 16px var(--acc-glow)}
+.pst .sil img{filter:brightness(0) opacity(.55)}
+.qmark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 26px var(--num);color:var(--acc);text-shadow:0 0 12px var(--acc-glow)}
+.pst.hid .pimg{border:1px dashed var(--edge);background:rgba(0,0,0,.2)}
+/* быстрее: размытие только у крупных панелей */
+.row .tile,.qk,.fc,.hidebtn,.cat,.qm,.scene .r,.mbtn,.btn{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.card,.hbar{-webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1616,7 +1647,7 @@ function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
     +'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+lv.need+'" aria-valuenow="'+lv.cur+'"><i style="width:'+Math.round(lv.cur/lv.need*100)+'%"></i></div>'
     +'<div class="xpline">'+(lv.need-lv.cur)+' XP до '+(lv.L+1)+' ур.</div>'
     +'<div class="streak"><span class="ic">'+flame(3)+'<span>'+esc(full?stTxt:(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь')+'</span></span>'+(full?'<span class="ic">'+snow(3)+'<span>Заморозки: '+S.streak.freezes+' из 3</span></span><span class="ic">📅<span>Заходов подряд: '+visitView().count+'</span></span>':'')+'</div>'
-    +(full?'<div class="chips"><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'<div class="hgo">Лагерь ›</div>')+'</div></section>'}
+    +(full?'':'<div class="hgo">Лагерь ›</div>')+'</div>'+(full?'<div class="herobtns"><button class="btn ghost small" data-act="gear">🎒 Инвентарь</button><button class="btn ghost small" data-act="look">Облик</button><button class="btn ghost small" data-act="ach">Достижения</button></div>':'')+'</section>'}
 function sheetCamp(){const lv=levelInfo(S.xp),nx=nextUnlock(lv.L);
   return shHead('Лагерь героя')+heroCard(true)+((nx&&!S.calm)?'<p class="note">Дальше: '+esc(nx.n)+', '+nx.l+' ур.</p>':'')+(S.calm?'':petCard()+questCard())}
 function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const wh=f.pay?'до зарплаты':'до конца месяца';
@@ -1643,13 +1674,13 @@ function hb(key,html){if(!html)return '';const nm=(HIDEABLE[key]||'').replace(/^
   return html.slice(0,j)+'<button class="hidebtn glass" data-act="hide" data-v="'+key+'" aria-label="Свернуть блок «'+nm+'»">скрыть</button>'+html.slice(j)}
 function hiddenCard(){return ''}
 /* Переключатели (.seg, .segb, периоды): стеклянная «капля» плавно едет к выбранному, её можно тянуть пальцем */
-function segPills(){try{document.querySelectorAll('.seg,.segb,.pseg').forEach(g=>{const on=g.querySelector(':scope>button.on,:scope>.on');let p=g.querySelector(':scope>.segpill');
+function segPills(){try{document.querySelectorAll('.seg,.segb').forEach(g=>{const on=g.querySelector(':scope>button.on,:scope>.on');let p=g.querySelector(':scope>.segpill');
   if(!on){if(p)p.remove();return}
   if(!p){p=document.createElement('i');p.className='segpill';g.insertBefore(p,g.firstChild);const prev=UI.segPrev&&UI.segPrev[segKey(g)];if(prev){p.style.transition='none';p.style.left=prev[0]+'px';p.style.width=prev[1]+'px';void p.offsetWidth;p.style.transition=''}}
   g.classList.add('hasPill');const L=on.offsetLeft,W=on.offsetWidth;p.style.left=L+'px';p.style.width=W+'px';p.style.top=on.offsetTop+'px';p.style.height=on.offsetHeight+'px';
   (UI.segPrev=UI.segPrev||{})[segKey(g)]=[L,W]})}catch(e){}}
 function segKey(g){return (g.className||'')+'|'+[].map.call(g.querySelectorAll(':scope>button'),b=>b.dataset.act||'').join(',')}
-function bootSeg(){let g=null,p=null,x0=0,l0=0,moved=false,btns=[];
+function bootSeg(){window.addEventListener('resize',()=>setTimeout(segPills,60));return;let g=null,p=null,x0=0,l0=0,moved=false,btns=[];
   document.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest('.hasPill');if(!t)return;g=t;p=g.querySelector(':scope>.segpill');if(!p){g=null;return}
     btns=[].slice.call(g.querySelectorAll(':scope>button'));x0=e.clientX;l0=p.offsetLeft;moved=false},{passive:true});
   document.addEventListener('pointermove',e=>{if(!g)return;const dx=e.clientX-x0;if(!moved&&Math.abs(dx)<8)return;moved=true;g.classList.add('drag');
@@ -1711,12 +1742,19 @@ function viewHome(){
   +hb('attn',attnCard())
   +(S.tx.some(isUncat)?'<button class="fc on" style="align-self:flex-start;margin:0 0 10px" data-act="fixcat">❔ Без категории: '+S.tx.filter(isUncat).length+' · разобрать</button>':'')
   +(fresh?'':hb('today','<section class="card"><h2>Сегодня'+(hasExp?': '+fmt(tsum):'')+hq('today')+'</h2>'+today_+'</section>')+hb('hero',heroStrip()))}
+function sheetGrow(){const p=petInfo(),k=petKind(),P=petDef(k),pct=p.next?Math.round(p.cur/p.span*100):100,fd=(S.pet&&S.pet.food)||0;
+  const cell=i=>i<=p.stage?'<div class="pst'+(i===p.stage?' now':'')+'"><div class="pimg">'+petImg(k,i,'happy',[74,84])+'</div><small>'+esc(P.st[i])+'</small></div>'
+    :i===p.stage+1?'<div class="pst nextq"><div class="pimg"><span class="sil">'+petImg(k,i,'happy',[74,84])+'</span><b class="qmark">?</b></div><small>Секрет</small></div>'
+    :'<div class="pst hid"><div class="pimg"><b class="qmark">?</b></div><small>???</small></div>';
+  return shHead('Рост: '+esc((S.pet&&S.pet.name)||P.nm))+'<div class="petrow">'+[0,1,2,3].map(cell).join('')+'</div>'
+   +'<div class="bar"><i style="width:'+pct+'%"></i></div><p class="sub" style="text-align:center">'+(p.next?'До следующей стадии: '+(p.span-p.cur)+' корм. Корм даётся за записи.':'Это высшая стадия.')+'</p>'
+   +'<button class="btn" data-act="feed"'+(fd<1?' disabled':'')+'>Покормить (есть '+fd+')</button>'}
 function petCard(){const p=petInfo(),pet=S.pet||{food:0,xp:0,name:'Желе'};
   const mt={happy:'Сыт.',ok:'Не голоден.',hungry:'Голоден.'}[p.mood];
   const prog=p.next?Math.round(p.cur/p.span*100):100;
   return '<section class="card" id="t-pet"><div class="pet"><div class="pet-art m-'+p.mood+'">'+petImg(petKind(),p.stage,p.mood)+'</div><div class="pet-info"><div class="label">Компаньон</div><div class="pet-name">'+esc(pet.name)+'</div>'
    +'<div class="note">'+p.stageName+' · '+mt+'</div><div class="bar thin"><i style="width:'+prog+'%"></i></div>'
-   +'<div class="xpline">'+(p.next?'До роста: '+(p.span-p.cur):'Вершина')+'</div></div></div>'
+   +'<button class="growbtn" data-act="petgrow">'+(p.next?'Рост: стадия '+(p.stage+1)+' из 4 · ещё '+(p.span-p.cur)+' корм.':'Высшая стадия')+' ›</button></div></div>'
    +'<div class="chips" style="margin-top:10px;align-items:center"><button class="btn small" data-act="feed"'+(pet.food<1?' disabled':'')+'>Покормить</button><span class="ic">Корм: <b class="n">'+pet.food+'</b></span><button class="btn ghost small" data-act="pets">Компаньоны</button></div>'+'</section>'}
 const COIN=['..ooo..','.oyyyo.','oyyoyyo','oyoyyyo','oyyoyyo','.oyyyo.','..ooo..'];
 const fmtDateY=d=>fmtDate(d)+(d.slice(0,4)!==today().slice(0,4)?' '+d.slice(0,4):'');
@@ -1775,7 +1813,7 @@ function viewList(){
       +'<span class="amt '+cls+'">'+amtTxt(x)+'</span></button>'});
   return scene('list','Записи','Архив хроник',S.tx.length+' '+plural(S.tx.length,['запись','записи','записей']))
   +(S.tx.some(isUncat)?'<button class="fc on" style="align-self:flex-start" data-act="fixcat">❔ Без категории: '+S.tx.filter(isUncat).length+' · разобрать</button>':'')
-  +'<div class="fchips">'+fl.map(f=>'<button class="fc '+(UI.filter===f[0]?'on':'')+'" data-act="filter" data-v="'+f[0]+'">'+f[1]+'</button>').join('')+'</div>'
+  +'<div class="fchips flt">'+fl.map(f=>'<button class="fc '+(UI.filter===f[0]?'on':'')+'" data-act="filter" data-v="'+f[0]+'">'+f[1]+'</button>').join('')+'</div>'
   +'<section class="card">'+(items.length?'<div class="list">'+html+'</div>'+(items.length>shown.length?'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="more">Показать ещё</button>':''):'<p class="empty">Записей пока нет. Нажми «+», чтобы добавить первую.</p>')+'</section>'}
 function chartSVG(st){
   const bk=st.list,W=360,H=190,R=8,T=10,B=24;
@@ -1854,7 +1892,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.43.0';
+const APP_V='0.44.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -2036,12 +2074,13 @@ function sheetMand(){const f=UI.form;const edit=!!UI.sheet.id;
    +(edit?'<button class="btn ghost" data-act="manddel">Удалить платёж</button>':'')}
 const INVSLOTS=[{id:'weapon',n:'Оружие'},{id:'armor',n:'Броня'},{id:'helm',n:'Шлем'},{id:'cloak',n:'Плащ'},{id:'ring',n:'Кольцо'},{id:'amulet',n:'Амулет'}];
 function sheetGear(){const L=levelInfo(S.xp).L,cl=heroLook().cls,cw=equippedTier('weapon',L),ca=equippedTier('armor',L);
-  const ic=(sl,i)=>sl==='weapon'?weaponIcon(cl,i,3):armorIcon(cl,i,3);
+  const ic=(sl,i)=>sl==='weapon'?weaponIcon(cl,i,3):armorIcon(cl,i,3);const t=(UI.sheet&&UI.sheet.gt)||'weapon';
+  const tabs=[['weapon','Оружие'],['armor','Броня'],['soon','Ещё']];
   let h=shHead('Инвентарь'+hq('gear'))+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
-   +'<div class="inv">'+INVSLOTS.map(sl=>(sl.id==='weapon'||sl.id==='armor')?'<div class="islot on r'+(sl.id==='weapon'?cw:ca)+'">'+ic(sl.id,sl.id==='weapon'?cw:ca)+'<b>'+esc(GEAR[sl.id][sl.id==='weapon'?cw:ca].n)+'</b><small>'+sl.n+'</small></div>':'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>в разработке</small></div>').join('')+'</div>'
-   +'<p class="note" style="margin-top:6px">Нажми, чтобы взять.</p>';
-  ['weapon','armor'].forEach(s=>{const cur=s==='weapon'?cw:ca;h+='<div class="slot">'+SLOTN[s]+'</div><div class="gear">'+GEAR[s].map((g,i)=>'<button class="g r'+i+' '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+s+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl">'+ic(s,i)+'<span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cur?(s==='weapon'?'в руках':'надето'):g.l>L?'с '+g.l+' ур.':(s==='weapon'?'взять':'надеть'))+'</span></button>').join('')+'</div>'});
-  return h}
+   +'<div class="seg" style="margin:10px 0">'+tabs.map(x=>'<button class="'+(t===x[0]?'on':'')+'" data-act="geartab" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+  if(t==='soon')return h+'<div class="inv">'+INVSLOTS.filter(sl=>sl.id!=='weapon'&&sl.id!=='armor').map(sl=>'<div class="islot lock"><span class="lk">🔒</span><b>'+sl.n+'</b><small>скоро</small></div>').join('')+'</div>';
+  const cur=t==='weapon'?cw:ca;
+  return h+'<div class="gear">'+GEAR[t].map((g,i)=>'<button class="g r'+i+' '+(i===cur?'on':g.l>L?'lock':'')+'" data-act="equip" data-s="'+t+'" data-v="'+i+'"'+(g.l>L?' disabled':'')+'><span class="gl">'+ic(t,i)+'<span>'+esc(g.n)+'</span></span><span class="gr"><small>'+RARITY[i]+'</small>'+(i===cur?(t==='weapon'?'в руках':'надето'):g.l>L?'с '+g.l+' ур.':(t==='weapon'?'взять':'надеть'))+'</span></button>').join('')+'</div>'}
 function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
   const sw=(arr,cur,act)=>'<div class="swrow">'+arr.map((c,i)=>'<button class="sw'+(i===cur?' on':'')+'" style="--sc:'+c[0]+'" data-act="'+act+'" data-v="'+i+'" aria-label="'+c[1]+'"></button>').join('')+'</div>';
   return shHead('Облик героя')+'<div class="herobig"><div class="hbox">'+heroArt(L)+'</div></div>'
@@ -2054,11 +2093,12 @@ function sheetLook(){const h=heroLook(),L=levelInfo(S.xp).L;
    +'<p class="note">Графика: Kenney.nl, CC0.</p>'}
 function sheetPets(){const L=levelInfo(S.xp).L,cur=petKind(),v=UI.sheet&&UI.sheet.view;
   if(v){const P=petDef(v),un=P.l<=L;
-    return shHead(P.n)+'<div class="petrow">'+[0,1,2,3].map(i=>'<div class="pst"><div class="pimg">'+petImg(P.id,i,'happy',[74,84])+'</div><small>'+esc(P.st[i])+'</small></div>').join('')+'</div>'
-     +(P.id===cur?'<p class="note" style="text-align:center">Сейчас он с тобой.</p>':un?'<button class="btn" style="width:100%" data-act="petpick" data-v="'+P.id+'">Взять с собой</button><p class="note">Прогресс прежнего компаньона сохранится, вернуться к нему можно когда угодно.</p>':'<p class="note" style="text-align:center">Откроется на '+P.l+' уровне. Пока можно посмотреть, как он растёт.</p>')
+    const top=P.id===cur?petInfo().stage:(S.petBox&&S.petBox[P.id]?PET_XP.reduce((a,x,i)=>S.petBox[P.id].xp>=x?i:a,0):0);
+    return shHead(P.n)+'<div class="petrow">'+[0,1,2,3].map(i=>i<=top?'<div class="pst"><div class="pimg">'+petImg(P.id,i,'happy',[74,84])+'</div><small>'+esc(P.st[i])+'</small></div>':'<div class="pst hid"><div class="pimg"><b class="qmark">?</b></div><small>???</small></div>').join('')+'</div>'
+     +(P.id===cur?'<p class="note" style="text-align:center">Сейчас он с тобой.</p>':un?'<button class="btn" style="width:100%" data-act="petpick" data-v="'+P.id+'">Взять с собой</button><p class="note">Прогресс прежнего компаньона сохранится, вернуться к нему можно когда угодно.</p>':'<p class="note" style="text-align:center">Откроется на '+P.l+' уровне.</p>')
      +'<button class="btn ghost" style="width:100%;margin-top:8px" data-act="pets">Назад к списку</button>'}
   return shHead('Компаньоны'+hq('pets'))+'<div class="plist">'
-   +PETS.map(P=>{const un=P.l<=L;return '<button class="prow2'+(P.id===cur?' on':'')+(un?'':' lock')+'" data-act="petview" data-v="'+P.id+'"><span class="pthumb">'+petImg(P.id,3,'happy',[64,56])+'</span><span class="pinfo"><b>'+esc(P.n)+'</b><small>'+(P.id===cur?'с тобой':un?'открыт':'с '+P.l+' ур.')+'</small></span></button>'}).join('')+'</div>'}
+   +PETS.map(P=>{const un=P.l<=L;return '<button class="prow2'+(P.id===cur?' on':'')+(un?'':' lock')+'" data-act="petview" data-v="'+P.id+'"><span class="pthumb">'+petImg(P.id,0,'happy',[64,56])+'</span><span class="pinfo"><b>'+esc(P.n)+'</b><small>'+(P.id===cur?'с тобой':un?'открыт':'с '+P.l+' ур.')+'</small></span></button>'}).join('')+'</div>'}
 function sheetLvl(){const p=UI.pendingLvl;const un=unlockedBetween(p.from,p.to);
   return shHead('Новый уровень!',true)+'<div class="herobig"><div class="hbox">'+heroArt(p.to)+'</div></div><p class="lvbig">Уровень <span class="n">'+p.to+'</span></p>'
    +(un.length?'<div><div class="label">Открыто</div>'+un.map(u=>'<p>'+esc(u)+'</p>').join('')+'</div>':'<p class="note" style="text-align:center">Новые вещи ждут на следующих уровнях.</p>')
@@ -2158,7 +2198,7 @@ function dlgType(){dlgStop();let cs=[];try{cs=Array.prototype.slice.call(documen
   UI.typing=true;let n=0;UI.dtm=setInterval(()=>{if(n>=cs.length){dlgStop();box();return}cs[n++].classList.add('on');if(n<cs.length)cs[n++].classList.add('on')},34)}
 function dlgFinish(){try{document.querySelectorAll('#tourlayer .dlg-t i').forEach(c=>c.classList.add('on'))}catch(e){}dlgStop();try{document.querySelector('#tourlayer .dlg').classList.add('done')}catch(e){}}
 function dlgBox(text,n,total,intro,extra,spot,top){
-  return '<div class="tv-block"></div>'+(spot?'<div class="tv-spot" style="'+spot+'"></div>':'<div class="tv-dim'+(intro?' intro':'')+'"></div>')
+  return '<div class="tv-block" data-act="dlgtap"></div>'+(spot?'<div class="tv-spot" data-act="tourpeek" style="'+spot+'"></div>':'<div class="tv-dim'+(intro?' intro':'')+'"></div>')
    +'<div class="dlg'+(intro?' intro':'')+(top?' top':'')+'" role="dialog" aria-label="Диалог" data-act="dlgtap"><div class="dlg-name">Подсказка</div>'
    +'<div class="dlg-in"><div class="tv-mage">'+mageSVG()+'</div><p class="dlg-t">'+text+'</p></div>'+(extra||'')
    +'<div class="dlg-bar">'+(!intro&&n>0?'<button class="tv-back" data-act="tourprev" aria-label="Назад">‹</button>':'')+'<button class="tv-skip" data-act="'+(intro?'introend':'tourend')+'">Пропустить</button><span class="dlg-dots">'+Array.from({length:total},(_,i)=>'<u class="'+(i<=n?'on':'')+'"></u>').join('')+'</span><span class="dlg-more">▼</span></div></div>'}
@@ -2212,7 +2252,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh);document.documentElement.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';UI.lastSheetKind=null;return}
-  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,attn:sheetAttn,dadv:sheetDadv,limit:sheetLimit,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,attn:sheetAttn,dadv:sheetDadv,petgrow:sheetGrow,limit:sheetLimit,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   const kbf=sh.kind==='add'&&UI.focus;
@@ -2323,6 +2363,7 @@ function act(a,el){const v=el.dataset.v;
     case 'calopen':UI.form.calOpen=!UI.form.calOpen;UI.form.calM=UI.form.date.slice(0,7);renderSheet();break;
     case 'calm':{const c=UI.form.calM,d=new Date(+c.slice(0,4),+c.slice(5,7)-1+parseInt(v,10),1);UI.form.calM=dstr(d).slice(0,7);renderSheet();break}
     case 'calpick':UI.form.date=v;UI.form.day=String(+v.slice(8));UI.form.calOpen=false;if(v.slice(0,7)>mkey(today()))UI.form.paidNow=false;renderSheet();break;
+    case 'geartab':UI.sheet.gt=v;renderSheet();break;
     case 'gear':questDone('gear');save();flush();render();openSheet('gear');break;
     case 'equip':{const L=levelInfo(S.xp).L;if(setEquip(el.dataset.s,+v,L)){save();render();renderSheet()}break}
     case 'lvlok':UI.pendingLvl=null;UI.sheet=null;renderSheet();maybeTour();break;
@@ -2390,6 +2431,11 @@ function act(a,el){const v=el.dataset.v;
     case 'dlgtap':if(UI.typing){dlgFinish();break}
       if(UI.intro!=null){if(UI.intro>=INTRO.length-1)endIntro();else{UI.intro++;drawIntro()}}
       else if(UI.tour!=null){if(UI.tour>=TOURS.length-1)endTour();else{UI.tour++;tourGo()}}break;
+    case 'tourpeek':{const st=TOURS[UI.tour];let el2=null;try{el2=st&&st.sel&&document.querySelector(st.sel)}catch(x){}
+      const tgt=el2&&((el2.dataset&&el2.dataset.act?el2:null)||el2.closest('[data-act]')||el2.querySelector('[data-act]'));
+      if(UI.typing||!tgt||!/^(tab|add|gear|look|ach|pets|hint|hide|attn)$/.test(tgt.dataset.act||'')){act('dlgtap',el);break}
+      UI.peek=UI.tour;UI.tour=null;dlgStop();$('#tourlayer').innerHTML='<button class="tourback" data-act="tourback">‹ Вернуться к обучению</button>';tgt.click();break}
+    case 'tourback':{const i=UI.peek;UI.peek=null;UI.sheet=null;UI.confirm=null;renderSheet();UI.tour=Math.min(TOURS.length-1,(i||0)+1);tourGo();break}
     case 'tourprev':if(UI.tour>0){UI.tour--;tourGo(-1)}break;
     case 'tourend':endTour();break;
     case 'tourimp':endTour();act('imp',el);break;
@@ -2435,6 +2481,7 @@ function act(a,el){const v=el.dataset.v;
     case 'setskin':case 'setbody':case 'sethair':case 'sethcol':case 'setbeard':{const key={setskin:'skin',setbody:'body',sethair:'hair',sethcol:'hcol',setbeard:'beard'}[a];S.hero=Object.assign(heroLook(),{[key]:parseInt(v,10)});save();if(S.onboarded)render();renderSheet();break}
     case 'setcls':{S.hero=Object.assign(heroLook(),{cls:v});if(S.equip){delete S.equip.weapon;delete S.equip.armor}save();if(S.onboarded)render();renderSheet();break}
     case 'pets':openSheet('pets');break;
+    case 'petgrow':openSheet('petgrow');break;
     case 'petview':openSheet('pets',{view:v});break;
     case 'petpick':if(switchPet(v)){say(S.pet.name+' теперь с тобой');save();UI.sheet=null;commit()}break;
     case 'syncnow':cloudAt=0;cloudLive(true);toast('Сверяю с облаком…');setTimeout(()=>{if(UI.sheet&&UI.sheet.kind==='data')renderSheet()},1500);break;

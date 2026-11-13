@@ -29,8 +29,9 @@ chk('weapon slot rarity r2',app().includes('r2'));
 run("S.xp=xpAtLevel(30)");run("render()");chk('lvl 30: legendary r4',app().includes('r4'));
 run("S.xp=xpAtLevel(12)");run("render()");
 act('look');chk('look sheet: swatches and classes',lay().includes('data-act="setskin"')&&lay().includes('data-act="setcls" data-v="rogue"')&&lay().includes('Kenney'));
-act('gear');chk('inventory: 6 slots, 4 locked',(lay().match(/class="islot/g)||[]).length===6&&(lay().match(/islot lock/g)||[]).length===4);
-chk('inventory: weapon+armor rows',(lay().match(/data-act="equip"/g)||[]).length===10);
+act('gear');chk('inventory: weapon tab only',(lay().match(/data-act="equip"/g)||[]).length===5&&lay().includes('data-act="geartab"'));
+act('geartab','armor');chk('inventory: armor tab',(lay().match(/data-s="armor"/g)||[]).length===5);
+act('geartab','soon');chk('inventory: 4 locked soon',(lay().match(/islot lock/g)||[]).length===4);act('geartab','weapon');
 act('close');
 const fsx=require('fs'),root=require('path').dirname(require('path').resolve(process.argv[2]))+'/../assets/';
 let miss=[];if(!fsx.existsSync(root+'kenney/roguelike.png'))miss.push('kenney');
@@ -58,7 +59,7 @@ chk('custom name kept on migration',run("S.pet.name")==='Бобик'&&run("petKi
 ctx.localStorage.getItem=()=>null;run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:100000}];S.xp=xpAtLevel(15)");
 run("UI.tab='hero';render()");chk('pet card has companions button',app().includes('data-act="pets"')&&app().includes('pet-img'));
 act('pets');chk('pets list shows 4',(lay().match(/data-act="petview"/g)||[]).length===4);
-act('petview','dragon');chk('detail shows 4 stages',(lay().match(/class="pst"/g)||[]).length===4);
+act('petview','dragon');chk('detail hides future stages',(lay().match(/class="pst"/g)||[]).length===1&&(lay().match(/pst hid/g)||[]).length===3);
 act('close');
 // предупреждение о level-up: компаньон в списке открытий
 chk('unlock list has companion',run("unlockedBetween(4,5)").some(x=>x.includes('Теневой кот')));
