@@ -12,13 +12,13 @@ run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'К�
 run("S.xp=0;S.tx=[]");
 // окно: кнопка выше категорий, категории свёрнуты
 act('add','exp');let L=lay();
-chk('save button before categories',L.indexOf('data-act="save"')>0&&L.indexOf('data-act="save"')<L.indexOf('data-act="catopen"'));
-chk('categories collapsed',L.indexOf('data-act="cat"')<0&&L.indexOf('catsel')>0);
-chk('hint: optional',L.indexOf('необязательно')>0);
+chk('categories before save button',L.indexOf('data-act="cat"')>0&&L.indexOf('data-act="cat"')<L.indexOf('data-act="save"'));
+chk('no autofocus on open',run('!!UI.focus')===false);
 act('catopen');L=lay();
 chk('categories open',L.indexOf('data-act="cat"')>0);
 act('cat','food');L=lay();
-chk('collapsed after pick',L.indexOf('data-act="cat"')<0&&run('UI.F.cat')==='food');
+chk('picked category highlighted',run('UI.F.cat')==='food'&&/class="cat on"[^>]*data-v="food"/.test(L));
+act('cat','food');chk('tap again unselects',run('UI.F.cat')===null);act('cat','food');
 // запись без категории
 run("UI.F=newF('exp');UI.F.amount='1500'");run('saveTxForm()');
 let tx=run('S.tx');

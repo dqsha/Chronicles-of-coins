@@ -423,7 +423,7 @@ body.lefty .hidebtn{left:8px}
 .convsel{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:10px}.convsel .inp{min-width:0;font-size:13px}
 .convres{text-align:center;margin:14px 0 4px;min-height:44px;color:var(--mute)}.convres b{font:700 30px var(--num);color:#f1ebf8;overflow-wrap:anywhere}
 .curbtn{flex-shrink:0;margin-left:8px;min-height:40px;padding:4px 12px;border-radius:999px;font:700 22px var(--num);color:var(--gold);cursor:pointer}
-.curpick{margin-top:8px}.curhint{text-align:right;margin-top:6px;min-height:1em}
+.curpick{margin-top:8px}.curhint{text-align:right;margin-top:6px;min-height:1em}.curhint:empty{display:none}
 .row .amt{text-align:right}
 .amt small.amt2{display:block;font:12px var(--body);color:var(--mute);text-align:right;margin-top:2px}
 
@@ -539,6 +539,13 @@ button,[data-act]{cursor:pointer}
 .scrim.kblock .sheet{margin-top:var(--stop,0px);max-height:calc(var(--vvh,100%) - var(--stop,0px) - 6px)!important}
 /* запас снизу, чтобы поле можно было поднять над клавиатурой */
 .sheet.kbpad{padding-bottom:calc(46vh + 16px)!important}
+/* кнопка «Скрыть клавиатуру»: видна только пока открыта клавиатура */
+.kbdone{display:none}
+.sheet.kbpad>.kbdone{display:block;position:sticky;top:-4px;z-index:6;align-self:center;margin:-6px auto 6px;padding:8px 16px;border-radius:999px;border:1px solid rgba(226,178,74,.45);background:rgba(30,24,40,.92);color:var(--gold,#e2b24a);font:inherit;font-size:13px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.4)}
+/* категории в окне записи: компактная сетка 4 в ряд */
+.addcats{grid-template-columns:repeat(4,1fr);gap:6px}
+.addcats .cat{min-height:58px;padding:6px 2px;font-size:11px}
+.addcats .cat .ci{font-size:20px}
 /* клавиатура: одна плавная анимация вместо двух наложенных */
 .sheet{transition:none}
 .scrim{transition:none}
@@ -1202,8 +1209,8 @@ function sheetProRep(){const st=proStats(),rk=proRank(st);
   if(st.leak>0)h+='<p class="fch neg">За 30 дней ушло мимо плана: '+fmtDt(Math.round(st.leak))+'</p><p class="sub">Это траты сверх плана плюс недополученные доходы.</p>';
   const worst=ks.filter(k=>st.cats[k].ok&&st.cats[k].type==='exp'&&st.cats[k].bias>0.05).sort((a,b)=>st.cats[b].bias-st.cats[a].bias)[0];
   if(worst)h+='<p>Сильнее всего ты недооцениваешь «'+esc(catInfo(worst).name)+'»: обычно выходит '+pct(st.cats[worst].bias)+'. Закладывай запас.</p>';
-  else h+='<p class="note">Привычную ошибку по категории я покажу, когда в ней будет хотя бы '+PRO_MIN+' закрытых пророчества.</p>';
-  return h+'<p class="note">Это простая оценка по твоим закрытым пророчествам, не прогноз будущего. Чем их больше, тем она точнее.</p></div>'}
+  else h+='<p class="note">Ошибка по категории появится после '+PRO_MIN+' закрытых пророчеств.</p>';
+  return h+'<p class="note">Оценка по закрытым пророчествам. Чем их больше, тем точнее.</p></div>'}
 function proRow(p,due){const c=catInfo(p.cat),inc=p.type==='inc';
   const when=due?(p.date===today()?'сегодня':'ждали '+fmtDate(p.date)):fmtDate(p.date);
   return '<div class="prow"><div class="row" data-act="proedit" data-v="'+p.id+'" role="button" tabindex="0"><span class="tile">'+c.icon+'</span><span class="mid"><div class="t1">'+esc(p.note||c.name)+'</div><div class="t2">'+when+(p.rec==='month'?' · каждый месяц':'')+'</div></span>'
@@ -1487,7 +1494,7 @@ function payBtns(m,s,extra){extra=extra||'';let h='';
     else h='<button class="btn small" data-act="pay" data-v="'+m.id+'">Оплатить</button><button class="btn ghost small" data-act="mpaid" data-v="'+m.id+'">Уже оплачено</button>'}
   return h||extra?'<div class="fchips pbtns">'+h+extra+'</div>':''}
 function heroCard(full){const lv=levelInfo(S.xp),sv=streakView();
-  const stTxt={new:'Запиши трату, и огонь зажжётся',ok:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд',
+  const stTxt={new:'Запиши трату — огонь зажжётся',ok:sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд',
     wait:sv.count+' '+plural(sv.count,['день','дня','дней'])+'. Запиши сегодня',
     frozen:'Пропущено: '+sv.missed+'. Запиши сегодня',broken:'Серия прервалась. Начни новую'}[sv.state];
   return '<section class="card hero'+(full?'':' herom')+'"'+(full?'':' data-act="camp" role="button" tabindex="0" aria-label="Открыть лагерь героя"')+'><div class="hero-col"><div class="hero-art">'+heroArt(lv.L)+'</div>'+(full?weaponSlot(lv.L):'')+'</div><div class="hero-info">'
@@ -1510,7 +1517,7 @@ function forecastCard(){if(!S.accounts.length)return '';const f=forecast();const
   let note='';
   if(f.state==='few')note='<p class="sub">Запиши траты за 3 дня, и появится прогноз.</p>';
   else if(f.state==='short'&&f.runOut)note='<p class="sub">Хватит до '+fmtDate(f.runOut)+'. Держись в '+fmtDt(f.perDay)+' в день.</p>';
-  else if(f.state==='ok')note='<p class="sub">Прогноз по тратам за месяц.</p>';
+  
   return '<section class="card" id="t-fc"><div class="label">Хватит ли '+wh+'?'+hq('forecast')+'</div><div class="fch '+cls+'">'+esc(head)+'</div>'+rows+note+(f.pay?'':'<p class="sub"><button class="fc" data-act="data">Указать день зарплаты</button></p>')+'</section>'}
 /* Скрываемые блоки главной: выбор хранится в S.hide, вернуть можно в «Данные и настройки» */
 const HIDEABLE={forecast:'План: прогноз «хватит ли»',pro:'План: пророчества',w_goals:'План: цели и копилки',w_debt:'План: долги',w_mand:'План: платежи',today:'Главная: сегодня',hero:'Главная: герой',quest:'Герой: задания',w_chr:'Герой: сокровищница',
@@ -1556,7 +1563,7 @@ function viewHome(){
   const fsub=(reserved()>0||depBal()>0)?'На счетах '+fmtDt(totalBal())+(depBal()>0?' (на депозитах '+fmt(depBal())+')':'')+(reserved()>0?', в целях отложено '+fmt(reserved()):'')+'.':'';
   const after=ups>0?'<div class="catrow dayrow"><span>После платежей месяца</span><span class="amt'+(fm<0?' neg':'')+'">'+fmtDt(fm)+'</span></div><p class="sub dayto">осталось оплатить '+fmt(ups)+'</p>':'';
   const rl=repeatList('exp');
-  const quick=rl.length?'<div class="label" style="margin-top:12px">Быстро, одним касанием</div><div class="qgrid">'+rl.map((r,i)=>{const c=catInfo(r.cat);return '<button class="qk" data-act="quick" data-v="'+i+'"><span class="qi">'+c.icon+'</span><span class="qn">'+esc(r.note||c.name)+'</span><span class="qa">'+(r.ocur?fmtCur(r.oamt,r.ocur):fmt(r.amount))+'</span></button>'}).join('')+'</div>'
+  const quick=rl.length?'<div class="label" style="margin-top:12px">Повторить</div><div class="qgrid">'+rl.map((r,i)=>{const c=catInfo(r.cat);return '<button class="qk" data-act="quick" data-v="'+i+'"><span class="qi">'+c.icon+'</span><span class="qn">'+esc(r.note||c.name)+'</span><span class="qa">'+(r.ocur?fmtCur(r.oamt,r.ocur):fmt(r.amount))+'</span></button>'}).join('')+'</div>'
     :'';
   const undo=UI.undo?'<div class="undo"><span>Записано: '+esc(UI.undo.txt)+'</span><button class="btn small" data-act="undo">Отменить</button></div>':'';
   const today_=todayAll.length?'<div class="list">'+todayAll.slice(0,3).map(txRow).join('')+'</div>'+(todayAll.length>3?'<p class="sub">И ещё '+(todayAll.length-3)+'. Все записи во вкладке «Записи».</p>':'')
@@ -1715,7 +1722,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.40.1';
+const APP_V='0.41.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1742,18 +1749,17 @@ function sheetAdd(){const F=UI.F;
   const types=[['exp','Расход'],['inc','Доход'],['tr','Перевод']];
   let h=shHead('Новая запись')+'<div class="seg">'+types.map(t=>'<button class="'+(F.type===t[0]?'on':'')+'" data-act="ftype" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>'
    +'<div class="amtwrap"><input id="amt" class="amount" data-f="amount" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0" aria-label="Сумма" data-live="addcur" value="'+esc(F.amount)+'"><button class="curbtn glass" data-act="curopen" aria-label="Валюта: '+curInfo(F.cur).name+'">'+curInfo(F.cur).sym+' ▾</button></div>'+curPicker(F)+'<p class="sub curhint" id="addconv">'+curHint(F)+'</p>'
-   +(F.err?'<p class="err">'+esc(F.err)+'</p>':'')+'<button class="btn" data-act="save">Записать</button>';
+   +(F.err?'<p class="err">'+esc(F.err)+'</p>':'');
   UI.rep=F.type==='tr'?[]:repeatList(F.type);
-  if(UI.rep.length)h+='<div class="label">Повторить</div><div class="fchips">'+UI.rep.map((r,i)=>{const c=catInfo(r.cat);return '<button class="fc" data-act="rep" data-v="'+i+'">'+c.icon+' '+esc(c.name)+' · '+(r.ocur?fmtCur(r.oamt,r.ocur):fmtCt(r.amount))+'</button>'}).join('')+'</div>';
+  const repH=UI.rep.length?'<div class="label">Повторить</div><div class="fchips">'+UI.rep.map((r,i)=>{const c=catInfo(r.cat);return '<button class="fc" data-act="rep" data-v="'+i+'">'+c.icon+' '+esc(c.name)+' · '+(r.ocur?fmtCur(r.oamt,r.ocur):fmtCt(r.amount))+'</button>'}).join('')+'</div>':'';
   if(F.type==='tr'){h+='<div class="two"><div class="field"><label for="facc">Откуда</label><select id="facc" class="inp" data-f="acc">'+accOpts(F.acc)+'</select></div>'
      +'<div class="field"><label for="fto">Куда</label><select id="fto" class="inp" data-f="to">'+accOpts(F.to)+'</select></div></div>'}
-  else{const cc=F.cat&&F.cat!=='none'?catInfo(F.cat):null;
-    if(!F.catOpen&&!F.custom)h+='<button class="catsel" data-act="catopen"><span class="ci">'+(cc?cc.icon:'❔')+'</span><span>'+(cc?esc(cc.name):'Категория (необязательно)')+'</span><span class="chev">▾</span></button>';
-    else h+='<div class="cats">'+catsFor(F.type).map(c=>'<button class="cat '+(F.cat===c.id?'on':'')+'" data-act="cat" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')
+  else{h+='<div class="cats addcats">'+catsFor(F.type).map(c=>'<button class="cat '+(F.cat===c.id?'on':'')+'" data-act="cat" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')
      +'<button class="cat dashed" data-act="customtoggle"><span class="ci">+</span><span>Своя</span></button></div>';
     if(F.custom)h+='<div class="two"><div class="field"><label for="fci">Значок</label><input id="fci" class="inp" data-f="cicon" maxlength="4" value="'+esc(F.cicon)+'" placeholder="☕"></div>'
       +'<div class="field"><label for="fcn">Название</label><input id="fcn" class="inp" data-f="cname" maxlength="20" value="'+esc(F.cname)+'" placeholder="Кофе"></div></div><button class="btn ghost small" data-act="customsave">Добавить категорию</button>';
     h+='<div class="field"><label for="facc">'+(F.type==='exp'?'Со счёта':'На счёт')+'</label><select id="facc" class="inp" data-f="acc">'+accOpts(F.acc)+'</select></div>'}
+  h+='<button class="btn" data-act="save">Записать</button>'+repH;
   h+='<button class="fc" style="align-self:flex-start" data-act="more2">'+(F.more?'Скрыть дату и заметку':'Дата и заметка')+'</button>';
   if(F.more)h+='<div class="fchips"><button class="fc'+(F.date===today()?' on':'')+'" data-act="dayset" data-v="0">Сегодня</button><button class="fc'+(F.date===addDays(today(),-1)?' on':'')+'" data-act="dayset" data-v="1">Вчера</button></div><div class="two"><div class="field"><label for="fd">Дата</label><input id="fd" class="inp" type="date" data-f="date" max="'+today()+'" value="'+esc(F.date)+'"></div>'
     +'<div class="field"><label for="fn">Заметка</label><input id="fn" class="inp" data-f="note" maxlength="60" value="'+esc(F.note)+'" placeholder="Что именно"></div></div>';
@@ -1797,7 +1803,7 @@ function sheetImp(){const F=UI.form;
     const cats={};ex.forEach(i=>{if(i.cat){const c=cats[i.cat]||(cats[i.cat]={n:0,s:0});c.n++;c.s+=i.amount}});
     const top=Object.keys(cats).sort((a,b)=>cats[b].s-cats[a].s).slice(0,6);
     let h=shHead('Проверь список')+'<p class="sub">Найдено в выписке: '+F.rows.length+'. Добавим '+P.items.length+': расходов '+ex.length+' на '+fmt(sum(ex))+', доходов '+inc.length+' на '+fmt(sum(inc))+'.</p>';
-    if(skN)h+='<p class="note">Пропущено '+skN+': переводы между своими счетами и пополнения наличными. Это не траты и не доходы.</p>';
+    if(skN)h+='<p class="note">Пропущено '+skN+': переводы между своими счетами.</p>';
     if(P.dups)h+='<p class="note">Уже были добавлены раньше: '+P.dups+'.</p>';
     h+='<div class="fchips"><button class="fc'+(F.tx?' on':'')+'" data-act="imptoggle" data-v="tx">Переводы людям: '+(F.tx?'считать расходом':'не считать')+'</button><button class="fc'+(F.inc?' on':'')+'" data-act="imptoggle" data-v="inc">Пополнения от людей: '+(F.inc?'считать доходом':'не считать')+'</button></div>';
     if(top.length)h+='<div class="label">Куда уходят деньги</div>'+top.map(k=>{const ci=catInfo(k);return '<div class="catrow"><span>'+ci.icon+' '+esc(ci.name)+'</span><span class="amt">'+fmt(cats[k].s)+' · '+cats[k].n+'</span></div>'}).join('');
@@ -1944,14 +1950,14 @@ function debtRow(m){const s=mandStatus(m);const inf=debtInfo(m,0);
     +(s.paid&&!m.closed?'<br><span class="pos">✓ в этом месяце оплачено</span>':'');
   return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'💳':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2 wrap">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'<small class="permo">в мес.</small></span></div>'
    +payBtns(m,s,'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'" aria-label="Изменить">✎</button>')+'</div>'}
+function sheetDadv(){return shHead('Советы по долгам')+debtAdvice().map(a=>'<p class="dadv">'+esc(a)+'</p>').join('')+'<p class="sub">Расчёт по твоим цифрам, не консультация.</p>'}
 function debtCard(){const all=debtsAll(),open=debtsOpen();
   if(!all.length)return '<section class="card" id="t-debt"><h2>Долги и рассрочки'+hq('debt')+'</h2><p class="note">Кредиты и рассрочки.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="debtnew">Добавить долг или рассрочку</button></section>';
   const adv=debtAdvice();
   return '<section class="card" id="t-debt"><h2>Долги и рассрочки'+hq('debt')+'</h2>'
-   +(open.length?'<p class="sub" style="margin-top:0">Осталось выплатить: '+fmt(debtLeft())+'. Платежей в месяц на '+fmt(debtMonthly())+'.</p>':'<p class="sub" style="margin-top:0">Все долги погашены. Это победа.</p>')
+   +(open.length?'<p class="sub" style="margin-top:0">Осталось '+fmt(debtLeft())+' · в месяц '+fmt(debtMonthly())+'</p>':'<p class="sub" style="margin-top:0">Все долги погашены. Это победа.</p>')
    +'<div class="list">'+all.map(debtRow).join('')+'</div>'
-   +(adv.length?'<div class="label" style="margin-top:12px">Подсказки</div>'+adv.map(a=>'<p class="dadv">'+esc(a)+'</p>').join('')+'<p class="sub">Это расчёт по твоим цифрам, а не финансовая консультация.</p>':'')
-   +'<div class="fchips" style="margin-top:10px"><button class="fc" data-act="debtnew">Добавить долг</button><button class="fc" data-act="aisum">Сводка для ИИ</button></div></section>'}
+      +'<div class="fchips" style="margin-top:10px">'+(adv.length?'<button class="fc" data-act="dadv">💡 Советы ('+adv.length+')</button>':'')+'<button class="fc" data-act="debtnew">Добавить долг</button><button class="fc" data-act="aisum">Сводка для ИИ</button></div></section>'}
 function sheetAi(){return shHead('Сводка для ИИ')+'<p class="note">Скопируй и вставь в чат с ИИ. Сама она никуда не отправляется.</p>'
    +'<textarea id="aix" class="inp" readonly style="min-height:260px">'+esc(aiSummary())+'</textarea><button class="btn" data-act="aicopy">Скопировать</button>'}
 function sheetData(){const f=UI.form;
@@ -1960,7 +1966,7 @@ function sheetData(){const f=UI.form;
   const fxv=S.fx||'full';
   return shHead('Настройки')
    +grp('Профиль','<div class="field"><label for="dn">Имя героя</label><input id="dn" class="inp" data-f="name" maxlength="20" value="'+esc(f.name)+'"></div><div class="field"><label for="dp">Имя компаньона</label><input id="dp" class="inp" data-f="pet" maxlength="16" value="'+esc(f.pet)+'"></div><div class="field"><label for="dd">День зарплаты</label><input id="dd" class="inp" data-f="payday" inputmode="numeric" maxlength="2" value="'+esc(f.payday||'')+'" placeholder="число, пусто = конец месяца"></div><button class="btn small" data-act="namesave">Сохранить</button>')
-   +grp('Синхронизация',tgCloud()?'<p class="sub" style="margin-top:0">Данные хранятся в облаке твоего Telegram и сами сходятся на телефоне и компьютере (Telegram Desktop). '+(cloudErr?'<b style="color:var(--red,#e66)">Облако не отвечает: '+esc(cloudErr)+'</b> ':cloudOk?'Последняя запись в облако: '+new Date(cloudOk).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'.':'В облако ещё ничего не записано.')+'</p><button class="btn ghost small" style="margin-top:8px" data-act="syncnow">Сверить сейчас</button>':'<p class="sub" style="margin-top:0">Приложение открыто не через Telegram, поэтому данные лежат только на этом устройстве. Чтобы всё совпадало с телефоном, открой бота в Telegram Desktop. Перенести вручную можно через «Сделать копию» и «Восстановить».</p>')
+   +grp('Синхронизация',tgCloud()?'<p class="sub" style="margin-top:0">Данные в облаке Telegram: видны на телефоне и в Telegram Desktop. '+(cloudErr?'<b style="color:var(--red,#e66)">Облако не отвечает: '+esc(cloudErr)+'</b> ':cloudOk?'Последняя запись в облако: '+new Date(cloudOk).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'.':'В облако ещё ничего не записано.')+'</p><button class="btn ghost small" style="margin-top:8px" data-act="syncnow">Сверить сейчас</button>':'<p class="sub" style="margin-top:0">Приложение открыто не через Telegram, поэтому данные лежат только на этом устройстве. Чтобы всё совпадало с телефоном, открой бота в Telegram Desktop. Перенести вручную можно через «Сделать копию» и «Восстановить».</p>')
    +grp('Удобство',sw('lefty',S.lefty,'Я левша','свайп и кнопки «скрыть» под левую руку')+sw('calmtoggle',S.calm,'Спокойный режим','без анимаций, звуков и игровых окон')
      +'<div class="sseg" role="radiogroup" aria-label="Эффекты при записи"><span class="segl">Эффекты при записи</span><div class="segb">'+[['full','Полные'],['soft','Мягкие'],['off','Выкл']].map(k=>'<button class="'+(fxv===k[0]?'on':'')+'" role="radio" aria-checked="'+(fxv===k[0])+'" data-act="fx" data-v="'+k[0]+'">'+k[1]+'</button>').join('')+'</div></div>')
    +grp('Валюта показа','<div class="sseg"><span class="segl">Показывать «Банк», итоги и прогноз в</span><div class="segb curseg">'+CUR.filter(c=>c[0]==='KZT'||rateOf(c[0])).slice(0,6).map(c=>'<button class="'+(dCur()===c[0]?'on':'')+'" data-act="dispcur" data-v="'+c[0]+'">'+c[1]+'</button>').join('')+'</div><small class="sub">Записи и счета остаются в своей валюте.</small></div>')
@@ -2057,16 +2063,16 @@ function sheetGdet(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return sh
    +(UI.confirm==='goal'?'<button class="btn danger small" data-act="goaldel" data-v="'+g.id+'">Да, удалить</button>':'<button class="btn ghost small" data-act="goaldel" data-v="'+g.id+'">Удалить цель</button>')+'</div>'
    +(UI.confirm==='goal'?'<p class="err">Удалить цель? Отложенные деньги снова станут свободными.</p>':'')}
 function sheetLimit(){const k=UI.sheet.cat,ci=catInfo(k),f=UI.form,cur=(S.limits&&S.limits[k])||0;
-  return shHead('Лимит на месяц')+'<p class="note">'+ci.icon+' '+esc(ci.name)+'. Когда траты дойдут до лимита, полоска покраснеет.</p>'
+  return shHead('Лимит на месяц')+'<p class="note">'+ci.icon+' '+esc(ci.name)+'. Превысишь лимит — полоска покраснеет.</p>'
    +'<div class="amtwrap"><input id="lamt" class="amount" data-f="lim" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Лимит в тенге" value="'+esc(f.lim)+'"><span>₸</span></div>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="limitsave">Сохранить</button>'+(cur>0?'<button class="btn ghost" data-act="limitdel">Убрать лимит</button>':'')}
 function sheetContrib(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Взнос')+'<p>Цель не найдена.</p>';const f=UI.form,i=goalInfo(g);
-  return shHead('Взнос')+'<p class="note">'+esc(g.icon+' '+g.name)+': отложено '+fmt(i.saved)+' из '+fmt(g.target)+'. Деньги остаются на твоих счетах, но считаются отложенными и не входят в «Банк».</p>'
+  return shHead('Взнос')+'<p class="note">'+esc(g.icon+' '+g.name)+': отложено '+fmt(i.saved)+' из '+fmt(g.target)+'. Не входит в «Банк».</p>'
    +'<div class="seg" style="grid-template-columns:1fr 1fr"><button class="'+(f.mode==='in'?'on':'')+'" data-act="cmode" data-v="in">Отложить</button><button class="'+(f.mode==='out'?'on':'')+'" data-act="cmode" data-v="out">Забрать</button></div>'
    +'<div class="amtwrap"><input id="camt" class="amount" data-f="amount" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Сумма в тенге" value="'+esc(f.amount)+'"><span>₸</span></div>'
    +(f.err?'<p class="err">'+esc(f.err)+'</p>':'')+'<button class="btn" data-act="contribsave">'+(f.mode==='out'?'Забрать из цели':'Отложить')+'</button>'}
 function sheetBuy(){const g=S.goals.find(x=>x.id===UI.sheet.id);if(!g)return shHead('Покупка')+'<p>Цель не найдена.</p>';const f=UI.form;
-  return shHead('Купил!')+'<p class="note">'+esc(g.icon+' '+g.name)+'. Отложенные деньги перестанут быть отложенными, а со счёта спишется сумма покупки. Опыт за это не начисляется.</p>'
+  return shHead('Купил!')+'<p class="note">'+esc(g.icon+' '+g.name)+'. Сумма спишется со счёта, отложенное освободится.</p>'
    +'<div class="field"><label for="ba">Сколько заплатил, ₸</label><input id="ba" class="inp" data-f="amount" inputmode="decimal" value="'+esc(f.amount)+'"></div>'
    +'<div class="two"><div class="field"><label for="bc">Категория</label><select id="bc" class="inp" data-f="cat">'+catsFor('exp').map(c=>'<option value="'+c.id+'"'+(f.cat===c.id?' selected':'')+'>'+(c.emo||c.icon)+' '+esc(c.name)+'</option>').join('')+'</select></div>'
    +'<div class="field"><label for="bk">Со счёта</label><select id="bk" class="inp" data-f="acc">'+accOpts(f.acc)+'</select></div></div>'
@@ -2077,7 +2083,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';return}
-  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,attn:sheetAttn,limit:sheetLimit,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,attn:sheetAttn,dadv:sheetDadv,limit:sheetLimit,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   const kbf=sh.kind==='add'&&UI.focus;
@@ -2144,9 +2150,10 @@ function act(a,el){const v=el.dataset.v;
     case 'rep':{const F=UI.F,r=(UI.rep||[])[+v];if(r&&F){F.cat=r.cat;if(r.ocur&&rateOf(r.ocur)){F.cur=r.ocur;F.amount=String(r.oamt)}else{F.cur='KZT';F.amount=String(r.amount)}if(S.accounts.find(x=>x.id===r.acc))F.acc=r.acc;F.note=r.note||'';F.err='';UI.focus=false;renderSheet()}break}
     case 'fx':S.fx=(v==='soft'||v==='off')?v:'full';save();renderSheet();fxDemo();break;
     case 'attn':openSheet('attn');break;
+    case 'dadv':openSheet('dadv');break;
     case 'attngo':UI.sheet=null;UI.tab='plan';render();renderSheet();window.scrollTo(0,0);break;
     case 'tab':UI.tab=v;render();window.scrollTo(0,0);break;
-    case 'add':UI.F=newF(v==='inc'?'inc':'exp');UI.focus=true;openSheet('add');break;
+    case 'add':UI.F=newF(v==='inc'?'inc':'exp');openSheet('add');break;
     case 'camp':openSheet('camp');break;
     case 'reload':try{location.href=location.pathname+'?v='+encodeURIComponent(UI.upd||'')+'&t='+Date.now()}catch(e){}break;
     case 'quick':{const tx=quickAdd(+v);if(tx){const c=catInfo(tx.cat);UI.undo={id:tx.id,txt:(tx.note||c.name)+' · '+fmt(tx.amount)};
@@ -2156,8 +2163,8 @@ function act(a,el){const v=el.dataset.v;
       if(i>=0&&i<keys.length){UI.mon=keys[i]===keys[keys.length-1]?null:keys[i];UI.day=null;render()}break}
     case 'statday':UI.day=UI.day===v?null:v;render();break;
     case 'close':closeSheet();break;
-    case 'ftype':{const F=UI.F;F.type=v;F.cat=null;F.catOpen=false;F.err='';UI.focus=true;renderSheet();break}
-    case 'cat':UI.F.cat=v;UI.F.catOpen=false;UI.F.err='';renderSheet();break;
+    case 'ftype':{const F=UI.F;F.type=v;F.cat=null;F.catOpen=false;F.err='';renderSheet();break}
+    case 'cat':UI.F.cat=UI.F.cat===v?null:v;UI.F.catOpen=false;UI.F.err='';renderSheet();break;
     case 'hint':if(!S.hintSeen)S.hintSeen={};if(!S.hintSeen[v]){S.hintSeen[v]=1;save();try{render()}catch(e){}}UI.hintBack=(UI.sheet&&UI.sheet.kind!=='hint')?UI.sheet:null;openSheet('hint',{k:v});break;
     case 'hintok':if(UI.hintBack){UI.sheet=UI.hintBack;UI.hintBack=null;renderSheet()}else closeSheet();break;
     case 'fixcat':UI.fixSkip=[];openSheet('fixcat');break;
@@ -2203,7 +2210,7 @@ function act(a,el){const v=el.dataset.v;
     case 'accnew':openAcc(null);break;
     case 'trdep':{UI.F=newF('tr');const dep=S.accounts.find(a=>a.type==='deposit'),live=S.accounts.find(a=>a.type!=='deposit'&&a.id!==(dep&&dep.id));
       if(dep&&live&&v==='out'){UI.F.acc=dep.id;UI.F.to=live.id}else if(dep&&live&&v==='in'){UI.F.acc=live.id;UI.F.to=dep.id}
-      UI.F.more=false;UI.focus=true;openSheet('add');break}
+      UI.F.more=false;openSheet('add');break}
     case 'accedit':openAcc(v);break;
     case 'accsave':saveAcc();break;
     case 'accdel':delAcc();break;
@@ -2349,12 +2356,15 @@ function kbDoUnlock(){try{UI.kbWait=false;try{document.querySelectorAll('.sheet.
 function kbReveal(t){try{if(document.activeElement!==t)return;const sh=t.closest('.sheet');if(!sh)return;const vv=window.visualViewport,vh=Math.round(vv?vv.height:window.innerHeight)||600;
   const shrunk=vvMax-vh>100;const free=shrunk?vh:Math.round(vh*0.55);const r=t.getBoundingClientRect();
   if(r.bottom>free-14||r.top<8){const d=r.bottom-(free-24);sh.scrollTop=Math.max(0,sh.scrollTop+d)}}catch(e){}}
+function kbDoneBtn(sh){try{if(sh.querySelector(':scope>.kbdone'))return;const b=document.createElement('button');b.className='kbdone';b.type='button';b.textContent='Скрыть клавиатуру ⌄';
+  b.addEventListener('pointerdown',e=>e.preventDefault());b.addEventListener('click',()=>{try{const a=document.activeElement;if(a&&a.blur)a.blur()}catch(e){}});sh.insertBefore(b,sh.firstChild)}catch(e){}}
 function kbUnlock(){try{if(UI.kbStop==null)return;kbDoUnlock()}catch(e){}}
 let vvLast=0,vvMax=0,vvRaf=0;
 function vvSync(){try{if(vvRaf)return;vvRaf=requestAnimationFrame(()=>{vvRaf=0;try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);if(h>vvMax)vvMax=h;if(Math.abs(h-vvLast)>=2){vvLast=h;document.documentElement.style.setProperty('--vvh',h+'px');if(UI.kbWait&&h>=vvMax-2)kbDoUnlock();if(UI.kbStop!=null){setTimeout(kbKeepScroll,40);setTimeout(kbKeepScroll,340)}}}catch(e){}})}catch(e){}}
 function bootKb(){try{vvSync();if(window.visualViewport)window.visualViewport.addEventListener('resize',vvSync);window.addEventListener('resize',vvSync);
   document.addEventListener('focusout',()=>{setTimeout(()=>{try{const a=document.activeElement;if(!(a&&a.closest&&a.closest('.sheet')&&/INPUT|TEXTAREA/.test(a.tagName)))kbUnlock()}catch(e){}},250)});
-  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName))UI.kbWait=false;kbLock(t);if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName)){const sh=t.closest('.sheet');sh.classList.add('kbpad');[350,750].forEach(ms=>setTimeout(()=>kbReveal(t),ms))}})}catch(e){}}
+  document.addEventListener('keydown',e=>{try{const t=e.target;if(e.key==='Enter'&&t&&t.tagName==='INPUT'&&t.closest&&t.closest('.sheet')){e.preventDefault();t.blur()}}catch(x){}});
+  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName))UI.kbWait=false;kbLock(t);if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName)){const sh=t.closest('.sheet');sh.classList.add('kbpad');kbDoneBtn(sh);[350,750].forEach(ms=>setTimeout(()=>kbReveal(t),ms))}})}catch(e){}}
 /* Свайп между вкладками. Правша: влево = следующая; левша: зеркально. Допускаем дугу большого пальца (до ~35°). */
 const TAB_ORDER=['home','list','plan','hero'];
 function swipeHint(){if(S.swipeHint||!S.onboarded||!S.tourSeen||S.tx.length<1)return;S.swipeHint=true;save();setTimeout(()=>toast(S.lefty?'Подсказка: вкладки листаются свайпом вправо и влево':'Подсказка: листай вкладки пальцем влево и вправо'),1200)}
