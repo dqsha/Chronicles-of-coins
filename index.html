@@ -596,6 +596,74 @@ button,[data-act]{cursor:pointer}
 :root{--read:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif}
 .sub,.note,.attn-w,.hint,.err{font-family:var(--read);font-size:15px;line-height:1.5;letter-spacing:0}
 .row .t2{font-family:var(--read);font-size:14px}
+/* ===== Тема «Костёр» (стекло + пиксели) ===== */
+/* сброс каменных рамок */
+.card::before,.btn::after,.btn.big::after,.hidebtn::after{display:none!important}
+.card,.btn,.qk,.plus,.scene,.tab .ti{filter:none!important}
+.btn,.qk,.plus,.card,.sheet,.sheet.fancy,.scrim.mid .sheet.fancy,.dlg,.amtwrap,.inp,.seg,.fc,.hbar,.hidebtn,.tile,.x,.mbtn,.qm,.segb,.bar,.sgrp,.tdots,.cat,.catsel{border-image:none!important}
+
+.tdots{display:none!important}
+body{background-color:#06050a!important;background-image:none!important}
+body::before{content:"";position:fixed;inset:-40px;z-index:-1;background:var(--art) center 30%/cover no-repeat;filter:blur(var(--artblur,2px)) saturate(1.1);transform:scale(1.05)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;background:var(--veil)}
+/* текст: пиксельный шрифт только у заголовков и цифр */
+.sub,.note,.row .t2,.attn-w,.hint,.fc,.hidebtn,.seg button,.inp,.t1,.catrow,.dayrow,.label,.dayhead,.tab{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif!important;letter-spacing:0!important}
+.label,.dayhead{text-transform:none!important;font-weight:600!important;font-size:13px!important;color:var(--mute2)!important;opacity:1}
+.tab{text-transform:none!important;font-size:10.5px!important;font-weight:600!important}
+/* стекло */
+.card,.hbar{border:1px solid var(--edge)!important;border-radius:26px!important;background:var(--glass)!important;
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(170%)!important;backdrop-filter:blur(var(--blur)) saturate(170%)!important;
+  box-shadow:inset 0 1px 0 var(--hi),inset 0 -1px 0 rgba(0,0,0,.25),0 10px 30px rgba(0,0,0,.35)!important;padding:16px!important;margin-bottom:12px}
+.scene{display:none!important}
+.row{border-top:1px solid rgba(255,255,255,.06)!important}
+.row .tile{border:1px solid var(--edge)!important;border-radius:14px!important;background:rgba(255,255,255,.06)!important;box-shadow:inset 0 1px 0 var(--hi)!important}
+.btn{border:1px solid var(--edge)!important;border-radius:18px!important;background:rgba(255,255,255,.08)!important;color:var(--ink)!important;box-shadow:inset 0 1px 0 var(--hi)!important;text-shadow:none!important;min-height:48px}
+.btn:not(.ghost):not(.exp):not(.inc):not(.small){background:var(--acc-glass)!important;color:var(--acc-ink)!important;border-color:var(--acc-edge)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 22px var(--acc-glow)!important}
+.btn.big{min-height:58px!important;border-radius:22px!important;font-size:17px}
+.btn.exp{background:linear-gradient(180deg,rgba(255,110,95,.32),rgba(255,110,95,.14))!important;border-color:rgba(255,130,115,.45)!important;color:#ffd9d4!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 6px 22px rgba(255,90,80,.22)!important}
+.btn.inc{background:linear-gradient(180deg,rgba(110,220,130,.30),rgba(110,220,130,.12))!important;border-color:rgba(130,230,150,.45)!important;color:#dcffe2!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 6px 22px rgba(80,200,110,.2)!important}
+.qk{border:1px solid var(--edge)!important;border-radius:18px!important;background:rgba(255,255,255,.06)!important;box-shadow:inset 0 1px 0 var(--hi)!important}
+.fc,.hidebtn{border:1px solid var(--edge)!important;border-radius:999px!important;background:rgba(255,255,255,.07)!important;box-shadow:inset 0 1px 0 var(--hi)!important;color:var(--ink)!important}
+.fc.on{background:var(--acc-glass)!important;color:var(--acc-ink)!important}
+.seg{border:1px solid var(--edge)!important;border-radius:999px!important;background:rgba(0,0,0,.25)!important;padding:4px!important;box-shadow:none!important}
+.seg button{border-radius:999px!important;background:none!important;border:0!important;box-shadow:none!important;color:var(--mute2)!important}
+.seg button.on{background:var(--acc-glass)!important;color:var(--acc-ink)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)!important}
+.qm{border:1px solid var(--edge)!important;background:rgba(255,255,255,.06)!important;box-shadow:none!important;animation:none!important;color:var(--mute2)!important;width:20px;height:20px}
+.bar{border:0!important;border-radius:999px!important;background:rgba(255,255,255,.1)!important;height:8px!important}
+.bar>i{border-radius:999px!important;background-image:none!important;background:var(--acc)!important;box-shadow:0 0 10px var(--acc-glow)}
+/* панель вкладок: плавающая стеклянная капсула */
+.tabbar{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;border-radius:30px!important;border:1px solid var(--edge)!important;background:var(--glass2)!important;
+  -webkit-backdrop-filter:blur(26px) saturate(180%)!important;backdrop-filter:blur(26px) saturate(180%)!important;box-shadow:inset 0 1px 0 var(--hi),0 12px 40px rgba(0,0,0,.5)!important;padding-bottom:6px!important}
+.tab[aria-current="true"]{color:var(--acc)!important}
+.plus{border:1px solid var(--acc-edge)!important;border-radius:22px!important;background:var(--acc-glass)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 26px var(--acc-glow)!important}
+/* окна */
+.scrim{background:rgba(0,0,0,.35)!important}
+.sheet,.sheet.fancy,.scrim.mid .sheet.fancy{border:1px solid var(--edge)!important;border-bottom:0!important;border-radius:30px 30px 0 0!important;background:var(--glass2)!important;
+  -webkit-backdrop-filter:blur(30px) saturate(180%)!important;backdrop-filter:blur(30px) saturate(180%)!important;box-shadow:inset 0 1px 0 var(--hi)!important}
+.amtwrap,.inp,.catsel{border:1px solid var(--edge)!important;border-radius:20px!important;background:rgba(0,0,0,.22)!important;box-shadow:inset 0 2px 6px rgba(0,0,0,.25)!important}
+.cat{border:1px solid var(--edge)!important;border-radius:18px!important;background:rgba(255,255,255,.06)!important;box-shadow:inset 0 1px 0 var(--hi)!important}
+.cat.on{background:var(--acc-glass)!important;color:var(--acc-ink)!important;border-color:var(--acc-edge)!important}
+.x{border:1px solid var(--edge)!important;background:rgba(255,255,255,.08)!important;border-radius:50%!important;box-shadow:none!important}
+.hero-art,.pxh{image-rendering:pixelated}
+.sheet,.sheet.fancy{padding:10px 18px 20px!important;box-sizing:border-box!important;width:100%!important}
+.card{padding:16px!important}
+:root{--art:url(assets/loc-home.webp);--artblur:3px;--veil:linear-gradient(180deg,rgba(8,6,10,.1) 0,rgba(8,6,10,.6) 40%,rgba(8,6,10,.9) 100%);
+--glass:rgba(40,28,22,.32);--glass2:rgba(30,22,18,.55);--edge:rgba(255,220,170,.16);--hi:rgba(255,235,200,.18);--blur:20px;--mute2:#c9b8a3;
+--acc:#f2b84b;--acc-glass:linear-gradient(180deg,rgba(255,206,110,.95),rgba(226,160,60,.9));--acc-edge:rgba(255,220,150,.7);--acc-ink:#2a1a08;--acc-glow:rgba(242,170,60,.35)}
+
+/* «Костёр»: рамки героя и компаньона мягкие, без острых квадратов */
+.hero-art,.herobig,.wslot,.pet-art{border:1px solid var(--edge)!important;border-radius:22px!important;background:rgba(0,0,0,.18)!important;box-shadow:inset 0 1px 0 var(--hi)!important;overflow:hidden}
+.wslot{border-radius:18px!important}
+.pet-art{background:transparent!important;border:0!important;box-shadow:none!important;position:relative}
+.pet-art::before{content:"";position:absolute;left:12%;right:12%;bottom:4px;height:22px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,190,110,.35),rgba(255,150,60,.08) 70%,transparent);filter:blur(1px)}
+.pet-art .pet-img{position:relative;z-index:1}
+.kbdone{border-radius:999px}
+/* фон: свечение костра и искры */
+#bgfx{z-index:0}
+#bgfx .glow{position:absolute;left:50%;bottom:-12vh;width:130vw;height:60vh;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(255,140,50,.28),rgba(255,90,30,.10) 55%,transparent);animation:fireglow 3.2s ease-in-out infinite;mix-blend-mode:screen}
+@keyframes fireglow{0%,100%{opacity:.75;transform:translateX(-50%) scale(1)}35%{opacity:1;transform:translateX(-50%) scale(1.04)}60%{opacity:.82;transform:translateX(-50%) scale(.98)}}
+#bgfx .ember{position:absolute;bottom:-10px;width:3px;height:3px;border-radius:1px;background:#ffcf7a;box-shadow:0 0 6px 2px rgba(255,150,50,.75);opacity:0;animation:emberup linear infinite;will-change:transform,opacity}
+@keyframes emberup{0%{transform:translate3d(0,0,0);opacity:0}10%{opacity:.9}60%{opacity:.6}100%{transform:translate3d(var(--dx,20px),-85vh,0);opacity:0}}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1722,16 +1790,14 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.41.0';
+const APP_V='0.42.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
-  const leaf=pixURI(['..gg....','.gGGg...','gGGGGg..','gGdGGGg.','.gGGdGg.','..gGGg..','...gg...','........'],{g:'#3f6b3a',G:'#5c8f4a',d:'#2a4a2a'});
-  const leaf2=pixURI(['..oo....','.oOOo...','oOOOOo..','oOdOOOo.','.oOOdOo.','..oOOo..','...oo...','........'],{o:'#8a4a1e',O:'#b8692a',d:'#5a2e12'});
-  const coin=pixURI(['..yyyy..','.yYYYYy.','yYlYYYYy','yYlYYYYy','yYYYYdYy','yYYYYdYy','.yYYYYy.','..yyyy..'],{y:'#8a6416',Y:'#e2b24a',l:'#f0d27a',d:'#c8952c'});
-  const kinds=[leaf,leaf,leaf2,coin],n=m==='full'?14:7;
-  for(let i=0;i<n;i++){const d=document.createElement('div');d.className='bgp';const sz=10+Math.round(Math.random()*8);
-    d.style.cssText='left:'+Math.round(Math.random()*96)+'%;width:'+sz+'px;height:'+sz+'px;background-image:'+kinds[i%kinds.length]+';animation-duration:'+(16+Math.round(Math.random()*16))+'s;animation-delay:-'+Math.round(Math.random()*30)+'s';el.appendChild(d)}}catch(e){}}
+  const g=document.createElement('div');g.className='glow';el.appendChild(g);
+  const n=m==='full'?16:8;
+  for(let i=0;i<n;i++){const d=document.createElement('i');d.className='ember';const sz=2+Math.round(Math.random()*2);
+    d.style.cssText='left:'+(20+Math.round(Math.random()*60))+'%;width:'+sz+'px;height:'+sz+'px;--dx:'+(Math.round(Math.random()*80)-40)+'px;animation-duration:'+(6+Math.round(Math.random()*7))+'s;animation-delay:-'+Math.round(Math.random()*12)+'s';el.appendChild(d)}}catch(e){}}
 function render(){
   const v={home:viewHome,list:viewList,stats:viewStats,wallet:viewWallet,plan:viewPlan,hero:viewHero}[UI.tab]();
   $('#app').innerHTML=hbDown(v);if(UI.shown&&UI.shown!==UI.tab&&!S.calm){try{const a=document.getElementById('app');a.classList.remove('swap','swl','swr');void a.offsetWidth;a.classList.add(UI.swipeDir>0?'swl':UI.swipeDir<0?'swr':'swap');UI.swipeDir=0}catch(e){}}UI.shown=UI.tab;document.body.dataset.tab=UI.tab;document.body.classList.toggle('lefty',!!S.lefty);bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
