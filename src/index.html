@@ -600,7 +600,6 @@ button,[data-act]{cursor:pointer}
 .card,.btn,.qk,.plus,.scene,.tab .ti{filter:none!important}
 .btn,.qk,.plus,.card,.sheet,.sheet.fancy,.scrim.mid .sheet.fancy,.dlg,.amtwrap,.inp,.seg,.fc,.hbar,.hidebtn,.tile,.x,.mbtn,.qm,.segb,.bar,.sgrp,.tdots,.cat,.catsel{border-image:none!important}
 
-.tdots{display:none!important}
 body{background-color:#06050a!important;background-image:none!important}
 body::before{content:"";position:fixed;inset:-40px;z-index:-1;background:var(--art) center 30%/cover no-repeat;filter:blur(var(--artblur,2px)) saturate(1.1);transform:scale(1.05)}
 body::after{content:"";position:fixed;inset:0;z-index:-1;background:var(--veil)}
@@ -612,7 +611,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:var(--veil)}
 .card,.hbar{border:1px solid var(--edge)!important;border-radius:26px!important;background:var(--glass)!important;
   -webkit-backdrop-filter:blur(var(--blur)) saturate(170%)!important;backdrop-filter:blur(var(--blur)) saturate(170%)!important;
   box-shadow:inset 0 1px 0 var(--hi),inset 0 -1px 0 rgba(0,0,0,.25),0 10px 30px rgba(0,0,0,.35)!important;padding:16px!important;margin-bottom:12px}
-.scene{display:none!important}
 .row{border-top:1px solid rgba(255,255,255,.06)!important}
 .row .tile{border:1px solid var(--edge)!important;border-radius:14px!important;background:rgba(255,255,255,.06)!important;box-shadow:inset 0 1px 0 var(--hi)!important}
 .btn{border:1px solid var(--edge)!important;border-radius:18px!important;background:rgba(255,255,255,.08)!important;color:var(--ink)!important;box-shadow:inset 0 1px 0 var(--hi)!important;text-shadow:none!important;min-height:48px}
@@ -626,7 +624,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:var(--veil)}
 .seg{border:1px solid var(--edge)!important;border-radius:999px!important;background:rgba(0,0,0,.25)!important;padding:4px!important;box-shadow:none!important}
 .seg button{border-radius:999px!important;background:none!important;border:0!important;box-shadow:none!important;color:var(--mute2)!important}
 .seg button.on{background:var(--acc-glass)!important;color:var(--acc-ink)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)!important}
-.qm{border:1px solid var(--edge)!important;background:rgba(255,255,255,.06)!important;box-shadow:none!important;animation:none!important;color:var(--mute2)!important;width:20px;height:20px}
 .bar{border:0!important;border-radius:999px!important;background:rgba(255,255,255,.1)!important;height:8px!important}
 .bar>i{border-radius:999px!important;background-image:none!important;background:var(--acc)!important;box-shadow:0 0 10px var(--acc-glow)}
 /* панель вкладок: плавающая стеклянная капсула */
@@ -662,6 +659,53 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:var(--veil)}
 @keyframes fireglow{0%,100%{opacity:.75;transform:translateX(-50%) scale(1)}35%{opacity:1;transform:translateX(-50%) scale(1.04)}60%{opacity:.82;transform:translateX(-50%) scale(.98)}}
 #bgfx .ember{position:absolute;bottom:-10px;width:3px;height:3px;border-radius:1px;background:#ffcf7a;box-shadow:0 0 6px 2px rgba(255,150,50,.75);opacity:0;animation:emberup linear infinite;will-change:transform,opacity}
 @keyframes emberup{0%{transform:translate3d(0,0,0);opacity:0}10%{opacity:.9}60%{opacity:.6}100%{transform:translate3d(var(--dx,20px),-85vh,0);opacity:0}}
+
+/* --- 0.43: шапка вкладки без картинки, но с музыкой и датой --- */
+.scene{display:flex!important;align-items:center;gap:10px;height:auto!important;min-height:0;background:none!important;border:0!important;box-shadow:none!important;overflow:visible;padding:2px 4px 2px;margin-bottom:2px;filter:none!important}
+.scene>svg,.scene>.sc-img{display:none!important}
+.scene .cap{position:static!important;max-width:none;padding:0!important;background:none!important;border:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;flex:1;min-width:0}
+.scene .cap .loc{display:none}
+.scene .cap h1{font-size:19px;margin:0;color:var(--acc);text-shadow:0 2px 10px rgba(242,170,60,.35)}
+.scene .r{position:static!important;order:3;padding:5px 11px!important;border-radius:999px!important;border:1px solid var(--edge)!important;background:rgba(255,255,255,.07)!important;color:var(--mute2);font-size:12px;-webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important}
+.mbtn{position:static!important;order:2;flex:none;width:34px;height:34px;border-radius:50%!important;border:1px solid var(--edge)!important;background:rgba(255,255,255,.08)!important;color:var(--mute2)!important;box-shadow:inset 0 1px 0 var(--hi)!important;-webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important;font-size:16px}
+.mbtn.on{color:var(--acc)!important;border-color:var(--acc-edge)!important;box-shadow:inset 0 1px 0 var(--hi),0 0 12px var(--acc-glow)!important}
+/* --- точки вкладок над стеклянной панелью --- */
+.tdots{top:-38px!important;border:1px solid var(--edge)!important;background:var(--glass2)!important;-webkit-backdrop-filter:blur(20px)!important;backdrop-filter:blur(20px)!important;box-shadow:inset 0 1px 0 var(--hi),0 6px 18px rgba(0,0,0,.4)!important}
+.tdots .dot.on i{background:var(--acc)!important;box-shadow:0 0 8px var(--acc-glow)!important}
+/* --- переход вкладок без мигания размытия (только сдвиг, без прозрачности) --- */
+@keyframes swl{from{transform:translateX(40px)}}@keyframes swr{from{transform:translateX(-40px)}}
+@keyframes viewin{from{transform:translateY(8px)}}
+/* --- кружок «?»: ровный круг, мигает, пока не нажимали --- */
+.qm{width:22px!important;height:22px!important;min-width:22px!important;max-width:22px!important;min-height:22px!important;padding:0!important;border-radius:50%!important;display:inline-flex!important;align-items:center;justify-content:center;
+  font:700 12px/1 system-ui,-apple-system,sans-serif!important;vertical-align:middle;border:1px solid var(--acc-edge)!important;color:var(--acc)!important;background:rgba(242,184,75,.14)!important;
+  -webkit-backdrop-filter:blur(10px)!important;backdrop-filter:blur(10px)!important;box-shadow:0 0 0 0 rgba(242,170,60,.5)!important;animation:qmpulse 2.4s ease-out infinite!important}
+.qm.seen{animation:none!important;border-color:var(--edge)!important;color:var(--mute2)!important;background:rgba(255,255,255,.06)!important;box-shadow:none!important;font-weight:500!important}
+@keyframes qmpulse{0%{box-shadow:0 0 0 0 rgba(242,170,60,.55)}70%{box-shadow:0 0 0 8px rgba(242,170,60,0)}100%{box-shadow:0 0 0 0 rgba(242,170,60,0)}}
+@media (prefers-reduced-motion:reduce){.qm{animation:none!important}}
+.hint-main{font-size:16px;line-height:1.5;margin:4px 0 8px}
+/* --- переключатели: стеклянная капля едет к выбранному --- */
+.hasPill{position:relative!important;isolation:isolate}
+.hasPill>button{position:relative;z-index:1;background:transparent!important;box-shadow:none!important;border-color:transparent!important;transition:color .25s}
+.hasPill>button.on,.hasPill>button.hov{color:var(--acc-ink)!important}
+.hasPill.drag>button.on:not(.hov){color:var(--mute2)!important}
+.segpill{position:absolute;z-index:0;border-radius:999px;pointer-events:none;background:var(--acc-glass);border:1px solid var(--acc-edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 6px rgba(160,90,20,.25),0 4px 16px var(--acc-glow);
+  transition:left .38s cubic-bezier(.3,1.4,.5,1),width .38s cubic-bezier(.3,1.4,.5,1),transform .2s}
+.hasPill.drag .segpill{transition:width .2s;transform:scaleY(1.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 6px 24px var(--acc-glow)}
+.pseg{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;border:1px solid var(--edge);border-radius:999px;padding:4px!important;background:rgba(0,0,0,.25);gap:2px!important}
+.pseg::-webkit-scrollbar{display:none}
+.pseg>.fc{border:0!important;background:transparent!important;white-space:nowrap;flex:none}
+/* --- окно поверх: задний экран не двигается --- */
+html.lock,body.lock{overflow:hidden!important;overscroll-behavior:none}
+.scrim{overscroll-behavior:contain;touch-action:none}
+.sheet{overscroll-behavior:contain;touch-action:pan-x pan-y}
+/* --- обучение в стекле --- */
+.dlg{border:1px solid var(--edge)!important;border-image:none!important;border-radius:26px!important;background:var(--glass2)!important;-webkit-backdrop-filter:blur(26px) saturate(170%)!important;backdrop-filter:blur(26px) saturate(170%)!important;box-shadow:inset 0 1px 0 var(--hi),0 16px 40px rgba(0,0,0,.55)!important;filter:none!important;padding:16px 14px 12px!important}
+.dlg .tv-mage{border-radius:18px!important;border:1px solid var(--edge)!important;background:rgba(0,0,0,.2)!important}
+.dlg-t{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif!important;font-size:16.5px!important;line-height:1.5!important}
+.dlg-name{background:var(--acc-glass)!important;color:var(--acc-ink)!important;border:1px solid var(--acc-edge)!important}
+.tv-spot{border-radius:22px!important;box-shadow:0 0 0 9999px rgba(5,3,6,.68),0 0 0 2px var(--acc),0 0 24px var(--acc-glow)!important}
+.tv-skip,.tv-back{border-radius:999px!important;border:1px solid var(--edge)!important;background:rgba(255,255,255,.07)!important;color:var(--ink)!important}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -722,7 +766,7 @@ const ACC_TYPES={cash:['Наличные','💵'],card:['Карта','💳'],ban
 
 function defaults(){return{payday:null,hide:{},epoch:'',del:{},v:1,name:'Странник',onboarded:false,accounts:[],customCats:[],tx:[],mand:[],paid:{},equip:{},xp:0,
   streak:{count:0,last:null,freezes:1,best:0},visit:{count:0,last:null,best:0,total:0},limits:{},noSpend:{},dayRec:{},lastAcc:null,
-  goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Желе',kind:'slime'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[],hero:{race:'human',cls:'warrior'},petBox:{}}}
+  goals:[],dayGoal:{},quest:{},questAll:false,questInit:false,tourSeen:false,tourV:2,questHidden:false,lastBackup:null,ach:{},pet:{food:2,xp:0,fedOn:null,name:'Желе',kind:'slime'},sound:{sfx:true,music:false,vol:0.6},calm:false,fx:'full',rules:{},histM:0,histHide:false,pro:[],hero:{race:'human',cls:'warrior'},petBox:{}}}
 let S=defaults();
 let saveFailed=false;
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r),d=defaults();
@@ -730,6 +774,10 @@ function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r
   /* волка убрали: прежний питомец становится слаймом с тем же прогрессом */
   if(r2.pet&&(!r2.pet.kind||r2.pet.kind==='wolf')){r2.pet.kind='slime';if(!r2.pet.name||r2.pet.name==='Уголёк')r2.pet.name='Желе'}
   if(r2.petBox&&r2.petBox.wolf)delete r2.petBox.wolf;
+  /* раньше «Скрыть» у заданий прятало их навсегда — возвращаем строчкой внизу */
+  if(r2.questHidden&&!r2.questAll){r2.hide=r2.hide||{};r2.hide.quest=true;r2.questHidden=false}
+  /* новое обучение 0.43: показать один раз всем */
+  if((o.tourV||0)<2&&r2.onboarded){r2.tourSeen=false;r2.tourV=2}
   return r2}}catch(e){}return defaults()}
 function save(){try{S.savedAt=Date.now();localStorage.setItem(KEY,JSON.stringify(S));saveFailed=false}catch(e){saveFailed=true}cloudPush()}
 /* Облако Telegram: данные привязаны к аккаунту Telegram. Режем JSON на куски по 3000 символов (лимит значения 4096). */
@@ -1594,6 +1642,24 @@ function hb(key,html){if(!html)return '';const nm=(HIDEABLE[key]||'').replace(/^
   const i=html.indexOf('<section');if(i<0)return html;const j=html.indexOf('>',i)+1;
   return html.slice(0,j)+'<button class="hidebtn glass" data-act="hide" data-v="'+key+'" aria-label="Свернуть блок «'+nm+'»">скрыть</button>'+html.slice(j)}
 function hiddenCard(){return ''}
+/* Переключатели (.seg, .segb, периоды): стеклянная «капля» плавно едет к выбранному, её можно тянуть пальцем */
+function segPills(){try{document.querySelectorAll('.seg,.segb,.pseg').forEach(g=>{const on=g.querySelector(':scope>button.on,:scope>.on');let p=g.querySelector(':scope>.segpill');
+  if(!on){if(p)p.remove();return}
+  if(!p){p=document.createElement('i');p.className='segpill';g.insertBefore(p,g.firstChild);const prev=UI.segPrev&&UI.segPrev[segKey(g)];if(prev){p.style.transition='none';p.style.left=prev[0]+'px';p.style.width=prev[1]+'px';void p.offsetWidth;p.style.transition=''}}
+  g.classList.add('hasPill');const L=on.offsetLeft,W=on.offsetWidth;p.style.left=L+'px';p.style.width=W+'px';p.style.top=on.offsetTop+'px';p.style.height=on.offsetHeight+'px';
+  (UI.segPrev=UI.segPrev||{})[segKey(g)]=[L,W]})}catch(e){}}
+function segKey(g){return (g.className||'')+'|'+[].map.call(g.querySelectorAll(':scope>button'),b=>b.dataset.act||'').join(',')}
+function bootSeg(){let g=null,p=null,x0=0,l0=0,moved=false,btns=[];
+  document.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest('.hasPill');if(!t)return;g=t;p=g.querySelector(':scope>.segpill');if(!p){g=null;return}
+    btns=[].slice.call(g.querySelectorAll(':scope>button'));x0=e.clientX;l0=p.offsetLeft;moved=false},{passive:true});
+  document.addEventListener('pointermove',e=>{if(!g)return;const dx=e.clientX-x0;if(!moved&&Math.abs(dx)<8)return;moved=true;g.classList.add('drag');
+    const max=g.scrollWidth-p.offsetWidth;p.style.left=Math.max(0,Math.min(max,l0+dx))+'px';
+    const c=p.offsetLeft+p.offsetWidth/2;let best=null,bd=1e9;btns.forEach(b=>{const d=Math.abs(b.offsetLeft+b.offsetWidth/2-c);if(d<bd){bd=d;best=b}});
+    if(best){const w=best.offsetWidth;p.style.width=w+'px';btns.forEach(b=>b.classList.toggle('hov',b===best))}},{passive:true});
+  const up=()=>{if(!g)return;const G=g;g=null;G.classList.remove('drag');if(!moved)return;const best=btns.find(b=>b.classList.contains('hov'));btns.forEach(b=>b.classList.remove('hov'));
+    if(best&&!best.classList.contains('on')){UI.segSkipClick=Date.now();best.click()}else segPills()};
+  document.addEventListener('pointerup',up,{passive:true});document.addEventListener('pointercancel',up,{passive:true});
+  window.addEventListener('resize',()=>setTimeout(segPills,60))}
 /* свёрнутые блоки уходят под активные, при раскрытии возвращаются на своё место */
 function hbDown(v){const bars=[];const r=v.replace(/<button class="hbar glass"[\s\S]*?<\/button>/g,m=>{bars.push(m);return ''});return bars.length?r+bars.join(''):v}
 function viewPlan(){return scene('plan','План','Башня предсказаний',fmtDate(today()))
@@ -1749,7 +1815,7 @@ function viewStats(){
       const rows=open?S.tx.filter(x=>x.date===d.date).sort((a,b)=>b.ts-a.ts).map(txRow).join(''):'';
       return '<div><button class="row" data-act="statday" data-v="'+d.date+'" aria-expanded="'+open+'"><span class="tile">'+parseD(d.date).getDate()+'</span><span class="mid"><div class="t1">'+dayLabel(d.date)+', '+WD[parseD(d.date).getDay()]+'</div><div class="t2">'+d.n+' '+plural(d.n,['запись','записи','записей'])+(d.inc>0?' · доход '+fmt(d.inc):'')+'</div></span><span class="amt neg">'+(d.exp>0?'−'+fmt(d.exp):'')+'</span></button>'+(open?'<div class="list dayin">'+rows+'</div>':'')+'</div>'}).join('')+'</div>':'<p class="empty">В этом месяце записей нет.</p>')+'</section>'}
   return scene('stats','Анализ','Башня звездочёта','')
-  +'<div class="fchips">'+pr.map(p=>'<button class="fc '+(UI.period===p[0]?'on':'')+'" data-act="period" data-v="'+p[0]+'">'+p[1]+'</button>').join('')+'</div>'
+  +'<div class="fchips pseg">'+pr.map(p=>'<button class="fc '+(UI.period===p[0]?'on':'')+'" data-act="period" data-v="'+p[0]+'">'+p[1]+'</button>').join('')+'</div>'
   +mnav
   +hb('s_kpi','<section class="card"><div class="kpis"><div class="kpi"><span class="label">Доходы</span><b class="pos">'+fmtD(st.inc,1e6)+'</b></div><div class="kpi"><span class="label">Расходы</span><b class="neg">'+fmtD(st.exp,1e6)+'</b>'+coreExpSub(st)+'</div>'
     +'<div class="kpi"><span class="label">Накоплено</span><b class="'+(net<0?'neg':'pos')+'">'+fmtD(net,1e6)+'</b></div><div class="kpi"><span class="label">Дней без трат</span><b>'+st.ns+'</b></div></div></section>')
@@ -1788,7 +1854,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.42.0';
+const APP_V='0.43.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1798,7 +1864,7 @@ function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;con
     d.style.cssText='left:'+(20+Math.round(Math.random()*60))+'%;width:'+sz+'px;height:'+sz+'px;--dx:'+(Math.round(Math.random()*80)-40)+'px;animation-duration:'+(6+Math.round(Math.random()*7))+'s;animation-delay:-'+Math.round(Math.random()*12)+'s';el.appendChild(d)}}catch(e){}}
 function render(){
   const v={home:viewHome,list:viewList,stats:viewStats,wallet:viewWallet,plan:viewPlan,hero:viewHero}[UI.tab]();
-  $('#app').innerHTML=hbDown(v);if(UI.shown&&UI.shown!==UI.tab&&!S.calm){try{const a=document.getElementById('app');a.classList.remove('swap','swl','swr');void a.offsetWidth;a.classList.add(UI.swipeDir>0?'swl':UI.swipeDir<0?'swr':'swap');UI.swipeDir=0}catch(e){}}UI.shown=UI.tab;document.body.dataset.tab=UI.tab;document.body.classList.toggle('lefty',!!S.lefty);bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
+  $('#app').innerHTML=hbDown(v);setTimeout(segPills,0);if(UI.shown&&UI.shown!==UI.tab&&!S.calm){try{const a=document.getElementById('app');a.classList.remove('swap','swl','swr');void a.offsetWidth;a.classList.add(UI.swipeDir>0?'swl':UI.swipeDir<0?'swr':'swap');UI.swipeDir=0}catch(e){}}UI.shown=UI.tab;document.body.dataset.tab=UI.tab;document.body.classList.toggle('lefty',!!S.lefty);bgSync();if(document.body.classList)document.body.classList.toggle('calm',!!S.calm);
   const tabs=[['home','Главная','home'],['list','Записи','records'],null,['plan','План','plan'],['hero','Герой','hero']];
   $('#tabbar').innerHTML='<div class="tdots glass" role="tablist" aria-label="Экраны">'+TAB_ORDER.map(t=>'<button class="dot'+(t===tabGroup(UI.tab)?' on':'')+'" data-act="tab" data-v="'+t+'" role="tab" aria-selected="'+(t===tabGroup(UI.tab))+'" aria-label="'+({home:'Главная',list:'Записи',plan:'План',hero:'Герой'})[t]+'"><i></i></button>').join('')+'</div><div class="tabbar-in">'+tabs.map(t=>t?'<button class="tab" data-act="tab" data-v="'+t[0]+'" aria-current="'+(tabGroup(UI.tab)===t[0])+'"><img class="ti" src="assets/tab-'+t[2]+'.webp" alt="" onerror="this.remove()">'+t[1]+'</button>':'<button class="plus" data-act="add" aria-label="Новая запись"><svg viewBox="0 0 9 9" width="26" height="26" shape-rendering="crispEdges" aria-hidden="true"><path d="M3 0h3v3h3v3H6v3H3V6H0V3h3z" fill="#271c06"/></svg></button>').join('')+'</div>'}
 
@@ -1908,30 +1974,30 @@ function sheetTx(){const x=S.tx.find(t=>t.id===UI.sheet.id);if(!x)return shHead(
   if(E.err)h+='<p class="err">'+esc(E.err)+'</p>';
   return h+'<button class="btn" data-act="txsave">Сохранить</button>'+del}
 const HINTS={
- bank:['Банк','Сколько денег реально твои и сколько можно тратить в день.','Крупно: деньги на счетах без отложенного в целях. Ниже: сколько останется после платежей месяца и сколько можно тратить в день.','Утром видишь лимит дня и не тратишь лишнее раньше зарплаты.'],
- today:['Сегодня','Траты за сегодня и быстрые кнопки.','Жми «Трата» или «Доход». Записи появятся тут.','К вечеру видно, не перебрал ли день.'],
- pro:['Пророчества','Ты записываешь, что ждёшь: доход, платёж или покупку. Потом приложение сверяет с жизнью.','Нажми «+ Пророчество», когда срок придёт, отметь, сбылось ли. Растёт меткость.','Учит честно оценивать свои траты и планы заранее.'],
- forecast:['Прогноз','Оценка, на сколько хватит денег при обычных тратах.','Считается по тратам за последний месяц, без кредитов и переводов людям.','Видно заранее, дотянешь ли до зарплаты, и сколько можно тратить в день.'],
- goal:['Ближайшая цель','Цель, к которой ты откладываешь.','Жми «Пополнить», чтобы отложить сумму.','Копишь на конкретное: телефон, отпуск, подушку безопасности.'],
- goals:['Цели и копилки','Деньги, отложенные на конкретное.','Создай цель, потом пополняй. Отложенные деньги не считаются свободными.','Не потратишь накопленное на мелочи: оно уже в деле.'],
- quest:['Путь новичка','Пять заданий, которые учат пользоваться приложением.','Выполняй по порядку. +15 XP за шаг и +30 XP за все вместе.','Быстрее привыкнешь вести учёт.'],
- backup:['Копия данных','Файл-текст со всеми твоими данными.','Жми «Сделать копию» и сохрани текст в заметки.','Не потеряешь записи, если сменишь телефон или что-то сломается.'],
- mand:['Обязательные платежи','Аренда, интернет, подписки, всё, что платишь каждый месяц.','Добавь платёж и дату. «Оплатить» спишет сумму со счёта. «Уже оплачено» просто отметит, если ты платил раньше.','Видишь, сколько у тебя действительно свободно.'],
- acc:['Счета','Твои кошельки: карты, наличные, депозиты.','Остаток примерный. Если разошёлся с реальным, открой счёт и поправь.','Видно, где лежат деньги и сколько всего.'],
- fx:['Курсы валют','Курсы для записей в другой валюте.','Выбирай валюту в окне записи, пересчёт в тенге сделает приложение.','Удобно, если тратишь за границей или в долларах.'],
- chart:['Доходы и расходы','Столбики доходов и расходов по периодам.','Переключай период сверху. Зелёный доход, красный расход.','Сразу видно, в какие месяцы тратишь больше, чем получаешь.'],
- cats:['Куда уходят деньги','Расходы по категориям за период.','Нажми на категорию, чтобы увидеть записи.','Находишь, на чём можно сэкономить.'],
- habits:['Твои привычки','Три самые затратные категории за 30 дней.','Появляется, когда набралось достаточно записей. Без переводов и кредитов.','Видишь повторяющиеся траты: кофе, такси, доставка.'],
- hist:['История трат','Загрузка выписки Kaspi в PDF.','Скачай выписку в Kaspi, выбери файл. Файл читается только на этом телефоне.','Сразу получаешь картину за прошлые месяцы.'],
- debt:['Долги и рассрочки','Кредиты и рассрочки в одном месте.','Добавь платёж, остаток и ставку. Для рассрочки без процентов ставка 0.','Видно, когда всё закроется и какой долг гасить первым.'],
- treasure:['Сокровищница героя','Итоги за всё время: сколько получено и потрачено.','Только смотри, настраивать нечего.','Общая картина твоих денег.'],
- records:['Рекорды по месяцам','Самые затратные и самые удачные месяцы.','Появляется, когда накопится история.','Понимаешь, что отличало удачные месяцы.'],
- days:['По дням','Траты, разбитые по дням.','Нажми на день, чтобы раскрыть записи.','Находишь дорогие дни и их причину.'],
- gear:['Инвентарь','Снаряжение героя: оружие и броня.','Оружие открывается с уровнем. Нажми, чтобы взять. Броня и остальные слоты в разработке.','Игровая награда за привычку вести учёт.'],
- pets:['Компаньоны','Питомцы, которые растут вместе с тобой.','Новые открываются с уровнем. Нажми, чтобы посмотреть и взять с собой.','Лёгкая мотивация записывать каждый день.']};
+ bank:['Банк','Все твои деньги на картах и наличными. Деньги, отложенные на цели, сюда не входят.','Ниже две цифры: сколько останется после обязательных платежей этого месяца и сколько можно тратить в день до зарплаты.'],
+ today:['Сегодня','Всё, что ты записал за сегодня.','Нажми «Трата» или «Доход», запись появится здесь.'],
+ pro:['Пророчества','Заранее записываешь, что ждёшь: зарплату, платёж или покупку.','Когда день наступит, отметь, сбылось или нет. Так учишься точнее планировать.'],
+ forecast:['Хватит ли денег','Показывает, хватит ли денег до зарплаты, если тратить как обычно.','Считается по твоим тратам за последний месяц.'],
+ goal:['Ближайшая цель','То, на что ты копишь.','Нажми «Пополнить», чтобы отложить деньги.'],
+ goals:['Цели и копилки','Деньги, которые ты откладываешь на что-то конкретное: телефон, отпуск.','Создай цель и пополняй её. Отложенное не входит в «Банк», чтобы случайно не потратить.'],
+ quest:['Задания','Пять простых шагов, чтобы освоиться.','За каждый шаг даётся опыт для героя.'],
+ backup:['Копия данных','Все твои записи одним текстом.','Нажми «Сделать копию» и сохрани текст, например в заметки. Пригодится при смене телефона.'],
+ mand:['Обязательные платежи','То, что платишь каждый месяц: аренда, интернет, подписки.','«Оплатить» спишет деньги со счёта. «Уже оплачено» просто отметит платёж, если ты заплатил раньше.'],
+ acc:['Счета','Твои карты, наличные и депозиты.','Если остаток не совпадает с настоящим, открой счёт и поправь сумму.'],
+ fx:['Курсы валют','Курсы, по которым доллары, рубли и другие валюты переводятся в тенге.','Валюту можно выбрать прямо в окне записи.'],
+ chart:['Доходы и расходы','Сколько пришло и сколько ушло за каждый период.','Зелёный — доход, красный — расход. Период выбирается сверху.'],
+ cats:['Куда уходят деньги','Траты по категориям: еда, такси, кафе.','Нажми на категорию, чтобы увидеть записи.'],
+ habits:['Привычки','Три категории, на которые уходит больше всего за 30 дней.','Появится, когда наберётся хотя бы 10 трат.'],
+ hist:['Выписка Kaspi','Можно загрузить выписку из Kaspi, и прошлые траты появятся сами.','Скачай выписку в Kaspi (PDF) и выбери файл. Файл никуда не отправляется.'],
+ debt:['Долги и рассрочки','Кредиты и рассрочки в одном месте.','Добавь сумму платежа и остаток. Видно, когда всё закроется.'],
+ treasure:['Итоги','Сколько ты получил и потратил за всё время.'],
+ records:['Рекорды','Месяцы, когда ты тратил больше всего и меньше всего.'],
+ days:['По дням','Траты по дням.','Нажми на день, чтобы увидеть записи.'],
+ gear:['Снаряжение','Оружие героя. Новое открывается с уровнем.','Нажми на оружие, чтобы взять его.'],
+ pets:['Компаньоны','Питомцы, которые растут вместе с тобой.','Новые открываются с уровнем.']};
 function hq(k){return HINTS[k]?'<button class="qm'+((S.hintSeen||{})[k]?' seen':'')+'" data-act="hint" data-v="'+k+'" aria-label="Что это?">?</button>':''}
 function sheetHint(){const h=HINTS[UI.sheet.k];if(!h)return shHead('Подсказка')+'<button class="btn" data-act="hintok">Понятно</button>';
-  return shHead(h[0])+'<div class="label">Что это</div><p class="sub">'+esc(h[1])+'</p><div class="label">Как пользоваться</div><p class="sub">'+esc(h[2])+'</p><div class="label">Зачем это в жизни</div><p class="sub">'+esc(h[3])+'</p><button class="btn" data-act="hintok">Понятно</button>'}
+  return shHead(h[0])+'<p class="hint-main">'+esc(h[1])+'</p>'+(h[2]?'<p class="sub">'+esc(h[2])+'</p>':'')+'<button class="btn" data-act="hintok" style="margin-top:6px">Понятно</button>'}
 function isUncat(x){return x.type!=='tr'&&(!x.cat||x.cat==='none')}
 function uncatList(){const sk=UI.fixSkip||[];return S.tx.filter(x=>isUncat(x)&&sk.indexOf(x.id)<0).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:b.ts-a.ts)}
 function sheetFix(){const l=uncatList(),n=S.tx.filter(isUncat).length;
@@ -2057,24 +2123,23 @@ function mageSVG(){let o='';const r=(x,y,w,h,c)=>{o+='<rect x="'+x+'" y="'+y+'" 
 function kw(t,ch){t=esc(t);const sp=x=>ch?x.replace(/&#?\w+;|[^\s]/g,c=>'<i>'+c+'</i>'):x;let o='',last=0,m;const re=/\{([ygrb]) ([^}]+)\}/g;
   while((m=re.exec(t))){o+=sp(t.slice(last,m.index))+'<b class="k'+m[1]+'">'+sp(m[2])+'</b>';last=re.lastIndex}return o+sp(t.slice(last))}
 const INTRO=[
- 'О, живой человек! Подходи к костру, не стесняйся, тут тепло.',
- 'Я {y Орвин}. Веду хроники: кто сколько заработал и куда всё это потом {r испарилось}.',
- 'Секрет простой: записываешь {r траты} и {g доходы}, и деньги перестают исчезать загадочным образом.',
- 'А за порядок в деньгах твой герой будет {y расти}. Давай знакомиться.'];
+ 'Привет! Это {y Хроника Монет} — учёт денег, похожий на игру.',
+ 'Записываешь {r траты} и {g доходы} — и видишь, сколько можно тратить и куда уходят деньги.',
+ 'За каждую запись твой {y герой} растёт. Давай настроим всё за минуту.'];
 /* Экскурсия: sel — что подсветить. Если элемента нет (скрыт или ещё не появился), шаг пропускается. */
 const TOURS=[
- {tab:'home',t:'{y %n}, сейчас быстро покажу, что тут где. Минута, честно.'},
- {tab:'home',sel:'#t-free',t:'Это {g Банк}: сколько у тебя реально есть и сколько можно тратить в день. Платежи месяца и копилки я уже вычел, чтобы ты не радовался раньше времени.'},
- {tab:'home',sel:'#t-log .logbtns',t:'Потратил, жми {r Трата}. Пришли деньги, жми {g Доход}. Два касания, быстрее, чем найти чек в кармане.'},
- {tab:'home',sel:'#tabbar .plus',t:'Эта жёлтая кнопка делает то же самое с любой вкладки. Увидел трату, записал, забыл.'},
- {tab:'home',sel:'#tabbar .tdots',t:'Вкладки листаются пальцем влево и вправо. А если провести по этим точкам, пролетишь всё за секунду.'},
- {tab:'list',sel:'#tabbar .tab[data-v="list"]',t:'В {y Записях} вся история, а сверху переключатель: {y Анализ} покажет, куда утекают деньги, {y Счета} покажут кошельки. Иногда больно, зато честно.'},
- {tab:'plan',sel:'#tabbar .tab[data-v="plan"]',t:'В {y Плане} живут пророчества: записываешь, что ждёшь, а я потом сверяю с жизнью. Там же платежи, цели и долги.'},
- {tab:'plan',sel:'#app .hidebtn',t:'Что-то лишнее? Жми {y скрыть}, и блок свернётся в строчку. Передумал, нажал на строчку, вернулся.'},
- {tab:'plan',sel:'#app .qm',t:'Видишь {y ?}? Нажми, и я объясню: что это, как пользоваться и зачем в жизни.'},
- {tab:'hero',sel:'#tabbar .tab[data-v="hero"]',t:'В {y Герое} лагерь, задания, достижения и настройки. Если игра начнёт отвлекать, там есть {b Спокойный режим}.'},
- {tab:'wallet',sel:'#t-acc',t:'А в {y Счетах} деньги по кошелькам и курсы валют. Есть выписка Kaspi в PDF? Загрузи, разберу сам.',btn:'Загрузить выписку'},
- {tab:'home',t:'Всё, дальше сам. Удачи, {y %n}!'}];
+ {tab:'home',t:'Привет, {y %n}! Покажу главное. Это займёт минуту.'},
+ {tab:'home',sel:'#t-free',t:'{g Банк} — все твои деньги. Ниже: сколько можно тратить в день.'},
+ {tab:'home',sel:'#t-log .logbtns',t:'Потратил — нажми {r Трата}. Получил деньги — {g Доход}.'},
+ {tab:'home',sel:'#tabbar .plus',t:'Жёлтый {y плюс} делает то же самое с любой вкладки.'},
+ {tab:'home',sel:'#tabbar .tdots',t:'Вкладки листаются пальцем влево-вправо. Или проведи по точкам.'},
+ {tab:'list',sel:'#app .recseg',t:'{y Записи} — все траты. Сверху: {y Анализ} (куда уходят деньги) и {y Счета} (карты и наличные).'},
+ {tab:'plan',sel:'#tabbar .tab[data-v="plan"]',t:'{y План} — платежи каждый месяц, цели и долги.'},
+ {tab:'plan',sel:'#app .hidebtn',t:'Лишний блок можно {y скрыть}: он уедет вниз. Вернуть — одним нажатием.'},
+ {tab:'plan',sel:'#app .qm',t:'Непонятно, что за блок? Нажми {y ?}.'},
+ {tab:'hero',sel:'#tabbar .tab[data-v="hero"]',t:'{y Герой} растёт, когда ты записываешь траты. Тут же настройки.'},
+ {tab:'wallet',sel:'#t-acc',t:'Есть выписка Kaspi? Загрузи, и прошлые траты появятся сами.',btn:'Загрузить выписку'},
+ {tab:'home',t:'Готово! Начни с первой траты.'}];
 function maybeTour(){if(S.onboarded&&!S.tourSeen&&UI.tour==null&&UI.intro==null&&!UI.sheet&&!UI.pendingLvl)startTour()}
 function startTour(){UI.sheet=null;UI.confirm=null;renderSheet();UI.tour=0;tourGo()}
 function tourGo(dir){dir=dir||1;if(UI.tour<0)UI.tour=0;const st=TOURS[UI.tour];if(!st)return endTour();
@@ -2094,7 +2159,7 @@ function dlgType(){dlgStop();let cs=[];try{cs=Array.prototype.slice.call(documen
 function dlgFinish(){try{document.querySelectorAll('#tourlayer .dlg-t i').forEach(c=>c.classList.add('on'))}catch(e){}dlgStop();try{document.querySelector('#tourlayer .dlg').classList.add('done')}catch(e){}}
 function dlgBox(text,n,total,intro,extra,spot,top){
   return '<div class="tv-block"></div>'+(spot?'<div class="tv-spot" style="'+spot+'"></div>':'<div class="tv-dim'+(intro?' intro':'')+'"></div>')
-   +'<div class="dlg'+(intro?' intro':'')+(top?' top':'')+'" role="dialog" aria-label="Диалог" data-act="dlgtap"><div class="dlg-name">Маг Орвин</div>'
+   +'<div class="dlg'+(intro?' intro':'')+(top?' top':'')+'" role="dialog" aria-label="Диалог" data-act="dlgtap"><div class="dlg-name">Подсказка</div>'
    +'<div class="dlg-in"><div class="tv-mage">'+mageSVG()+'</div><p class="dlg-t">'+text+'</p></div>'+(extra||'')
    +'<div class="dlg-bar">'+(!intro&&n>0?'<button class="tv-back" data-act="tourprev" aria-label="Назад">‹</button>':'')+'<button class="tv-skip" data-act="'+(intro?'introend':'tourend')+'">Пропустить</button><span class="dlg-dots">'+Array.from({length:total},(_,i)=>'<u class="'+(i<=n?'on':'')+'"></u>').join('')+'</span><span class="dlg-more">▼</span></div></div>'}
 function drawIntro(){const L=$('#tourlayer');if(UI.intro==null){L.innerHTML='';return}
@@ -2145,13 +2210,16 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
   return shHead('Достижения')+'<p class="note">Открыто '+n+' из '+ACH.length+'. За каждое награда: 20 XP.</p><div class="list">'
    +ACH.map(a=>{const d=S.ach[a[0]];return '<div class="row" style="cursor:default;opacity:'+(d?1:.5)+'"><span class="tile">'+(d?a[3]:'🔒')+'</span><span class="mid"><div class="t1">'+esc(a[1])+'</div><div class="t2">'+esc(a[2])+(d?' · '+fmtDate(d):'')+'</div></span></div>'}).join('')+'</div>'}
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
-  try{document.body.classList.toggle('lock',!!sh)}catch(e){}
-  if(!sh){L.innerHTML='';return}
+  try{document.body.classList.toggle('lock',!!sh);document.documentElement.classList.toggle('lock',!!sh)}catch(e){}
+  if(!sh){L.innerHTML='';UI.lastSheetKind=null;return}
   const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,attn:sheetAttn,dadv:sheetDadv,limit:sheetLimit,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   const kbf=sh.kind==='add'&&UI.focus;
+  let keepTop=0;try{const o=L.querySelector('.sheet');if(o&&UI.lastSheetKind===sh.kind)keepTop=o.scrollTop}catch(e){}UI.lastSheetKind=sh.kind;
   L.innerHTML='<div class="scrim'+(lock||sh.kind==='gear'?' mid':'')+(fresh?' fresh':'')+(kbf?' kbfade':'')+((sh.kind==='add'||/<input(?![^>]*type="(?:file|checkbox|radio)")|<textarea/.test(body))?' addsheet':'')+(UI.kbStop!=null?' kblock':'')+'" data-lock="'+(lock?1:0)+'"'+(UI.kbStop!=null?' style="--stop:'+UI.kbStop+'px"':'')+'><div class="sheet'+(lock?' fancy':'')+'" role="dialog" aria-modal="true">'+body+'</div></div>';
+  if(keepTop){try{L.querySelector('.sheet').scrollTop=keepTop}catch(e){}}
+  segPills();
   if(sh.kind==='add'&&UI.focus){UI.focus=false;const a=$('#amt');if(a){try{a.focus({preventScroll:true})}catch(e){a.focus()}}}}
 
 /* ---------- actions ---------- */
@@ -2315,7 +2383,7 @@ function act(a,el){const v=el.dataset.v;
     case 'calmtoggle':S.calm=!S.calm;save();musicSync();render();renderSheet();break;
     case 'sfxtoggle':S.sound.sfx=!S.sound.sfx;save();renderSheet();break;
     case 'musictoggle':S.sound.music=!S.sound.music;save();musicSync();render();renderSheet();break;
-    case 'questhide':S.questHidden=true;commit();break;
+    case 'questhide':S.hide=S.hide||{};S.hide.quest=true;commit();break;
     case 'ach':openSheet('ach');break;
     case 'tournext':if(UI.tour>=TOURS.length-1)endTour();else{UI.tour++;tourGo()}break;
     case 'introend':endIntro();break;
@@ -2437,7 +2505,7 @@ function swipeTab(dx){S.swipeHint=true;const i=TAB_ORDER.indexOf(tabGroup(UI.tab
 function bootSwipe(){let x0=null,y0=0,t0=0,lock=0,dx=0;const app=()=>document.getElementById('app');
   const skip=el=>{try{return UI.sheet||UI.tour!=null||UI.intro!=null||(el&&el.closest&&el.closest('input,select,textarea,.fchips,.qgrid,[style*="overflow-x"],.noswipe,#layer,#tourlayer,#tabbar'))}catch(e){return true}};
   const canGo=d=>{const i=TAB_ORDER.indexOf(tabGroup(UI.tab));let dir=d<0?1:-1;if(S.lefty)dir=-dir;const j=i+dir;return j>=0&&j<TAB_ORDER.length};
-  const setX=(x,anim)=>{const a=app();if(!a)return;a.style.transition=anim?'transform .28s cubic-bezier(.22,.8,.3,1),opacity .28s':'none';a.style.transform=x?'translate3d('+x+'px,0,0)':'';a.style.opacity=x?String(Math.max(.55,1-Math.abs(x)/700)):''};
+  const setX=(x,anim)=>{const a=app();if(!a)return;a.style.transition=anim?'transform .28s cubic-bezier(.22,.8,.3,1),opacity .28s':'none';a.style.transform=x?'translate3d('+x+'px,0,0)':'';a.style.opacity=''};
   document.addEventListener('touchstart',e=>{lock=0;dx=0;if(e.touches.length!==1||skip(e.target)){x0=null;return}x0=e.touches[0].clientX;y0=e.touches[0].clientY;t0=Date.now();const W=window.innerWidth||400;if(x0<20||x0>W-20)x0=null},{passive:true});
   document.addEventListener('touchmove',e=>{if(x0==null)return;const t=e.touches[0];const mx=t.clientX-x0,my=t.clientY-y0;
     if(!lock){if(Math.abs(mx)<10&&Math.abs(my)<10)return;lock=Math.abs(mx)>Math.abs(my)*1.2?1:-1}
@@ -2455,7 +2523,7 @@ function bootDots(){let on=false,rect=null;
   document.addEventListener('pointerdown',e=>{const d=e.target.closest&&e.target.closest('.tdots');if(!d)return;on=true;rect=d.getBoundingClientRect();},{passive:true});
   document.addEventListener('pointermove',e=>{if(on)pick(e.clientX)},{passive:true});
   const end=()=>{if(on){on=false;try{window.scrollTo(0,0)}catch(e){}}};document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end)}
-function boot(){bootKb();try{bootSwipe();bootDots()}catch(e){}tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);setTimeout(()=>fetchRates(),2500);try{swipeHint()}catch(e){}if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
+function boot(){bootKb();try{bootSwipe();bootDots();bootSeg()}catch(e){}tgInit();preloadLoc();S=load();if(window.__cloudMerged){window.__cloudMerged=false;setTimeout(()=>cloudPush(true),300)}setTimeout(checkUpdate,1500);setTimeout(()=>fetchRates(),2500);try{swipeHint()}catch(e){}if(S.onboarded)syncQuest();UI.pct=curPct();UI.tab='home';render();
   if(!S.onboarded){UI.form={name:S.name,cash:'',card:''};startIntro()}else renderSheet();
   if(S.onboarded){visitTick();checkAch();if(notes.length)commit();else save()}
   if(cloudAsk&&S.onboarded)openSheet('syncask');else maybeTour();

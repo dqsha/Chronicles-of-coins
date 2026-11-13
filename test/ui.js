@@ -18,10 +18,10 @@ for(const [k,pre] of [['goal',`UI.form={name:'',icon:'',target:'',deadline:'',er
   run(`${pre}UI.tourStep=0;openSheet('${k}',{id:'${gid}'})`);chk('sheet '+k,els['#layer'].innerHTML.includes('sheet'))}
 const act=(a,v,ds)=>{ctx.__el={dataset:Object.assign({v},ds||{}),disabled:false};run(`act('${a}',__el)`)};
 const L=()=>els['#tourlayer'].innerHTML;
-run(`startTour()`);chk('tour step 1 card + mage',L().includes('class="dlg')&&L().includes('Маг Орвин')&&L().includes('<i>п</i>'));
+run(`startTour()`);chk('tour step 1 card + mage',L().includes('class="dlg')&&L().includes('Подсказка')&&L().includes('<i>П</i>'));
 const goTo=n=>{while(run('UI.tour')<n)act('tournext')};
 chk('no spotlight, no bullet list',!L().includes('tv-spot')&&!L().includes('<li'));
-goTo(9);chk('hero step: calm mode word',run('UI.tour')===9&&run('UI.tab')==='hero'&&L().includes('<b class="kb">'));chk('calm hint on hero step',L().replace(/<[^>]+>/g,'').includes('Спокойный режим'));
+goTo(9);chk('hero step on hero tab',run('UI.tour')===9&&run('UI.tab')==='hero');chk('hero step text',L().replace(/<[^>]+>/g,'').includes('растёт'));
 goTo(10);chk('tour switches to wallet tab',run('UI.tab')==='wallet');chk('spotlight on target, dialog on top',L().includes('tv-spot')&&L().includes('dlg top'));
 act('tourprev');chk('prev works',run('UI.tour')===9);
 goTo(11);chk('last step reached',run('UI.tour')===11);
@@ -41,7 +41,7 @@ act('gear');chk('gear quest',run('S.quest.gear')===1);
 run(`S=defaults();S.onboarded=true;S.accounts=[{id:'a',name:'Нал',type:'cash',bal0:1000}];S.tourSeen=true;NOW='2026-11-01';UI.tab='home';render()`);
 run("openSheet('camp')");chk('camp has achievements button',els['#layer'].innerHTML.includes('data-act="ach"'));
 chk('quest card has hide',els['#layer'].innerHTML.includes('questhide'));
-act('questhide');chk('quest hidden',run('S.questHidden')===true&&!els['#app'].innerHTML.includes('Путь новичка'));
+act('questhide');chk('quest collapsed, not lost',run('S.hide.quest')===true&&!els['#app'].innerHTML.includes('Путь новичка'));
 chk('no backup card with few records',!els['#app'].innerHTML.includes('Копия данных'));
 run(`for(let i=0;i<6;i++)S.tx.push({id:'x'+i,type:'exp',amount:1,cat:'food',acc:'a',date:'2026-11-01',ts:i});render()`);
 run(`UI.tab='hero';render()`);chk('backup card appears',els['#app'].innerHTML.includes('Копия данных'));run(`UI.tab='home';render()`);

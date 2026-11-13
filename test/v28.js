@@ -11,9 +11,9 @@ const near=(a,b)=>Math.abs(a-b)<0.01;
 run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:100000}];NOW='2026-11-11'");
 run("S.tx=[];UI.tab='plan';render()");
 chk('plan has ? buttons',app().indexOf('data-act="hint"')>0);
-chk('all hints have 4 parts',run("Object.keys(HINTS).every(k=>HINTS[k].length===4&&HINTS[k].every(t=>t&&t.length>2))"));
+chk('all hints have title + text',run("Object.keys(HINTS).every(k=>HINTS[k].length>=2&&HINTS[k].every(t=>t&&t.length>2))"));
 act('hint','pro');let L=lay();
-chk('hint sheet has 3 sections',L.indexOf('Что это')>0&&L.indexOf('Как пользоваться')>0&&L.indexOf('Зачем это в жизни')>0&&L.indexOf('Пророчества')>0);
+chk('hint sheet: title + plain text',L.indexOf('hint-main')>0&&L.indexOf('Пророчества')>0&&L.indexOf('Зачем это в жизни')<0);
 act('hintok');chk('hint closes',run('UI.sheet')===null);
 // подсказка внутри окна возвращает обратно
 act('gear');act('hint','gear');chk('hint over sheet',run("UI.sheet.kind")==='hint');
