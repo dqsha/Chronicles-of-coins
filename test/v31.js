@@ -55,12 +55,12 @@ else chk('attn visible for overdue payment',false);
 run("S.hide={}");
 // 0.40: пиксельные иконки категорий
 const cf=run("catsFor('exp')");
-chk('built-in categories have pixel icons',cf.filter(c=>c.id!=='x').every(c=>c.icon.includes('class="pxi c-'+c.id+'"')));
-chk('income categories too',run("catsFor('inc')").every(c=>c.icon.includes('pxi')));
+chk('built-in categories use emoji',cf.every(c=>c.icon&&!c.icon.includes('pxi')));
+chk('income categories use emoji',run("catsFor('inc')").every(c=>c.icon&&!c.icon.includes('pxi')));
 chk('emoji kept for select options',run("catsFor('exp')[0].emo")==='🛒');
 chk('unknown category falls back to emoji',run("catInfo('zzz').icon")==='❔');
 run("S.customCats=[{id:'c1',name:'Кофе',icon:'☕<b>',kind:'exp'}]");
 chk('custom icon is escaped, kept as emoji',run("catInfo('c1').icon").includes('☕&lt;b&gt;'));
 run("S.customCats=[]");
-act('add','exp');act('catopen');chk('category picker shows pixel icons',lay().includes('pxi c-food'));act('close');
+act('add','exp');act('catopen');chk('category picker shows emoji',lay().includes('🛒')&&!lay().includes('pxi'));act('close');
 console.log(bad?'FAILED '+bad:'ALL OK');process.exit(bad?1:0);

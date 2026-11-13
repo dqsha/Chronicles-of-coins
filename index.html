@@ -537,6 +537,8 @@ button,[data-act]{cursor:pointer}
 .scrim.kblock{align-items:flex-start!important}
 .scrim.kblock .sheet>*,.scrim.addsheet .sheet>*{flex-shrink:0}
 .scrim.kblock .sheet{margin-top:var(--stop,0px);max-height:calc(var(--vvh,100%) - var(--stop,0px) - 6px)!important}
+/* запас снизу, чтобы поле можно было поднять над клавиатурой */
+.sheet.kbpad{padding-bottom:calc(46vh + 16px)!important}
 /* клавиатура: одна плавная анимация вместо двух наложенных */
 .sheet{transition:none}
 .scrim{transition:none}
@@ -754,7 +756,7 @@ const ICO_ROWS={food:'............,....kkkk....,...k....k...,...k....k...,.kkkkk
   rows.forEach((row,y)=>{let x=0;while(x<row.length){const ch=row[x];if(ch==='.'){x++;continue}let e=x;while(e<row.length&&row[e]===ch)e++;r.push('<rect x="'+x+'" y="'+y+'" width="'+(e-x)+'" height="1" fill="'+ICO_PAL[ch]+'"/>');x=e}});
   css+='.pxi.c-'+id+'{background-image:url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" shape-rendering="crispEdges">'+r.join('')+'</svg>')+'")}\n'}
   try{const st=document.createElement('style');st.id='catico';st.textContent=css;document.head.appendChild(st)}catch(e){}})();
-const icoHtml=id=>ICO_ROWS[id]?'<i class="pxi c-'+id+'" aria-hidden="true"></i>':null;
+const icoHtml=id=>null; /* пиксельные значки отключены: везде смайлики (ICO_ROWS оставлены на будущее) */
 function catsFor(kind){const base=(kind==='inc'?CATS_INC:CATS_EXP).map(c=>({id:c[0],name:c[1],icon:icoHtml(c[0])||c[2],emo:c[2]}));
   return base.concat(S.customCats.filter(c=>c.kind===kind).map(c=>Object.assign({},c,{icon:esc(c.icon||'⭐')})))}
 function catInfo(id){const all=catsFor('exp').concat(catsFor('inc'));return all.find(c=>c.id===id)||{id:id,name:'Без категории',icon:'❔',emo:'❔'}}
@@ -1713,7 +1715,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.40.0';
+const APP_V='0.40.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1865,7 +1867,7 @@ function uncatList(){const sk=UI.fixSkip||[];return S.tx.filter(x=>isUncat(x)&&s
 function sheetFix(){const l=uncatList(),n=S.tx.filter(isUncat).length;
   if(!l.length)return shHead('Категории')+'<p class="sub">'+(n?'Остались только пропущенные ('+n+'). Их можно выбрать в «Записях».':'Все записи с категорией.')+'</p><button class="btn" data-act="close">Готово</button>';
   const x=l[0];
-  return shHead('Без категории: '+l.length)+'<div class="row" style="cursor:default"><span class="tile">'+(x.type==='inc'?icoHtml('salary'):icoHtml('other'))+'</span><span class="mid"><div class="t1">'+esc(x.note||(x.type==='inc'?'Доход':'Расход'))+'</div><div class="t2">'+dayLabel(x.date)+' · '+esc(accName(x.acc))+'</div></span><span class="amt '+(x.type==='inc'?'pos':'neg')+'">'+amtTxt(x)+'</span></div>'
+  return shHead('Без категории: '+l.length)+'<div class="row" style="cursor:default"><span class="tile">'+(x.type==='inc'?'💰':'❔')+'</span><span class="mid"><div class="t1">'+esc(x.note||(x.type==='inc'?'Доход':'Расход'))+'</div><div class="t2">'+dayLabel(x.date)+' · '+esc(accName(x.acc))+'</div></span><span class="amt '+(x.type==='inc'?'pos':'neg')+'">'+amtTxt(x)+'</span></div>'
    +'<div class="cats">'+catsFor(x.type).map(c=>'<button class="cat" data-act="fixset" data-v="'+c.id+'"><span class="ci">'+c.icon+'</span><span>'+esc(c.name)+'</span></button>').join('')+'</div>'
    +'<button class="btn ghost" data-act="fixskip">Пропустить</button>'}
 function newE(x){return{id:x.id,amount:String(x.ocur?x.oamt:x.amount),ocur:x.ocur||null,cat:x.cat,date:x.date,acc:x.acc,note:x.note||'',more:false,custom:false,cname:'',cicon:'',all:false,err:''}}
@@ -1940,7 +1942,7 @@ function debtRow(m){const s=mandStatus(m);const inf=debtInfo(m,0);
   const t2=m.closed?'Погашено':(isFinite(inf.months)?'ещё '+inf.months+' '+plural(inf.months,['платёж','платежа','платежей'])+(ed?' · до '+MG[ed.getMonth()]+' '+ed.getFullYear():''):'не закрывается, платёж меньше процентов')
     +(m.closed?'':'<br>осталось '+fmt(Math.round(m.left))+((m.rate||0)>0?' · '+m.rate+'%':''))
     +(s.paid&&!m.closed?'<br><span class="pos">✓ в этом месяце оплачено</span>':'');
-  return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?icoHtml('credit'):icoHtml('other'))+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2 wrap">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'<small class="permo">в мес.</small></span></div>'
+  return '<div><div class="row" style="cursor:default"><span class="tile">'+(m.rate>0?'💳':'🧾')+'</span><span class="mid"><div class="t1">'+esc(m.name)+'</div><div class="t2 wrap">'+t2+'</div></span><span class="amt">'+fmt(m.amount)+'<small class="permo">в мес.</small></span></div>'
    +payBtns(m,s,'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'" aria-label="Изменить">✎</button>')+'</div>'}
 function debtCard(){const all=debtsAll(),open=debtsOpen();
   if(!all.length)return '<section class="card" id="t-debt"><h2>Долги и рассрочки'+hq('debt')+'</h2><p class="note">Кредиты и рассрочки.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="debtnew">Добавить долг или рассрочку</button></section>';
@@ -2340,15 +2342,19 @@ function checkUpdate(){try{if(!window.fetch)return;fetch('version.json?t='+Date.
 function kbLock(t){try{const sc=t.closest('.scrim');if(!sc||UI.kbStop!=null)return;const sh=sc.querySelector('.sheet');if(!sh)return;const top=Math.max(0,Math.round(sh.getBoundingClientRect().top));UI.kbStop=top;UI.kbScroll=sh.scrollTop||0;sc.style.setProperty('--stop',top+'px');sc.classList.add('kblock')}catch(e){}}
 function kbKeepScroll(){try{const sh=document.querySelector('#layer .sheet');if(!sh||UI.kbStop==null)return;const a=document.activeElement,prev=sh.scrollTop,to=UI.kbScroll||0;const go=v=>{try{sh.scrollTo({top:v,behavior:'instant'})}catch(e){sh.scrollTop=v}};go(to);
   const r=a&&a.getBoundingClientRect?a.getBoundingClientRect():null,vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)||600;if(r&&(r.top<4||r.bottom>vh-4))go(prev)}catch(e){}}
-function kbDoUnlock(){try{UI.kbWait=false;if(UI.kbStop==null)return;UI.kbStop=null;const sc=document.querySelector('#layer .scrim');if(!sc)return;const sh=sc.querySelector('.sheet');
+function kbDoUnlock(){try{UI.kbWait=false;try{document.querySelectorAll('.sheet.kbpad').forEach(e=>e.classList.remove('kbpad'))}catch(x){}if(UI.kbStop==null)return;UI.kbStop=null;const sc=document.querySelector('#layer .scrim');if(!sc)return;const sh=sc.querySelector('.sheet');
   const before=sh?sh.getBoundingClientRect().top:0;sc.classList.remove('kblock');sc.style.removeProperty('--stop');
   if(sh){const d=before-sh.getBoundingClientRect().top;if(Math.abs(d)>1){sh.style.transition='none';sh.style.transform='translateY('+d+'px)';void sh.offsetHeight;sh.style.transition='transform .26s cubic-bezier(.25,.8,.3,1)';sh.style.transform='translateY(0)';setTimeout(()=>{try{sh.style.transition='';sh.style.transform=''}catch(e){}},320)}}}catch(e){}}
+/* Поле ввода должно быть видно над клавиатурой: даём запас снизу и подтягиваем поле вверх */
+function kbReveal(t){try{if(document.activeElement!==t)return;const sh=t.closest('.sheet');if(!sh)return;const vv=window.visualViewport,vh=Math.round(vv?vv.height:window.innerHeight)||600;
+  const shrunk=vvMax-vh>100;const free=shrunk?vh:Math.round(vh*0.55);const r=t.getBoundingClientRect();
+  if(r.bottom>free-14||r.top<8){const d=r.bottom-(free-24);sh.scrollTop=Math.max(0,sh.scrollTop+d)}}catch(e){}}
 function kbUnlock(){try{if(UI.kbStop==null)return;kbDoUnlock()}catch(e){}}
 let vvLast=0,vvMax=0,vvRaf=0;
 function vvSync(){try{if(vvRaf)return;vvRaf=requestAnimationFrame(()=>{vvRaf=0;try{const v=window.visualViewport;const h=Math.round(v?v.height:window.innerHeight);if(h>vvMax)vvMax=h;if(Math.abs(h-vvLast)>=2){vvLast=h;document.documentElement.style.setProperty('--vvh',h+'px');if(UI.kbWait&&h>=vvMax-2)kbDoUnlock();if(UI.kbStop!=null){setTimeout(kbKeepScroll,40);setTimeout(kbKeepScroll,340)}}}catch(e){}})}catch(e){}}
 function bootKb(){try{vvSync();if(window.visualViewport)window.visualViewport.addEventListener('resize',vvSync);window.addEventListener('resize',vvSync);
   document.addEventListener('focusout',()=>{setTimeout(()=>{try{const a=document.activeElement;if(!(a&&a.closest&&a.closest('.sheet')&&/INPUT|TEXTAREA/.test(a.tagName)))kbUnlock()}catch(e){}},250)});
-  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName))UI.kbWait=false;kbLock(t);if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))setTimeout(()=>{try{const r=t.getBoundingClientRect(),vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)||600;if(r.top<8||r.bottom>vh-8)t.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(x){}},320)})}catch(e){}}
+  document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName))UI.kbWait=false;kbLock(t);if(t&&t.closest&&t.closest('.sheet')&&/INPUT|TEXTAREA/.test(t.tagName)){const sh=t.closest('.sheet');sh.classList.add('kbpad');[350,750].forEach(ms=>setTimeout(()=>kbReveal(t),ms))}})}catch(e){}}
 /* Свайп между вкладками. Правша: влево = следующая; левша: зеркально. Допускаем дугу большого пальца (до ~35°). */
 const TAB_ORDER=['home','list','plan','hero'];
 function swipeHint(){if(S.swipeHint||!S.onboarded||!S.tourSeen||S.tx.length<1)return;S.swipeHint=true;save();setTimeout(()=>toast(S.lefty?'Подсказка: вкладки листаются свайпом вправо и влево':'Подсказка: листай вкладки пальцем влево и вправо'),1200)}
