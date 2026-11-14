@@ -22,9 +22,9 @@ run(`startTour()`);chk('tour step 1 card + mage',L().includes('class="dlg')&&L()
 const goTo=n=>{while(run('UI.tour')<n)act('tournext')};
 chk('no spotlight, no bullet list',!L().includes('tv-spot')&&!L().includes('<li'));
 goTo(9);chk('hero step on hero tab',run('UI.tour')===9&&run('UI.tab')==='hero');chk('hero step text',L().replace(/<[^>]+>/g,'').includes('растёт'));
-goTo(10);chk('tour switches to wallet tab',run('UI.tab')==='wallet');chk('spotlight on target, dialog on top',L().includes('tv-spot')&&L().includes('dlg top'));
-act('tourprev');chk('prev works',run('UI.tour')===9);
-goTo(11);chk('last step reached',run('UI.tour')===11);
+goTo(10);chk('settings step on home',run('UI.tab')==='home');goTo(11);chk('tour switches to wallet tab',run('UI.tab')==='wallet');chk('spotlight on target, dialog on top',L().includes('tv-spot')&&L().includes('dlg top'));
+act('tourprev');chk('prev works',run('UI.tour')===10);
+goTo(12);chk('last step reached',run('UI.tour')===12);
 act('tournext');chk('tour finished',run('UI.tour')===null&&L()===''&&run('S.tourSeen')===true&&run('UI.tab')==='home');
 run(`UI.tab='home';render()`);
 run(`UI.tab='home';render()`);
