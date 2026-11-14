@@ -29,8 +29,9 @@ run("openAcc(S.accounts[1].id);UI.form.cur='EUR';saveAcc()");chk('cannot change 
 // новый расход по умолчанию в валюте выбранного счёта
 run("S.lastAcc=S.accounts[1].id");chk('form defaults to account currency',run("newF('exp').cur")==='USD');
 // главная валюта
-run("UI.sheet=null;UI.tab='home';render()");const kzt=app();act('dispcur','USD');
-chk('bank shown in dollars',app().includes('$')&&run("dCur()")==='USD');
-act('dispcur','KZT');chk('back to tenge',run("dCur()")==='KZT'&&!('dispCur' in run("S")));
-run("UI.form={name:'x',pet:'y',payday:'',import:'',err:''};openSheet('data')");chk('settings has display currency',lay().includes('data-act="dispcur"'));
+run("UI.sheet=null;UI.tab='home';render()");act('bankcur','');
+chk('bank shown in dollars only on screen',app().includes('$')&&run("BASE")==='KZT'&&!('bankCur' in run("S"))&&app().includes('Вернуть'));
+act('bankcurreset','');chk('back to base',!app().includes('Вернуть')&&run("UI.bankCur")===null);
+run("UI.form={name:'x',pet:'y',payday:'',import:'',err:''};openSheet('data')");chk('settings: language + base currency',lay().includes('data-act="lang"')&&lay().includes('id="bcur"')&&!lay().includes('dispcur'));
+chk('base locked when records exist',lay().includes('id="bcur" class="inp" data-f="basecur" data-live="basecur" disabled'));
 console.log(bad?bad+' FAILED':'V21 OK');

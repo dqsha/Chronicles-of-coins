@@ -10,10 +10,10 @@ const act=(a,v)=>{ctx.__el={dataset:{v},disabled:false};run(`act('${a}',__el)`)}
 run("S=defaults();S.onboarded=true;S.tourSeen=true;S.accounts=[{id:'a',name:'Карта',type:'card',bal0:1234567890}];NOW='2026-11-10';S.tx.push({id:'1',type:'exp',amount:5000,cat:'food',acc:'a',to:null,date:'2026-11-05',note:'',mid:null,ts:1})");
 // числа
 chk('fmtC small stays full',run("fmtC(163000)")===run("fmt(163000)"));
-chk('fmtC billions',run("fmtCt(1234567890)")===run("(1.23).toLocaleString('ru-RU')")+' млрд ₸');
-chk('fmtC millions with limit',run("fmtCt(12500000)")===run("(12.5).toLocaleString('ru-RU')")+' млн ₸'&&run("fmtCt(2500000,1e6)").includes('млн'));
+chk('fmtC billions',run("fmtCt(1234567890)").replace(/\u00a0/g,' ')===run("(1.23).toLocaleString('ru-RU')")+' млрд ₸');
+chk('fmtC millions with limit',run("fmtCt(12500000)").replace(/\u00a0/g,' ')===run("(12.5).toLocaleString('ru-RU')")+' млн ₸'&&run("fmtCt(2500000,1e6)").includes('млн'));
 chk('fmtC negative',run("fmtCt(-3e9)").startsWith('−3 млрд'));
-run("UI.tab='home';render()");chk('home bank compact',app().includes('млрд ₸')&&app().includes('title="'));
+run("UI.tab='home';render()");chk('home bank compact',app().replace(/\u00a0/g,' ').includes('млрд ₸')&&app().includes('title="'));
 // скрытие на других вкладках
 run("UI.tab='stats';UI.period='month';UI.mon='2026-11';render()");
 chk('stats hide buttons',['s_kpi','s_chart','s_cats','s_days'].every(k=>app().includes('data-v="'+k+'"')));
