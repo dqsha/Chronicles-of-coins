@@ -18,7 +18,7 @@ for(const [k,pre] of [['goal',`UI.form={name:'',icon:'',target:'',deadline:'',er
   run(`${pre}UI.tourStep=0;openSheet('${k}',{id:'${gid}'})`);chk('sheet '+k,els['#layer'].innerHTML.includes('sheet'))}
 const act=(a,v,ds)=>{ctx.__el={dataset:Object.assign({v},ds||{}),disabled:false};run(`act('${a}',__el)`)};
 const L=()=>els['#tourlayer'].innerHTML;
-run(`startTour()`);chk('tour step 1 card + mage',L().includes('class="dlg')&&L().includes('Подсказка')&&L().includes('<i>П</i>'));
+run(`startTour()`);chk('tour step 1 card + mage',L().includes('class="dlg')&&L().includes('Орвин')&&L().includes('<i>П</i>'));
 const goTo=n=>{while(run('UI.tour')<n)act('tournext')};
 chk('no spotlight, no bullet list',!L().includes('tv-spot')&&!L().includes('<li'));
 goTo(9);chk('hero step on hero tab',run('UI.tour')===9&&run('UI.tab')==='hero');chk('hero step text',L().replace(/<[^>]+>/g,'').includes('растёт'));

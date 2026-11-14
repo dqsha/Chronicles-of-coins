@@ -739,6 +739,20 @@ html.lock,body.lock{overflow:hidden!important;overscroll-behavior:none}
 /* быстрее: размытие только у крупных панелей */
 .row .tile,.qk,.fc,.hidebtn,.cat,.qm,.scene .r,.mbtn,.btn{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 .card,.hbar{-webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important}
+
+/* --- 0.44.1 --- */
+.pst{min-width:0;overflow:hidden}
+.pst .pimg{overflow:hidden;padding:4px}
+.pst .pimg img{max-width:100%!important;max-height:76px!important;height:auto!important;width:auto!important;object-fit:contain}
+.pst.now .pimg{box-shadow:inset 0 0 0 2px var(--acc),0 0 14px var(--acc-glow)}
+.dlg .tv-mage{overflow:hidden;display:flex;align-items:center;justify-content:center;flex:none}
+.dlg .tv-mage svg{max-width:84%;max-height:84%;width:auto;height:auto}
+.dlg-bar{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap}
+.dlg-bar .tv-skip{flex:none;padding:7px 14px!important;font:600 13px system-ui,-apple-system,sans-serif!important;text-decoration:none!important}
+.dlg-bar .tv-back{flex:none;width:36px;height:36px;padding:0!important;display:inline-flex;align-items:center;justify-content:center}
+.dlg-dots{margin-left:auto;min-width:0;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px;overflow:hidden}
+/* компьютер: фон чёткий, без размытия и растягивания пикселей в мыло */
+@media (min-width:700px){body::before{filter:none!important;transform:none!important;inset:0!important;image-rendering:pixelated;image-rendering:crisp-edges}}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1740,7 +1754,7 @@ function viewHome(){
   +'<section class="card" id="t-free"><div class="label">Банк сейчас'+hq('bank')+'</div><div class="big '+(bn<0?'neg':'')+'" title="'+fmt(bn)+'">'+fmtD(bn)+'</div>'+after+perDay+(fsub?'<p class="sub">'+esc(fsub)+'</p>':'')+'</section>'
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
     +(fresh?'<p class="sub">Запиши первую операцию.</p>':quick)+undo
-    +(fresh?'':'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button>')+'</section>'
+    +(fresh||hasExp||S.tx.some(x=>x.date===today())?'':'<button class="btn ghost" style="margin-top:12px;width:100%" data-act="nospend"'+((nsDone||hasExp)?' disabled':'')+'>'+(nsDone?'День засчитан: трат не было':hasExp?'Сегодня уже есть траты':'Сегодня трат не было')+'</button>')+'</section>'
   +hb('attn',attnCard())
   +(S.tx.some(isUncat)?'<button class="fc on" style="align-self:flex-start;margin:0 0 10px" data-act="fixcat">❔ Без категории: '+S.tx.filter(isUncat).length+' · разобрать</button>':'')
   +(fresh?'':hb('today','<section class="card"><h2>Сегодня'+(hasExp?': '+fmt(tsum):'')+hq('today')+'</h2>'+today_+'</section>')+hb('hero',heroStrip()))}
@@ -1894,7 +1908,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.44.0';
+const APP_V='0.44.1';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -2201,7 +2215,7 @@ function dlgType(){dlgStop();let cs=[];try{cs=Array.prototype.slice.call(documen
 function dlgFinish(){try{document.querySelectorAll('#tourlayer .dlg-t i').forEach(c=>c.classList.add('on'))}catch(e){}dlgStop();try{document.querySelector('#tourlayer .dlg').classList.add('done')}catch(e){}}
 function dlgBox(text,n,total,intro,extra,spot,top){
   return '<div class="tv-block" data-act="dlgtap"></div>'+(spot?'<div class="tv-spot" data-act="tourpeek" style="'+spot+'"></div>':'<div class="tv-dim'+(intro?' intro':'')+'"></div>')
-   +'<div class="dlg'+(intro?' intro':'')+(top?' top':'')+'" role="dialog" aria-label="Диалог" data-act="dlgtap"><div class="dlg-name">Подсказка</div>'
+   +'<div class="dlg'+(intro?' intro':'')+(top?' top':'')+'" role="dialog" aria-label="Диалог" data-act="dlgtap"><div class="dlg-name">Орвин</div>'
    +'<div class="dlg-in"><div class="tv-mage">'+mageSVG()+'</div><p class="dlg-t">'+text+'</p></div>'+(extra||'')
    +'<div class="dlg-bar">'+(!intro&&n>0?'<button class="tv-back" data-act="tourprev" aria-label="Назад">‹</button>':'')+'<button class="tv-skip" data-act="'+(intro?'introend':'tourend')+'">Пропустить</button><span class="dlg-dots">'+Array.from({length:total},(_,i)=>'<u class="'+(i<=n?'on':'')+'"></u>').join('')+'</span><span class="dlg-more">▼</span></div></div>'}
 function drawIntro(){const L=$('#tourlayer');if(UI.intro==null){L.innerHTML='';return}
