@@ -34,4 +34,8 @@ chk('account in KZT counted in USD',Math.abs(run("accBal(S.accounts[0])")-2)<1e-
 run("addTx({type:'exp',amount:5,cat:'food',acc:'a',date:today()})");chk('locked after records',run('canRebase()')===false);
 // просмотр банка в другой валюте не меняет основную
 run("UI.tab='home';render()");act('bankcur','');chk('bank view switched, base same',run("UI.bankCur")!=null&&run('BASE')==='USD'&&!('bankCur' in run('S')));
+act('bankmenu','');chk('bank currency list',run("UI.bankMenu")===true);
+act('bankpick','USD');chk('pick base resets view',run("UI.bankCur")===null&&run("UI.bankMenu")===false);
+run("S.newsSeen=null;UI.tab='home';render()");chk('mailbox dot',run("document.querySelector('#app').innerHTML").includes('ndot'));
+act('news','');chk('news opened and seen',run("S.newsSeen")===run("NEWS[0].v")&&run("UI.sheet.kind")==='news');
 console.log(bad?bad+' FAILED':'V46 OK');process.exitCode=bad?1:0;

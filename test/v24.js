@@ -28,7 +28,7 @@ chk('tab groups',run("tabGroup('stats')")==='list'&&run("tabGroup('wallet')")===
 run("UI.tab='stats';render()");chk('records switcher on stats, Анализ active',/class="on" data-act="tab" data-v="stats"/.test(app())&&app().includes('data-v="wallet"')&&app().includes('data-v="list"'));
 run("UI.tab='wallet';render()");chk('wallet is Счета',app().includes('Счета')&&app().includes('t-acc'));
 chk('bottom bar has 4 tabs in new order',['home','list','plan','hero'].every(t=>els['#tabbar'].innerHTML.includes('data-v="'+t+'"')));
-run("UI.tab='hero';render()");chk('hero tab has camp, chronicle and settings',app().includes('Сокровищница героя')&&app().includes('data-act="data"')&&app().includes('class="card hero"'));
+run("UI.tab='hero';render()");chk('hero tab has camp and chronicle, no duplicate settings',app().includes('Сокровищница героя')&&!app().includes('data-act="data"')&&app().includes('class="card hero"'));
 // свайп по новым группам: из «Анализ» вправо в «План»
 run("S.lefty=false;UI.tab='stats'");chk('swipe from stats goes to plan',run("swipeTab(-100)")&&run("UI.tab")==='plan');
 console.log(bad?('FAILED '+bad):'ALL OK');process.exit(bad?1:0);

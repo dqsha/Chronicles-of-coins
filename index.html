@@ -769,6 +769,25 @@ html.lock,body.lock{overflow:hidden!important;overscroll-behavior:none}
 .lp-card{width:100%;max-width:360px;padding:26px 20px 20px;border-radius:28px;border:1px solid var(--edge);background:var(--glass2);-webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);box-shadow:inset 0 1px 0 var(--hi),0 20px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:12px;text-align:center}
 .lp-logo{font-size:40px}.lp-t{font:700 17px var(--num);color:var(--acc)}.lp-s{font:15px/1.5 system-ui,-apple-system,sans-serif;color:var(--mute2);margin:0 0 6px}
 .lp-b{min-height:54px!important;font-size:17px!important}
+
+/* --- 0.47: крупная сумма банка, список валют, почтовый ящик --- */
+#t-free{position:relative}.bankrow{margin-top:4px}
+#t-free .bankrow .curchip{position:absolute;top:12px;right:12px}
+#t-free .bankbig{font-size:42px!important;line-height:1.05;margin:0;min-width:0;white-space:nowrap;overflow-wrap:normal!important;flex:1 1 auto}
+#t-free .bankbig.l2{font-size:34px!important}#t-free .bankbig.l3{font-size:27px!important}#t-free .bankbig.l4{font-size:22px!important}
+#t-free .bankbig.alt{color:#9fd3ff}
+.curchip{flex:none;font:600 13px/1 system-ui,-apple-system,sans-serif;padding:8px 11px;border-radius:999px;border:1px solid var(--edge);background:rgba(255,255,255,.08);color:var(--ink);cursor:pointer;box-shadow:inset 0 1px 0 var(--hi)}
+.curlist{margin:10px 0 2px;flex-wrap:wrap!important}
+.curlist .fc{padding:7px 11px!important;font-size:13px!important}
+.gbtn.mailbtn{position:relative!important}
+.ndot{position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:#ff5a4f;box-shadow:0 0 0 2px rgba(20,14,12,.9),0 0 8px rgba(255,90,79,.8)}
+.news-new{border:1px solid var(--acc-edge);border-radius:20px;padding:14px;background:linear-gradient(180deg,rgba(255,200,110,.14),rgba(255,160,60,.05));margin-bottom:6px}
+.news-new h3{margin:6px 0 4px;font:700 17px var(--num);color:var(--acc)}.news-new p{margin:0;font:15px/1.5 system-ui,-apple-system,sans-serif}
+.nn-badge{display:inline-block;font:700 11px/1 system-ui,sans-serif;padding:5px 9px;border-radius:999px;background:var(--acc-glass);color:var(--acc-ink)}
+.ntime{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.nt{display:grid;grid-template-columns:78px 1fr;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.07)}
+.nt-v{font:700 13px var(--num);color:var(--acc)}.nt-v small{display:block;font:11px system-ui,sans-serif;color:var(--mute2);margin-top:3px}
+.nt-b b{font:600 14px system-ui,-apple-system,sans-serif}.nt-b p{margin:3px 0 0;font:13.5px/1.45 system-ui,-apple-system,sans-serif;color:var(--mute2)}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1830,13 +1849,15 @@ function musicSync(){try{const want=S.sound&&S.sound.music&&!S.calm;
     if(!SND.timer){SND.nextT=c.currentTime+0.1;SND.step=0;
       SND.timer=setInterval(()=>{const k=SND.ctx;if(!k)return;while(SND.nextT<k.currentTime+0.4){musicStep(k,SND.mg,SND.nextT,SND.step++);SND.nextT+=EIGHTH}},100)}}
   else if(SND.timer&&SND.ctx){SND.mg.gain.setTargetAtTime(0,SND.ctx.currentTime,0.2);const tm=SND.timer;SND.timer=null;setTimeout(()=>clearInterval(tm),900)}}catch(e){}}
-function bankCurs(){return [BASE].concat(['USD','EUR','RUB','KZT','CNY','GBP','TRY','UZS','KGS'].filter(c=>c!==BASE&&rateOf(c)))}
-function bankBig(bn){const list=bankCurs();let c=UI.bankCur&&list.indexOf(UI.bankCur)>0?UI.bankCur:BASE;
-  if(list.length<2)return '<div class="big '+(bn<0?'neg':'')+'" title="'+fmt(bn)+'">'+fmtD(bn)+'</div>';
-  const nx=list[(list.indexOf(c)+1)%list.length];
-  if(c===BASE)return '<button class="big bigbtn '+(bn<0?'neg':'')+'" data-act="bankcur" title="'+fmt(bn)+'" aria-label="Показать в '+nx+'">'+fmtD(bn)+'<span class="curchip">'+curInfo(nx).flag+' '+nx+'</span></button>';
-  return '<button class="big bigbtn alt '+(bn<0?'neg':'')+'" data-act="bankcur" aria-label="Показать в '+nx+'">≈ '+fmtCur(convert(bn,BASE,c),c)+'<span class="curchip">'+curInfo(nx).flag+' '+nx+'</span></button>'
-   +'<p class="sub curnote">Это только просмотр по сегодняшнему курсу. Основная валюта — '+BASE+'. <button class="lnk" data-act="bankcurreset">Вернуть '+bSym()+'</button></p>'}
+function bankCurs(){return [BASE].concat(CUR.map(c=>c[0]).filter(c=>c!==BASE&&rateOf(c)))}
+function bankBig(bn){const list=bankCurs();const c=UI.bankCur&&list.indexOf(UI.bankCur)>0?UI.bankCur:BASE;const alt=c!==BASE;
+  if(list.length<2)return '<div class="big bankbig '+(bn<0?'neg':'')+'" title="'+fmt(bn)+'">'+fmtD(bn)+'</div>';
+  const txt=alt?'≈ '+fmtCur(convert(bn,BASE,c),c):fmtD(bn);const ln=String(txt).replace(/<[^>]+>/g,'').length;const lc=ln<=9?'':ln<=11?'l2':ln<=14?'l3':'l4';
+  let h='<div class="bankrow"><div class="big bankbig '+lc+' '+(alt?'alt ':'')+(bn<0?'neg':'')+'" title="'+fmt(bn)+'">'+txt+'</div>'
+   +'<button class="curchip" data-act="bankmenu" aria-expanded="'+!!UI.bankMenu+'" aria-label="Показать в другой валюте">'+curInfo(c).flag+' '+c+' ▾</button></div>';
+  if(UI.bankMenu)h+='<div class="fchips curlist">'+list.map(k=>'<button class="fc'+(k===c?' on':'')+'" data-act="bankpick" data-v="'+k+'">'+curInfo(k).flag+' '+k+'</button>').join('')+'</div>';
+  if(alt)h+='<p class="sub curnote">Это только просмотр по сегодняшнему курсу. Основная валюта — '+BASE+'. <button class="lnk" data-act="bankcurreset">Вернуть '+bSym()+'</button></p>';
+  return h}
 function canRebase(){return !S.tx.length&&!(S.goals||[]).length&&!(S.mand||[]).length}
 function setBase(c){if(!CUR.find(k=>k[0]===c)||c===BASE)return;const old=BASE;
   S.accounts.forEach(a=>{if(!a.cur&&(Number(a.bal0)||0)!==0)a.cur=old;else if(a.cur===c)delete a.cur});
@@ -1888,6 +1909,19 @@ function setLang(v){const l=v==='en'?'en':'ru';if((S.lang||'ru')===l)return;S.la
   else{try{location.reload()}catch(e){render();if(UI.sheet)renderSheet()}}}
 function langPick(){const L=$('#tourlayer');L.innerHTML='<div class="langpick" role="dialog" aria-modal="true"><div class="lp-card"><div class="lp-logo">🪙</div><div class="lp-t">Хроника Монет · Chronicle of Coins</div><p class="lp-s">Выбери язык<br>Choose your language</p><button class="btn lp-b" data-act="langpick" data-v="ru">🇷🇺 Русский</button><button class="btn lp-b" data-act="langpick" data-v="en">🇬🇧 English</button></div></div>'}
 
+
+/* ---------- почтовый ящик: новости и история проекта ---------- */
+const NEWS=[{"v":"0.47.0","d":"14.11.2026","ru":["Почтовый ящик","Новости и вся история проекта в одном месте — ты сейчас здесь. Валюту «Банка» теперь выбираешь из списка, сумма стала крупнее, лишняя кнопка настроек на вкладке «Герой» убрана."],"en":["Mailbox","News and the whole story of the project in one place — you are here. Pick the “Bank” currency from a list, the amount is bigger, the extra settings button on the Hero tab is gone."]},{"v":"0.46","d":"14.11.2026","ru":["English и основная валюта","Приложение говорит по-английски: язык выбирается при первом запуске и в ⚙. Основная валюта выбирается в начале — все суммы хранятся в ней, курсы считаются от неё. Нажми на «Банк», чтобы посмотреть его в другой валюте: это только просмотр, основная валюта не меняется."],"en":["English and a main currency","The app speaks English: choose the language at first launch and in ⚙. You pick a main currency at the start — all amounts are stored in it and rates are calculated from it. Tap “Bank” to view it in another currency: it is only a preview, the main currency never changes."]},{"v":"0.45","d":"14.11.2026","ru":["Выписки из любых банков","Кроме Kaspi теперь читаются CSV, Excel, OFX/QFX, QIF, MT940, CAMT.053 и PDF других банков. Валюта пересчитывается по курсу, повторная загрузка не создаёт дублей."],"en":["Statements from any bank","Besides Kaspi, the app now reads CSV, Excel, OFX/QFX, QIF, MT940, CAMT.053 and PDFs of other banks. Currencies are converted at the rate, and uploading again creates no duplicates."]},{"v":"0.42–0.44","d":"13–14.11.2026","ru":["Дизайн «Костёр»","Стеклянные карточки поверх пиксельного костра, искры и мягкое свечение огня, плавающая панель вкладок. Новое короткое обучение, инвентарь с вкладками, рост компаньона со «секретной» следующей стадией."],"en":["The “Campfire” design","Glass cards over a pixel campfire, sparks and a soft glow, a floating tab bar. A new short tutorial, an inventory with tabs, companion growth with a “secret” next stage."]},{"v":"0.40–0.41","d":"13.11.2026","ru":["Удобнее записывать","Кнопка «Скрыть клавиатуру», категории сразу видны над кнопкой «Записать», клавиатура не выскакивает сама. Меньше текста на экранах."],"en":["Easier to record","A “Hide keyboard” button, categories are visible right above “Save”, the keyboard does not pop up by itself. Less text on screens."]},{"v":"0.38–0.39","d":"12.11.2026","ru":["Платежи и привычки","Серия заходов, лимиты по категориям, «Уже оплачено» и календарь для платежей, карточка «Внимание», прогноз без двойного учёта платежей."],"en":["Payments and habits","A visit streak, category limits, “Already paid” and a calendar for payments, the “Attention” card, a forecast that does not count payments twice."]},{"v":"0.33–0.37","d":"12.11.2026","ru":["Свой герой и компаньоны","Герой собирается из частей: кожа, волосы, борода, класс, оружие и броня (графика Kenney). Пять компаньонов с четырьмя стадиями роста. Подсказки «?» у каждого блока."],"en":["Your own hero and companions","The hero is built from parts: skin, hair, beard, class, weapon and armor (Kenney graphics). Five companions with four growth stages. “?” tips on every block."]},{"v":"0.29–0.32","d":"12.11.2026","ru":["Пророчества и синхронизация","Пророчества — заранее записанные доходы и расходы с проверкой «сбылось ли». Новый интерфейс из четырёх вкладок. Синхронизация телефона и компьютера через облако Telegram."],"en":["Prophecies and sync","Prophecies — income and expenses written in advance and checked later. A new four-tab interface. Phone and computer sync through Telegram cloud."]},{"v":"0.25–0.28","d":"11.11.2026","ru":["Валюты и знакомство","Курсы валют и конвертер, записи и счета в любой валюте. Новое знакомство с магом Орвином."],"en":["Currencies and a new welcome","Exchange rates and a converter, records and accounts in any currency. A new welcome from Orvin the mage."]},{"v":"0.17–0.24","d":"11.11.2026","ru":["Порядок и стиль","Блоки можно скрывать, вкладки листаются свайпом, большие суммы сокращаются, первый стеклянный стиль. Появился журнал изменений."],"en":["Order and style","Blocks can be hidden, tabs switch with a swipe, large amounts are shortened, the first glass style. A changelog appeared."]},{"v":"0.1–0.16","d":"2026","ru":["Начало","Идея: учёт денег для Казахстана, похожий на RPG. Запись траты за два касания, «Банк», счета и переводы, импорт выписки Kaspi, статистика, прогноз до зарплаты, долги и рассрочки, цели, опыт героя и питомец. Данные хранятся в облаке Telegram."],"en":["The beginning","The idea: money tracking for Kazakhstan that feels like an RPG. Recording an expense in two taps, “Bank”, accounts and transfers, Kaspi statement import, statistics, a payday forecast, debts and installments, goals, hero experience and a pet. Data is kept in Telegram cloud."]}];
+const newsUnseen=()=>S.newsSeen!==NEWS[0].v;
+function mailBtn(){return '<button class="gbtn mailbtn" data-act="news" aria-label="'+(isEn()?'News':'Новости')+'">✉'+(newsUnseen()?'<i class="ndot"></i>':'')+'</button>'}
+function sheetNews(){const en=isEn(),L=en?'en':'ru';const n=NEWS[0];
+  const intro=en?'Chronicle of Coins is free money tracking in Telegram in the style of a pixel RPG. It grows in small steps based on user feedback: more than 50 updates so far.'
+    :'Хроника Монет — бесплатный учёт денег в Telegram в стиле пиксельной RPG. Растёт маленькими шагами по отзывам пользователей: уже больше 50 обновлений.';
+  return shHead(en?'Mailbox':'Почтовый ящик')
+   +'<div class="news-new"><div class="nn-badge">'+(en?'New':'Новое')+' · '+esc(n.v)+'</div><h3>'+esc(n[L][0])+'</h3><p>'+esc(n[L][1])+'</p></div>'
+   +'<p class="sub">'+esc(intro)+'</p><div class="label">'+(en?'Project history':'История проекта')+'</div>'
+   +'<div class="ntime">'+NEWS.slice(1).map(x=>'<div class="nt"><div class="nt-v">'+esc(x.v)+'<small>'+esc(x.d)+'</small></div><div class="nt-b"><b>'+esc(x[L][0])+'</b><p>'+esc(x[L][1])+'</p></div></div>').join('')+'</div>'
+   +'<button class="btn" data-act="close">'+(en?'Got it':'Понятно')+'</button>'}
 function gearBtn(){return '<button class="gbtn" data-act="data" aria-label="Настройки">⚙</button>'}
 function musicBtn(){if(S.calm)return '';const on=!!(S.sound&&S.sound.music);return '<button class="mbtn'+(on?' on':'')+'" data-act="music" aria-pressed="'+on+'" aria-label="Музыка">♪</button>'}
 
@@ -2003,8 +2037,7 @@ function viewPlan(){return scene('plan','План','Башня предсказ�
   +hb('w_mand','<section class="card" id="t-mand"><h2>Обязательные платежи'+hq('mand')+'</h2>'+(S.mand.filter(m=>!m.debt).length?'<div class="list">'+S.mand.filter(m=>!m.debt).map(m=>'<div>'+mandRow(m,false)+payBtns(m,mandStatus(m),'<button class="btn ghost small" data-act="mandedit" data-v="'+m.id+'" aria-label="Изменить">✎</button>')+'</div>').join('')+'</div>':'<p class="note">Аренда, интернет, подписки.</p>')
     +'<button class="btn ghost" style="margin-top:10px;width:100%" data-act="mandnew">Добавить платёж</button></section>')}
 function viewHero(){return scene('hero','Герой','Лагерь у костра',fmtDate(today()))
-  +heroCard(true)+(S.calm?'':petCard())+(S.calm?'':hb('quest',questCard()))+hb('w_chr',chronicleCard())+backupCard()
-  +'<button class="btn ghost" data-act="data">Данные и настройки</button>'}
+  +heroCard(true)+(S.calm?'':petCard())+(S.calm?'':hb('quest',questCard()))+hb('w_chr',chronicleCard())+backupCard()}
 function heroStrip(){const lv=levelInfo(S.xp),sv=streakView();
   const days=(sv.state==='ok'||sv.state==='wait')?sv.count+' '+plural(sv.count,['день','дня','дней'])+' подряд':'Серия: запиши что-нибудь';
   return '<section class="card herostrip" data-act="tab" data-v="hero" role="button" tabindex="0" aria-label="Открыть героя"><div class="hs-art">'+heroAvatar()+'</div><div class="hs-info"><div class="hs-top"><b>'+esc(S.name)+'</b><span>Уровень '+lv.L+'</span></div>'
@@ -2039,7 +2072,7 @@ function viewHome(){
   const upd=UI.upd?'<section class="card updc"><p>Вышла новая версия '+esc(UI.upd)+'.</p><button class="btn small" data-act="reload">Обновить</button></section>':'';
   const fc=forecast(),perDay=(fc.state!=='broke'&&fc.perDay>0)?'<div class="catrow dayrow"><span>Можно тратить в день</span><span class="amt">'+fmtDt(fc.perDay)+'</span></div><p class="sub dayto">до '+fmtDate(fc.until)+(fc.pay?', до зарплаты':'')+'</p>':'';
   const fresh=!S.tx.length;
-  return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn()+gearBtn())+upd
+  return scene('home','Хроника Монет','Лагерь у костра',fmtDate(t),musicBtn()+mailBtn()+gearBtn())+upd
   +'<section class="card" id="t-free"><div class="label">Банк сейчас'+hq('bank')+'</div>'+bankBig(bn)+after+perDay+(fsub?'<p class="sub">'+esc(fsub)+'</p>':'')+'</section>'
   +'<section class="card logc" id="t-log"><div class="logbtns"><button class="btn big exp" data-act="add" data-v="exp"><span class="bi">−</span>Трата</button><button class="btn big inc" data-act="add" data-v="inc"><span class="bi">+</span>Доход</button></div>'
     +(fresh?'<p class="sub">Запиши первую операцию.</p>':quick)+undo
@@ -2198,7 +2231,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.46.0';
+const APP_V='0.47.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -2563,7 +2596,7 @@ function sheetAch(){const n=ACH.filter(a=>S.ach[a[0]]).length;
 function renderSheet(){const L=$('#layer');const sh=UI.sheet;
   try{document.body.classList.toggle('lock',!!sh);document.documentElement.classList.toggle('lock',!!sh)}catch(e){}
   if(!sh){L.innerHTML='';UI.lastSheetKind=null;return}
-  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,attn:sheetAttn,dadv:sheetDadv,petgrow:sheetGrow,limit:sheetLimit,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
+  const body={hint:sheetHint,fixcat:sheetFix,add:sheetAdd,tx:sheetTx,acc:sheetAcc,mand:sheetMand,pro:sheetPro,prores:sheetProRes,prorep:sheetProRep,gear:sheetGear,attn:sheetAttn,dadv:sheetDadv,news:sheetNews,petgrow:sheetGrow,limit:sheetLimit,lvl:sheetLvl,onboard:sheetOnboard,data:sheetData,look:sheetLook,pets:sheetPets,syncask:sheetSyncAsk,conv:sheetConv,ach:sheetAch,goal:sheetGoal,gdet:sheetGdet,contrib:sheetContrib,buy:sheetBuy,imp:sheetImp,camp:sheetCamp,ai:sheetAi}[sh.kind]();
   const lock=sh.kind==='lvl'||sh.kind==='onboard'||sh.kind==='syncask';
   let fresh=false;try{fresh=!S.calm&&(!L.firstChild||!!(L.querySelector('.scrim.closing')))}catch(e){}
   const kbf=sh.kind==='add'&&UI.focus;
@@ -2732,7 +2765,10 @@ function act(a,el){const v=el.dataset.v;
     case 'curopen':if(UI.F){UI.F.curOpen=!UI.F.curOpen;if(UI.F.curOpen)fetchRates();renderSheet()}break;
     case 'curset':if(UI.F&&(v===BASE||rateOf(v))){UI.F.cur=v;UI.F.curOpen=false;renderSheet()}break;
     case 'bankcur':{const l=bankCurs();const c=UI.bankCur&&l.indexOf(UI.bankCur)>0?UI.bankCur:BASE;UI.bankCur=l[(l.indexOf(c)+1)%l.length];if(UI.bankCur===BASE)UI.bankCur=null;render();break}
-    case 'bankcurreset':UI.bankCur=null;render();break;
+    case 'bankcurreset':UI.bankCur=null;UI.bankMenu=false;render();break;
+    case 'bankmenu':UI.bankMenu=!UI.bankMenu;render();break;
+    case 'bankpick':UI.bankCur=v===BASE?null:v;UI.bankMenu=false;render();break;
+    case 'news':S.newsSeen=NEWS[0].v;save();openSheet('news');render();break;
     case 'lang':setLang(v);break;
     case 'langpick':{S.lang=v==='en'?'en':'ru';save();try{document.documentElement.lang=S.lang}catch(e){}if(S.lang==='en'){trCompile();render();trNode(document.body)}$('#tourlayer').innerHTML='';startIntro();break}
     case 'basecur':if(!canRebase()){toast('Основную валюту можно сменить, только пока нет записей, целей и платежей');break}setBase(v);break;
