@@ -753,6 +753,7 @@ html.lock,body.lock{overflow:hidden!important;overscroll-behavior:none}
 .dlg-dots{margin-left:auto;min-width:0;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px;overflow:hidden}
 /* компьютер: фон чёткий, без размытия и растягивания пикселей в мыло */
 @media (min-width:700px){body::before{filter:none!important;transform:none!important;inset:0!important;image-rendering:pixelated;image-rendering:crisp-edges}}
+.catrow{display:flex!important;justify-content:space-between;align-items:center;gap:10px}.catrow .amt{flex:none!important;max-width:none!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap}
 </style>
 
 <div id="bgfx" aria-hidden="true"></div>
@@ -1201,7 +1202,14 @@ const MERCH=[
  [/ФАРМ|АПТЕК|PHARM|DORI|ПОЛИКЛИН|КЛИНИК|CLINIC|MEDICAL/i,'health'],
  [/KFC|BURGER|COFFEE|КОФЕ|PIZZA|ПИЦЦ|DODO|STARBUCKS|CAFE|КАФЕ|РЕСТОРАН|SUSHI|СУШИ|GLOVO|WOLT/i,'cafe'],
  [/MAGNUM|SMALL|GALMART|ARBUZ|ЭКОНОМ|МАРКЕТ|MARKET|ГИПЕР|ПРОДУКТ|FIX PRICE/i,'food'],
- [/ZARA|WAIKIKI|H&M|MANGO|SPORTMASTER|ОДЕЖД/i,'clothes']];
+ [/ZARA|WAIKIKI|H&M|MANGO|SPORTMASTER|ОДЕЖД|UNIQLO|GLORIA JEANS|BERSHKA|PULL.?BEAR|ADIDAS|NIKE|ЛАМОДА|LAMODA/i,'clothes'],
+ [/ПЯТ[ЕЁ]РОЧК|PYATEROCHKA|ПЕРЕК[РP][ЕЁ]СТ|PEREKRESTOK|МАГНИТ|MAGNIT|ВКУСВИЛЛ|VKUSVILL|ЛЕНТА|LENTA|АШАН|AUCHAN|ДИКСИ|DIXY|САМОКАТ|SAMOKAT|WALMART|TARGET|COSTCO|KROGER|WHOLE ?FOODS|TRADER JOE|ALDI|LIDL|TESCO|SAINSBURY|CARREFOUR|SPAR\b|METRO\b|ANVAR|SMALL|TOIMART/i,'food'],
+ [/МАКДОНАЛ|MCDONALD|ВКУСНО ?И ?ТОЧКА|SUBWAY|ШОКОЛАДНИЦ|ТЕРЕМОК|ROSTIC|ЯНДЕКС ?ЕДА|YANDEX\.?EDA|DELIVERY ?CLUB|UBER ?EATS|DOORDASH|GRUBHUB|DELIVEROO|COFFEE ?BOOM|COFFEEMANIA|ДОДО/i,'cafe'],
+ [/LYFT|CITYMOBIL|СИТИМОБИЛ|МЕТРО|METRO ?TRANSIT|ТРАНСПОРТ|ONAY|АЗС|ГАЗПРОМНЕФТ|ЛУКОЙЛ|LUKOIL|ROSNEFT|РОСНЕФТ|SHELL|HELIOS|SINOOIL|QAZAQ ?OIL|ПАРКОВК|PARKING/i,'taxi'],
+ [/МТС|MTS\b|МЕГАФОН|MEGAFON|БИЛАЙН|РОСТЕЛЕКОМ|ROSTELECOM|VERIZON|AT&T|T-MOBILE|VODAFONE/i,'comm'],
+ [/ЖКХ|ЖКУ|КВАРТПЛАТ|ЭНЕРГОСБЫТ|МОСЭНЕРГО|ВОДОКАНАЛ|АЛСЕКО|ALSECO|ИВЦ|COMCAST|ELECTRIC|UTILIT|RENT\b|АРЕНДА/i,'home'],
+ [/ИНВИТРО|INVITRO|ГЕМОТЕСТ|СТОМАТОЛ|DENTAL|CVS|WALGREENS/i,'health'],
+ [/КИНО|CINEMA|ТЕАТР|THEATRE|ИВИ|IVI\b|START\.RU|ЯНДЕКС ?МУЗЫК|YANDEX ?MUSIC|DISNEY|HBO|AMAZON ?PRIME|TWITCH/i,'fun']];
 function guessCat(det){for(let i=0;i<MERCH.length;i++)if(MERCH[i][0].test(det))return MERCH[i][1];return null}
 function merchKey(det){return String(det||'').toUpperCase().replace(/["«»“”'*]/g,'').replace(/(^|\s)(ИП|ТОО|ООО|АО)(?=\s)/g,' ').replace(/\s+/g,' ').trim().slice(0,32)}
 const KTYPES=['Перевод на свой','Поступление со','Покупка','Перевод','Пополнение','Снятие','Разное'];
@@ -1236,28 +1244,31 @@ function classifyRow(r,o){const a=r.amt,det=r.det,key=merchKey(det);
   if(r.type==='Снятие')return skip('cash');
   if(r.type==='Пополнение'){if(/банкомат/i.test(det))return skip('cash');if(a<0)return skip('other');return o&&o.inc===false?skip('people'):{kind:'inc',cat:'otherin',note:det,key:key}}
   if(r.type==='Перевод'){if(a>0)return o&&o.inc===false?skip('people'):{kind:'inc',cat:'otherin',note:det,key:key};return o&&o.tx===false?skip('people'):{kind:'exp',cat:'xfer',note:det,key:key}}
-  if(r.type==='Разное')return a<0?{kind:'exp',cat:'other',note:det,key:key}:{kind:'inc',cat:'otherin',note:det,key:key};
+  if(r.type==='Разное')return a<0?{kind:'exp',cat:'other',note:det,key:key}:{kind:'inc',cat:/зарплат|заработн|salary|payroll|аванс/i.test(det)?'salary':'otherin',note:det,key:key};
   if(a>0)return{kind:'inc',cat:'otherin',note:'Возврат: '+det,key:key};
   const known=(S.rules&&S.rules[key])||guessCat(det);
   return{kind:'exp',cat:known||null,note:det,key:key}}
 function planImport(rows,o){o=o||{};
   const have={};S.tx.forEach(x=>{if(x.imp)have[x.imp]=1});const seen={};
-  const items=[],skip={},unk={};let dups=0;
+  const items=[],skip={},unk={},nocur={};let dups=0;
   rows.forEach(r=>{const c=classifyRow(r,o);
     if(c.kind==='skip'){skip[c.why]=(skip[c.why]||0)+1;return}
-    const base=r.date+'|'+r.amt+'|'+r.type+'|'+merchKey(r.det);seen[base]=(seen[base]||0)+1;const dk=base+'#'+seen[base];
+    const cur=r.cur&&r.cur!=='KZT'?r.cur:null;
+    const base=r.date+'|'+r.amt+(cur?cur:'')+'|'+r.type+'|'+merchKey(r.det);seen[base]=(seen[base]||0)+1;const dk=base+'#'+seen[base];
     if(have[dk]){dups++;return}
-    const it={date:r.date,amount:Math.abs(r.amt),type:c.kind,cat:c.cat,note:c.note,key:c.key,imp:dk};
+    let amount=Math.abs(r.amt),ocur=null,oamt=null;
+    if(cur){const rt=rateOf(cur);if(!rt){nocur[cur]=(nocur[cur]||0)+1;return}ocur=cur;oamt=amount;amount=Math.round(amount*rt)}
+    const it={date:r.date,amount:amount,type:c.kind,cat:c.cat,note:c.note,key:c.key,imp:dk,ocur:ocur,oamt:oamt};
     if(it.type==='exp'&&!it.cat){const m=o.map&&o.map[c.key];if(m)it.cat=m;else{it.unk=true;const u=unk[c.key]||(unk[c.key]={key:c.key,name:c.note,n:0,sum:0});u.n++;u.sum+=it.amount}}
     items.push(it)});
-  return{items:items,skip:skip,dups:dups,unknown:Object.keys(unk).map(k=>unk[k]).sort((a,b)=>b.sum-a.sum)}}
+  return{items:items,skip:skip,dups:dups,nocur:nocur,unknown:Object.keys(unk).map(k=>unk[k]).sort((a,b)=>b.sum-a.sum)}}
 function histReward(){const h=S.tx.filter(x=>x.hist);if(h.length<15)return 0;let first=h[0].date;h.forEach(x=>{if(x.date<first)first=x.date});
   const m=Math.min(3,Math.floor(dayDiff(first,today())/30)),done=S.histM||0;if(m<=done)return 0;S.histM=m;return(m-done)*30}
 function applyImport(o){const P=planImport(o.rows,o);if(!S.rules)S.rules={};
   Object.keys(o.map||{}).forEach(k=>{if(o.map[k]&&o.map[k]!=='other')S.rules[k]=o.map[k]});
   let exp=0,inc=0;const base=Date.now();
   P.items.forEach((it,i)=>{if(it.type==='exp'&&!it.cat)it.cat='other';
-    S.tx.push({id:uid(),type:it.type,amount:it.amount,cat:it.cat,acc:o.acc,to:null,date:it.date,note:it.note,mid:null,ts:parseD(it.date).getTime()+43200000+i,hist:true,imp:it.imp});
+    S.tx.push({id:uid(),type:it.type,amount:it.amount,cat:it.cat,acc:o.acc,to:null,date:it.date,note:it.note,mid:null,ocur:it.ocur||null,oamt:it.oamt||null,ts:parseD(it.date).getTime()+43200000+i,hist:true,imp:it.imp});
     if(it.type==='exp')exp+=it.amount;else inc+=it.amount});
   const a=S.accounts.find(x=>x.id===o.acc);if(a)a.bal0=(Number(a.bal0)||0)+exp-inc;
   const w=histReward();if(w)gainXp(w,'История трат');
@@ -1267,6 +1278,205 @@ function pdfItemsToText(pages){return pages.map(items=>{
   a.sort((p,q)=>q.y-p.y);const lines=[];
   a.forEach(i=>{const L=lines[lines.length-1];if(L&&Math.abs(L.y-i.y)<=3)L.it.push(i);else lines.push({y:i.y,it:[i]})});
   return lines.map(L=>L.it.sort((p,q)=>p.x-q.x).map(i=>i.s).join(' ')).join('\n')}).join('\n')}
+
+/* ---------- универсальный импорт выписок: CSV / Excel / OFX / QIF / MT940 / CAMT.053 / HTML / любой PDF ---------- */
+const CUR_SIGN={'₸':'KZT','₽':'RUB','$':'USD','€':'EUR','£':'GBP','¥':'CNY','РУБ':'RUB','РУБ.':'RUB','ТГ':'KZT','ТЕНГЕ':'KZT'};
+function normCur(c){c=String(c||'').trim().toUpperCase();if(!c)return null;if(c==='RUR')return 'RUB';if(CUR_SIGN[c])return CUR_SIGN[c];return /^[A-Z]{3}$/.test(c)?c:null}
+function curInText(s){s=String(s||'');for(const k in CUR_SIGN)if(k.length===1&&s.indexOf(k)>=0)return CUR_SIGN[k];const m=s.match(/\b(KZT|RUB|RUR|USD|EUR|GBP|CNY|TRY|AED|UZS|KGS|GEL|AMD|BYN|UAH|JPY|CHF|CAD|AUD|PLN|CZK|THB|KRW|INR)\b/);return m?normCur(m[1]):null}
+function parseAmt(s){
+  if(typeof s==='number')return isFinite(s)?s:null;
+  let t=String(s==null?'':s).replace(/[     ]/g,'').replace(/[−–—]/g,'-').trim();
+  if(!t)return null;let neg=false;
+  if(/^\(.*\)$/.test(t)){neg=true;t=t.slice(1,-1)}
+  if(/DR$/i.test(t)){neg=!neg;t=t.slice(0,-2)}else if(/CR$/i.test(t))t=t.slice(0,-2);
+  t=t.replace(/^[A-Za-zА-Яа-яЁё₸₽$€£¥]+\.?/,'').replace(/[A-Za-zА-Яа-яЁё₸₽$€£¥]+\.?$/,'');
+  if(/^\+/.test(t))t=t.slice(1);
+  if(/^-/.test(t)){neg=!neg;t=t.slice(1)}
+  if(/-$/.test(t)){neg=!neg;t=t.slice(0,-1)}
+  t=t.replace(/[₸₽$€£¥]/g,'');
+  if(!/^[\d.,']+$/.test(t)||!/\d/.test(t))return null;
+  t=t.replace(/'/g,'');
+  const lc=t.lastIndexOf(','),ld=t.lastIndexOf('.');
+  if(lc>=0&&ld>=0){t=lc>ld?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'')}
+  else if(lc>=0){const p=t.split(',');t=(p.length===2&&p[1].length!==3)?p.join('.'):t.replace(/,/g,'')}
+  else if(ld>=0){const p=t.split('.');if(p.length>2)t=t.replace(/\./g,'')}
+  const v=parseFloat(t);return isFinite(v)?(neg?-v:v):null}
+const MONTHS={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,'янв':1,'фев':2,'мар':3,'апр':4,'мая':5,'май':5,'июн':6,'июл':7,'авг':8,'сен':9,'окт':10,'ноя':11,'дек':12};
+function mkD(y,m,d){y=+y;m=+m;d=+d;if(y<100)y+=2000;if(!(m>=1&&m<=12&&d>=1&&d<=31&&y>1990&&y<2100))return null;return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+function parseDateAny(s,us){
+  if(typeof s==='number'){if(s>20000&&s<80000){const d=new Date(Date.UTC(1899,11,30)+Math.floor(s)*864e5);return d.toISOString().slice(0,10)}return null}
+  s=String(s||'').trim().replace(/'/g,'/');let m;
+  if((m=s.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})/)))return mkD(m[1],m[2],m[3]);
+  if((m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})(?!\d)/)))return mkD(m[3],m[2],m[1]);
+  if((m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})(?!\d)/)))return us?mkD(m[3],m[1],m[2]):mkD(m[3],m[2],m[1]);
+  if((m=s.match(/^(\d{1,2})[\s-]+([A-Za-zА-Яа-яЁё]{3,})\.?,?[\s-]+(\d{2,4})/))){const mo=MONTHS[m[2].slice(0,3).toLowerCase()];return mo?mkD(m[3],mo,m[1]):null}
+  if((m=s.match(/^([A-Za-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})/))){const mo=MONTHS[m[1].slice(0,3).toLowerCase()];return mo?mkD(m[3],mo,m[2]):null}
+  return null}
+/* порядок день/месяц для дат через «/»: смотрим на все даты столбца */
+function slashUS(vals,eng){let dm=false,md=false;vals.forEach(v=>{const m=String(v||'').trim().match(/^(\d{1,2})[\/-](\d{1,2})[\/-]\d{2,4}/);if(m){if(+m[1]>12)dm=true;if(+m[2]>12)md=true}});
+  return md&&!dm?true:dm?false:!!eng}
+const RX_INTERNAL=/между своими|на свой сч|со своего сч|свой счет|своего счета|own account|\bexchange|exchanged|обмен валют|конвертац|currency conversion|to savings|from savings|копилк|\bpocket|bank deposit to pp|general card deposit|withdraw(al)? to bank|transfer to bank account|transfer from bank account/i;
+function genType(amt,det,hint){const s=(det||'')+' '+(hint||'');
+  if(RX_INTERNAL.test(s))return amt<0?'Перевод на свой':'Поступление со';
+  if(amt<0&&/банкомат|\batm\b|cash withdrawal|снятие нал/i.test(s))return 'Снятие';
+  return amt<0?'Покупка':'Разное'}
+function mkRow(date,amt,det,cur,hint){if(!date||amt==null||!isFinite(amt)||Math.abs(amt)<0.005)return null;
+  det=String(det||'').replace(/\s+/g,' ').trim().slice(0,80)||(amt<0?'Расход':'Поступление');
+  return{date:date,amt:Math.round(amt*100)/100,type:genType(amt,det,hint),det:det,cur:normCur(cur)}}
+/* ---- таблицы: CSV / Excel / HTML ---- */
+function splitDelim(text,d){const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c;continue}
+    if(c==='"'&&cell.trim()===''){q=true;cell='';continue}
+    if(c===d){row.push(cell);cell='';continue}
+    if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);rows.push(row);row=[];cell='';continue}
+    cell+=c}
+  if(cell!==''||row.length){row.push(cell);rows.push(row)}
+  return rows.filter(r=>r.some(x=>String(x).trim()))}
+function splitCsv(text){text=String(text||'').replace(/^﻿/,'');let best=null,bs=0;
+  [';',',','\t','|'].forEach(d=>{const r=splitDelim(text,d);const cnt={};r.forEach(x=>{if(x.length>1)cnt[x.length]=(cnt[x.length]||0)+1});
+    let mode=0,mc=0;Object.keys(cnt).forEach(k=>{if(cnt[k]>mc||(cnt[k]===mc&&+k>mode)){mc=cnt[k];mode=+k}});const sc=mc*Math.min(mode,8);if(sc>bs){bs=sc;best=r}});
+  return best||[]}
+function xmlUnesc(s){return String(s||'').replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;|&#39;/g,"'").replace(/&nbsp;/g,' ').replace(/&#(\d+);/g,(m,n)=>String.fromCharCode(+n)).replace(/&amp;/g,'&')}
+function htmlTableRows(h){const rows=[];String(h).replace(/<tr[^>]*>([\s\S]*?)<\/tr>/gi,(m,b)=>{const r=[];b.replace(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi,(q,x)=>{r.push(xmlUnesc(x.replace(/<br\s*\/?>/gi,' ')).replace(/\s+/g,' ').trim())});if(r.length)rows.push(r)});return rows}
+const H_ROLES={
+  date:[[/дата (и время )?(операции|транзакции|совершения)|transaction date|trans\.? date|completed date|date completed|күні/,4],[/^дата$|^date$|^дата\b|\bdate\b/,3],[/posting|posted|проводк|обработ|списания|платежа|started|value date/,1]],
+  amt:[[/сумма (в валюте )?(сч[её]та|карты|платежа)|^amount$|^net$|^сумма$|сумма операции в валюте сч|amount \(/,4],[/сумма|amount|сомасы|^gross$|^total$/,2]],
+  out:[[/^(расход|расходы|списание|списано|дебет|debit|withdrawals?|paid out|money out|outflow|исходящ)/,4]],
+  inn:[[/^(приход|доход|зачисление|зачислено|поступлени[ея]|кредит|credit|deposits?|paid in|money in|inflow|входящ)/,4]],
+  desc:[[/описание|назначение|description|merchant|payee|получатель|наименование|место|narrative|мерчант/,4],[/детали|details/,3],[/^name$|контрагент|counterparty|корреспондент|reference|memo|операция|operation/,2]],
+  cur:[[/валюта (сч[её]та|карты|платежа)|^currency$|^валюта$|^ccy$/,4],[/валюта|currency/,2]],
+  status:[[/статус|status|^state$/,4]],
+  type:[[/^(тип|type|вид операции|тип операции|transaction type)/,4]],
+  cat:[[/категория|category/,4]]};
+function roleScore(h){h=String(h||'').toLowerCase().replace(/\s+/g,' ').trim();const out={};if(!h||h.length>60)return out;
+  for(const k in H_ROLES)for(const p of H_ROLES[k])if(p[0].test(h)){out[k]=p[1];break}
+  if(out.amt&&/комисси|fee|кешб|cashback|бонус|balance|остаток|баланс/.test(h))delete out.amt;
+  if(/остаток|баланс|balance/.test(h)){delete out.out;delete out.inn}
+  return out}
+function findHeader(rows){for(let i=0;i<Math.min(rows.length,30);i++){const r=rows[i];if(!r||r.length<2)continue;const map={},sc={};
+    r.forEach((c,j)=>{const s=roleScore(c);for(const k in s){if(!(k in sc)||s[k]>sc[k]){sc[k]=s[k];map[k]=j}}});
+    if('date' in map&&('amt' in map||'out' in map||'inn' in map)){if(map.desc===map.amt||map.desc===map.date)delete map.desc;return{i:i,map:map,head:r}}}
+  return null}
+function guessCols(rows){const n=Math.max(...rows.slice(0,40).map(r=>r.length));const map={};const sample=rows.slice(0,40);
+  for(let j=0;j<n;j++){const v=sample.map(r=>r[j]);const dates=v.filter(x=>parseDateAny(x,false)).length,nums=v.filter(x=>parseAmt(x)!=null&&!parseDateAny(x,false)).length,txt=v.filter(x=>x&&isNaN(parseAmt(x))&&String(x).length>3).length;
+    if(!('date' in map)&&dates>=sample.length*0.5)map.date=j;else if(!('amt' in map)&&nums>=sample.length*0.5)map.amt=j;else if(!('desc' in map)&&txt>=sample.length*0.4)map.desc=j}
+  return 'date' in map&&'amt' in map?{i:-1,map:map,head:[]}:null}
+function parseTable(rows){rows=(rows||[]).map(r=>r.map(c=>typeof c==='string'?c.trim():c));const out=[];out.meta={};
+  const H=findHeader(rows)||guessCols(rows);if(!H)return out;const M=H.map,data=rows.slice(H.i+1);
+  const eng=H.head.some(h=>/[a-z]/i.test(String(h))&&!/[а-яё]/i.test(String(h)));
+  const us=slashUS(data.map(r=>r[M.date]),eng);
+  const fileCur=normCur(((String(H.head[M.amt]||'')+' '+String(H.head[M.out]||'')).match(/\(([A-Z]{3}|[₸₽$€£])\)/)||[])[1]);
+  let allPos=true,hasNeg=false;const pre=[];
+  data.forEach(r=>{const date=parseDateAny(r[M.date],us);if(!date)return;
+    if('status' in M&&/fail|declin|revert|cancel|отклон|отмен|неуспеш|error/i.test(String(r[M.status]||'')))return;
+    let a=null;
+    if('out' in M||'inn' in M){const o=parseAmt(r[M.out]),i=parseAmt(r[M.inn]);if(o==null&&i==null){if('amt' in M)a=parseAmt(r[M.amt])}else a=(Math.abs(i||0))-(Math.abs(o||0))}
+    else a=parseAmt(r[M.amt]);
+    if(a==null||!a)return;if(a<0)hasNeg=true;
+    const hint=[('type' in M)?r[M.type]:'',('cat' in M)?r[M.cat]:''].join(' ');
+    let det=('desc' in M)?r[M.desc]:'';if(!det&&('cat' in M))det=r[M.cat];if(!det&&('type' in M))det=r[M.type];
+    const cur=('cur' in M)?normCur(r[M.cur]):(curInText(r[M.amt])||fileCur);
+    pre.push({date,a,det,cur,hint,typ:String(('type' in M)?r[M.type]:'')})});
+  if(!hasNeg&&!('out' in M)&&!('inn' in M)){
+    const tcol='type' in M;
+    pre.forEach(p=>{if(tcol&&/debit|дебет|списан|расход|покупк|оплат|payment|purchase|sale|withdraw|снятие|перевод с|fee|комисси/i.test(p.typ)&&!/credit|зачисл|пополн|refund|возврат|deposit/i.test(p.typ))p.a=-Math.abs(p.a);
+      else if(tcol&&/credit|кредит|зачисл|пополн|поступ|refund|возврат|deposit|income|salary/i.test(p.typ))p.a=Math.abs(p.a);
+      else if(!/пополн|зачисл|поступл|возврат|зарплат|refund|deposit|salary|payroll|cashback|кешб|перевод от/i.test(p.det+' '+p.hint)){p.a=-Math.abs(p.a)}});
+    out.meta.allPos=!tcol}
+  pre.forEach(p=>{const r=mkRow(p.date,p.a,p.det,p.cur,p.hint);if(r)out.push(r)});
+  return out}
+/* ---- стандартные банковские форматы ---- */
+function parseOFX(t){const cur=normCur((t.match(/<CURDEF>\s*([A-Z]{3})/i)||[])[1]);const rows=[];
+  t.replace(/<STMTTRN>([\s\S]*?)(?=<\/STMTTRN>|<STMTTRN>|<\/BANKTRANLIST>)/gi,(m,b)=>{
+    const g=k=>{const r=b.match(new RegExp('<'+k+'>([^<\\r\\n]*)','i'));return r?xmlUnesc(r[1]).trim():''};
+    const d=g('DTPOSTED').match(/^(\d{4})(\d{2})(\d{2})/)||g('DTUSER').match(/^(\d{4})(\d{2})(\d{2})/);if(!d)return '';
+    const r=mkRow(mkD(d[1],d[2],d[3]),parseAmt(g('TRNAMT')),[g('NAME'),g('MEMO')].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join(' · '),cur,g('TRNTYPE'));if(r)rows.push(r);return ''});
+  return rows}
+function parseQIF(t){const recs=String(t).split(/^\^\s*$/m);const raw=[];
+  recs.forEach(rec=>{let d=null,a=null,p='',m='',l='';rec.split(/\r?\n/).forEach(x=>{const c=x[0],v=x.slice(1).trim();if(c==='D')d=v;else if((c==='T'||c==='U')&&a==null)a=parseAmt(v);else if(c==='P')p=v;else if(c==='M')m=v;else if(c==='L')l=v});
+    if(d&&a!=null)raw.push({d,a,det:p||m||l,hint:l+' '+m})});
+  const us=slashUS(raw.map(r=>r.d),true);
+  return raw.map(r=>mkRow(parseDateAny(r.d,us),r.a,r.det,null,r.hint)).filter(Boolean)}
+function parseMT940(t){const lines=String(t).split(/\r?\n/);const tags=[];
+  lines.forEach(l=>{const m=l.match(/^:(\d{2}[A-Z]?):(.*)$/);if(m)tags.push({tag:m[1],val:m[2]});else if(tags.length&&!/^-\}?$/.test(l.trim()))tags[tags.length-1].val+='\n'+l});
+  let cur=null;const rows=[];
+  tags.forEach((x,i)=>{if(/^60[FM]$/.test(x.tag)){const m=x.val.match(/^[CD]\d{6}([A-Z]{3})/);if(m)cur=m[1]}
+    if(x.tag!=='61')return;const m=x.val.match(/^(\d{2})(\d{2})(\d{2})(\d{4})?(R?[CD])[A-Z]?(\d+,\d*)/);if(!m)return;
+    let a=parseFloat(m[6].replace(',','.'));if(m[5]==='D'||m[5]==='RC')a=-a;
+    const nx=tags[i+1];let det=nx&&nx.tag==='86'?nx.val:x.val.slice(m[0].length);
+    det=det.replace(/\?\d{2}/g,' ').replace(/^\d{3}/,'').replace(/\/\/\S+/,'').replace(/\s+/g,' ').trim();
+    const r=mkRow(mkD(m[1],m[2],m[3]),a,det,cur,'');if(r)rows.push(r)});
+  return rows}
+function parseCAMT(t){const rows=[];const T=k=>'<(?:\\w+:)?'+k+'\\b[^>]*>';
+  String(t).replace(/<(?:\w+:)?Ntry>([\s\S]*?)<\/(?:\w+:)?Ntry>/g,(m,b)=>{
+    const am=b.match(new RegExp(T('Amt')+'\\s*([\\d.]+)'));const cc=(b.match(/<(?:\w+:)?Amt[^>]*Ccy="([A-Z]{3})"/)||[])[1];
+    const ind=(b.match(new RegExp(T('CdtDbtInd')+'\\s*(\\w+)'))||[])[1];
+    const dt=(b.match(new RegExp(T('BookgDt')+'\\s*'+T('Dt(?:Tm)?')+'\\s*(\\d{4}-\\d{2}-\\d{2})'))||b.match(new RegExp(T('ValDt')+'\\s*'+T('Dt(?:Tm)?')+'\\s*(\\d{4}-\\d{2}-\\d{2})'))||[])[1];
+    if(!am||!dt)return '';let a=parseFloat(am[1]);if(ind==='DBIT')a=-a;
+    const party=ind==='DBIT'?'Cdtr':'Dbtr';const pm=b.match(new RegExp(T(party)+'[\\s\\S]*?'+T('Nm')+'([^<]+)'));
+    const ustr=[];b.replace(new RegExp(T('Ustrd')+'([^<]+)','g'),(q,x)=>{ustr.push(x.trim());return ''});
+    const add=(b.match(new RegExp(T('AddtlNtryInf')+'([^<]+)'))||[])[1];
+    const det=[pm&&pm[1].trim(),ustr.join(' '),add].filter(Boolean)[0]||'';
+    const r=mkRow(dt,a,xmlUnesc(det),cc,add||'');if(r)rows.push(r);return ''});
+  return rows}
+/* ---- любой текст или PDF: строки «дата … сумма» ---- */
+const RX_MONEY=/(^|[\s(])([+\-−–]?\s?\d{1,3}(?:[   ]\d{3})+(?:[.,]\d{1,2})?|[+\-−–]?\s?\d+[.,]\d{2})(?=$|[\s)₸₽$€£A-ZА-Я]|\b)/g;
+function parseLinesGeneric(text){const lines=String(text||'').split(/\r?\n/);const out=[];let last=null;
+  const RXD=/(\d{1,2}[.\/]\d{1,2}[.\/]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}\s+(?:янв|фев|мар|апр|мая|май|июн|июл|авг|сен|окт|ноя|дек)[а-я]*\.?\s+\d{4})/i;
+  const dvals=[];lines.forEach(l=>{const m=l.match(RXD);if(m)dvals.push(m[1])});const us=slashUS(dvals,false);
+  lines.forEach(l=>{const dm=l.match(RXD);
+    if(!dm){if(last&&l.trim()&&l.trim().length<70&&!RX_MONEY.test(l)&&last.n<2){last.det+=' '+l.trim();last.n++}RX_MONEY.lastIndex=0;return}
+    const date=parseDateAny(dm[1],us);if(!date){last=null;return}
+    const rest=l.replace(dm[0],' ').replace(RXD,' ');const ms=[];let m;RX_MONEY.lastIndex=0;
+    while((m=RX_MONEY.exec(rest)))ms.push(m[2]);
+    if(!ms.length){last=null;return}
+    const pick=ms.find(x=>/^[+\-−–]/.test(x))||ms[0];let a=parseAmt(pick);if(a==null||!a){last=null;return}
+    let det=rest;ms.forEach(x=>{det=det.replace(x,' ')});det=det.replace(/[₸₽$€£]|\b(KZT|RUB|USD|EUR)\b/g,' ').replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g,' ').replace(/\s+/g,' ').trim();
+    if(!/^[+\-−–]/.test(pick)){if(/пополн|зачисл|поступл|возврат|зарплат|перевод от|кешб|cashback|refund|deposit|salary|income|приход/i.test(det))a=Math.abs(a);else a=-Math.abs(a)}
+    const cur=curInText(l);last={date,a,det,cur,n:0};out.push(last)});
+  return out.map(x=>mkRow(x.date,x.a,x.det,x.cur,'')).filter(Boolean)}
+/* ---- определить формат и разобрать ---- */
+function detectAndParse(text){const t=String(text||'').replace(/^﻿/,'');const h=t.slice(0,4000);let rows;
+  if(/OFXHEADER|<OFX>/i.test(h))return{fmt:'OFX',rows:parseOFX(t)};
+  if(/^\s*!(Type|Account|Option)/im.test(h))return{fmt:'QIF',rows:parseQIF(t)};
+  if(/BkToCstmrStmt|camt\.05[234]/i.test(h))return{fmt:'CAMT.053',rows:parseCAMT(t)};
+  if(/^:(20|25|28C?):/m.test(h)&&/^:61:/m.test(t))return{fmt:'MT940',rows:parseMT940(t)};
+  if(/<table/i.test(h)){rows=parseTable(htmlTableRows(t));if(rows.length)return{fmt:'таблица',rows}}
+  rows=parseKaspi(t);if(rows.length)return{fmt:'Kaspi',rows};
+  const tab=splitCsv(t);if(tab.length>=2&&tab.some(r=>r.length>=3)){rows=parseTable(tab);if(rows.length)return{fmt:'CSV',rows}}
+  rows=parseLinesGeneric(t);if(rows.length>=2)return{fmt:'текст',rows};
+  return{fmt:null,rows:[]}}
+/* ---- Excel .xlsx: zip + xml, без библиотек ---- */
+function zipIndex(buf){const u=new Uint8Array(buf),dv=new DataView(u.buffer,u.byteOffset,u.byteLength);let e=u.length-22;
+  while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;if(e<0)throw new Error('zip');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const files={};const td=new TextDecoder();
+  for(let i=0;i<n&&dv.getUint32(p,true)===0x02014b50;i++){const nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true);
+    files[td.decode(u.subarray(p+46,p+46+nl))]={meth:dv.getUint16(p+10,true),csz:dv.getUint32(p+20,true),lho:dv.getUint32(p+42,true)};p+=46+nl+xl+cl}
+  return{u,dv,files}}
+async function zipText(z,name){const f=z.files[name];if(!f)return null;const p=f.lho,nl=z.dv.getUint16(p+26,true),xl=z.dv.getUint16(p+28,true);
+  const data=z.u.subarray(p+30+nl+xl,p+30+nl+xl+f.csz);if(f.meth===0)return new TextDecoder().decode(data);
+  if(f.meth!==8||typeof DecompressionStream==='undefined')throw new Error('inflate');
+  const st=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return await new Response(st).text()}
+function colIdx(ref){let n=0;for(const ch of ref)n=n*26+ch.charCodeAt(0)-64;return n-1}
+async function xlsxToRows(buf){const z=zipIndex(buf);const ss=[];const sx=await zipText(z,'xl/sharedStrings.xml');
+  if(sx)sx.replace(/<si>([\s\S]*?)<\/si>/g,(m,b)=>{let s='';b.replace(/<t[^>]*>([\s\S]*?)<\/t>/g,(q,x)=>{s+=x;return ''});ss.push(xmlUnesc(s));return ''});
+  const sheets=Object.keys(z.files).filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a,b)=>parseInt(a.match(/\d+/))-parseInt(b.match(/\d+/)));
+  let best=[];for(const nm of sheets.slice(0,4)){const sh=await zipText(z,nm);const rows=[];
+    sh.replace(/<row[^>]*>([\s\S]*?)<\/row>/g,(m,b)=>{const r=[];
+      b.replace(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g,(q,at,inner)=>{const ref=(at.match(/r="([A-Z]+)\d+"/)||[])[1];const t=(at.match(/t="(\w+)"/)||[])[1];let v='';
+        if(inner){const vm=inner.match(/<v>([\s\S]*?)<\/v>/);if(t==='s'&&vm)v=ss[+vm[1]]||'';else if(t==='inlineStr'){let x='';inner.replace(/<t[^>]*>([\s\S]*?)<\/t>/g,(a,y)=>{x+=y;return ''});v=xmlUnesc(x)}else if(vm)v=(t==='str'||t==='e'||t==='b')?xmlUnesc(vm[1]):Number(vm[1])}
+        r[ref?colIdx(ref):r.length]=v;return ''});
+      rows.push(Array.from(r,x=>x==null?'':x));return ''});
+    if(rows.length>best.length)best=rows}
+  return best}
+function decodeText(u){try{return new TextDecoder('utf-8',{fatal:true}).decode(u)}catch(e){}
+  try{return new TextDecoder('windows-1251').decode(u)}catch(e){}return new TextDecoder().decode(u)}
+async function parseStatementBuf(buf){const u=new Uint8Array(buf);
+  if(u[0]===0x25&&u[1]===0x50&&u[2]===0x44&&u[3]===0x46){let txt;try{txt=await pdfToText(buf)}catch(e){throw new Error('pdf')}const r=detectAndParse(txt);r.text=txt;if(r.fmt&&r.fmt!=='Kaspi')r.fmt='PDF';return r}
+  if(u[0]===0x50&&u[1]===0x4b){let rows;try{rows=await xlsxToRows(buf)}catch(e){throw new Error('xlsx')}return{fmt:'Excel',rows:parseTable(rows)}}
+  if(u[0]===0xD0&&u[1]===0xCF)throw new Error('xls');
+  const txt=decodeText(u);const r=detectAndParse(txt);r.text=txt;return r}
 
 function similarTx(x){const k=merchKey(x.note);if(!k)return[];return S.tx.filter(t=>t.id!==x.id&&t.type===x.type&&t.note&&merchKey(t.note)===k)}
 function saveTxEdit(E){const x=S.tx.find(t=>t.id===E.id);if(!x||x.type==='tr')return{ok:false,err:'Запись не найдена'};
@@ -1908,7 +2118,7 @@ function chronicleCard(){const st=lifeStats(),n=ACH.filter(a=>S.ach[a[0]]).lengt
 
 function pixURI(rows,pal){let o='';rows.forEach((r,y)=>{for(let x=0;x<r.length;x++){const c=pal[r[x]];if(c)o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>'}});
   return 'url("data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+rows[0].length+' '+rows.length+'" shape-rendering="crispEdges">'+o+'</svg>')+'")'}
-const APP_V='0.44.1';
+const APP_V='0.45.0';
 let bgMode=null;
 function bgSync(){try{const el=document.getElementById('bgfx');if(!el)return;const m=fxMode();if(m===bgMode&&el.childNodes.length)return;bgMode=m;el.innerHTML='';
   if(m==='off')return;
@@ -1950,7 +2160,7 @@ function sheetAdd(){const F=UI.F;
   return h}
 
 function histCard(){if(S.histHide||S.tx.length>=8||S.tx.some(x=>x.hist))return '';
-  return '<section class="card"><h2>История трат'+hq('hist')+'</h2><p class="sub">Выписка Kaspi покажет, куда уходят деньги.</p><div class="two" style="margin-top:10px"><button class="btn" data-act="imp">Загрузить</button><button class="btn ghost" data-act="imphide">Не сейчас</button></div></section>'}
+  return '<section class="card"><h2>История трат'+hq('hist')+'</h2><p class="sub">Выписка из банка покажет, куда уходят деньги.</p><div class="two" style="margin-top:10px"><button class="btn" data-act="imp">Загрузить</button><button class="btn ghost" data-act="imphide">Не сейчас</button></div></section>'}
 function histWalletCard(){return '<section class="card"><h2>История трат'+hq('hist')+'</h2><p class="sub">Читается только на этом телефоне.</p><button class="btn ghost" style="margin-top:10px;width:100%" data-act="imp">Загрузить выписку</button></section>'}
 function habitsCard(){const t=today(),from=addDays(t,-29);const m={};let tot=0;
   S.tx.forEach(x=>{if(x.type!=='exp'||x.date<from||x.date>t||x.cat==='xfer'||x.cat==='credit')return;tot++;const c=m[x.cat]||(m[x.cat]={n:0,s:0,d:{}});c.n++;c.s+=x.amount;c.d[x.date]=1});
@@ -1971,24 +2181,25 @@ async function pdfToText(buf){const lib=await loadPdfJs();const doc=await lib.ge
     pages.push(tc.items.map(it=>({str:it.str,x:it.transform[4],y:it.transform[5]})))}
   return pdfItemsToText(pages)}
 function readStatementFile(file){const F=UI.form;if(!file||!F)return;F.err='';F.busy=true;renderSheet();
-  const isPdf=/\.pdf$/i.test(file.name||'')||file.type==='application/pdf';
-  const done=txt=>{F.busy=false;F.text=txt;const rows=parseKaspi(txt);
-    if(!rows.length){F.err='В файле не нашёл операций. Нужна выписка по карте Kaspi Gold в PDF.';return renderSheet()}
-    F.rows=rows;F.plan=planImport(rows,F);F.step=2;renderSheet()};
   const fail=m=>{F.busy=false;F.err=m;renderSheet()};
-  const rd=new FileReader();
-  rd.onerror=()=>fail('Не получилось открыть файл');
-  rd.onload=()=>{if(!isPdf){done(String(rd.result||''));return}
-    pdfToText(rd.result).then(done).catch(()=>fail('Не получилось прочитать PDF. Для этого нужен интернет. Попробуй ещё раз или вставь текст вручную.'))};
-  if(isPdf)rd.readAsArrayBuffer(file);else rd.readAsText(file)}
+  const rd=new FileReader();rd.onerror=()=>fail('Не получилось открыть файл');
+  rd.onload=()=>{parseStatementBuf(rd.result).then(res=>{F.busy=false;F.text=res.text||'';impShow(res)}).catch(e=>{const m=String(e&&e.message);
+    fail(m==='pdf'?'Не получилось прочитать PDF. Для этого нужен интернет. Попробуй ещё раз.':m==='xls'?'Это старый формат Excel (.xls). Открой файл и сохрани как .xlsx или CSV.':m==='xlsx'?'Не получилось открыть Excel-файл. Попробуй сохранить его как CSV.':'Не получилось прочитать файл')})};
+  rd.readAsArrayBuffer(file)}
+function impShow(res){const F=UI.form;const rows=res.rows||[];
+  if(!rows.length){F.err='Не нашёл операций в файле. Подходят: PDF, CSV, Excel (.xlsx), OFX/QFX, QIF, MT940, CAMT.053. Если банк даёт выписку в Excel или CSV — лучше её.';return renderSheet()}
+  F.fmt=res.fmt;F.allPos=!!(rows.meta&&rows.meta.allPos);F.rows=rows;F.plan=planImport(rows,F);F.step=2;renderSheet()}
 function sheetImp(){const F=UI.form;
   if(F.step===2&&F.plan){const P=F.plan;const ex=P.items.filter(i=>i.type==='exp'),inc=P.items.filter(i=>i.type==='inc');
     const sum=a=>a.reduce((q,i)=>q+i.amount,0);const sk=P.skip;const skN=(sk.internal||0)+(sk.cash||0)+(sk.other||0);
     const cats={};ex.forEach(i=>{if(i.cat){const c=cats[i.cat]||(cats[i.cat]={n:0,s:0});c.n++;c.s+=i.amount}});
     const top=Object.keys(cats).sort((a,b)=>cats[b].s-cats[a].s).slice(0,6);
-    let h=shHead('Проверь список')+'<p class="sub">Найдено в выписке: '+F.rows.length+'. Добавим '+P.items.length+': расходов '+ex.length+' на '+fmt(sum(ex))+', доходов '+inc.length+' на '+fmt(sum(inc))+'.</p>';
+    const nc=Object.keys(P.nocur||{});
+    let h=shHead('Проверь список')+(F.fmt?'<p class="note">Формат: '+esc(F.fmt)+'</p>':'')+'<p class="sub">Найдено в выписке: '+F.rows.length+'. Добавим '+P.items.length+': расходов '+ex.length+' на '+fmt(sum(ex))+', доходов '+inc.length+' на '+fmt(sum(inc))+'.</p>';
     if(skN)h+='<p class="note">Пропущено '+skN+': переводы между своими счетами.</p>';
     if(P.dups)h+='<p class="note">Уже были добавлены раньше: '+P.dups+'.</p>';
+    if(nc.length)h+='<p class="err">Нет курса для '+nc.join(', ')+': пропущено '+nc.reduce((q,k)=>q+P.nocur[k],0)+'.</p><button class="btn ghost small" data-act="impfx">Обновить курсы</button>';
+    if(F.allPos)h+='<p class="note">В файле у сумм нет знаков «+» и «−». Поступления я узнал по словам, остальное считаю расходами. Проверь список.</p>';
     h+='<div class="fchips"><button class="fc'+(F.tx?' on':'')+'" data-act="imptoggle" data-v="tx">Переводы людям: '+(F.tx?'считать расходом':'не считать')+'</button><button class="fc'+(F.inc?' on':'')+'" data-act="imptoggle" data-v="inc">Пополнения от людей: '+(F.inc?'считать доходом':'не считать')+'</button></div>';
     if(top.length)h+='<div class="label">Куда уходят деньги</div>'+top.map(k=>{const ci=catInfo(k);return '<div class="catrow"><span>'+ci.icon+' '+esc(ci.name)+'</span><span class="amt">'+fmt(cats[k].s)+' · '+cats[k].n+'</span></div>'}).join('');
     if(P.unknown.length){h+='<div class="label">Незнакомые места</div><p class="note">Выбери категорию один раз, приложение запомнит. Остальные попадут в «Прочее».</p>';
@@ -1998,10 +2209,11 @@ function sheetImp(){const F=UI.form;
     return h+'<button class="btn" data-act="impgo"'+(P.items.length?'':' disabled')+'>Добавить '+P.items.length+'</button><button class="btn ghost" data-act="impback">Назад</button>'}
   return shHead('Загрузить историю')
    +'<p class="note">Читается только на этом телефоне. Хранятся дата, сумма и место.</p>'
-   +'<p class="sub">Скачай в Kaspi выписку по карте в PDF и выбери файл.</p>'
+   +'<p class="sub">Скачай выписку в приложении банка и выбери файл. Лучше всего подходят Excel и CSV.</p>'
+   +'<p class="note">Kaspi — PDF. Другие банки — CSV, Excel (.xlsx), OFX/QFX, QIF, MT940, CAMT.053 или PDF (по возможности).</p>'
    +'<div class="field"><label for="ixa">К какому счёту относится выписка</label><select id="ixa" class="inp" data-f="acc">'+accOpts(F.acc)+'</select></div>'
    +(F.busy?'<p class="sub">Читаю файл…</p>'
-     :'<label class="btn" for="ixf" style="display:flex;align-items:center;justify-content:center;cursor:pointer;text-align:center">Выбрать файл выписки</label><input id="ixf" type="file" accept=".pdf,application/pdf,.txt,.csv,text/plain" data-file="1" style="position:absolute;opacity:0;width:1px;height:1px">')
+     :'<label class="btn" for="ixf" style="display:flex;align-items:center;justify-content:center;cursor:pointer;text-align:center">Выбрать файл выписки</label><input id="ixf" type="file" data-file="1" style="position:absolute;opacity:0;width:1px;height:1px">')
    +(F.err?'<p class="err">'+esc(F.err)+'</p>':'')
    +'<button class="fc" style="align-self:flex-start" data-act="imppaste">'+(F.paste?'Скрыть ввод текста':'Или вставить текст')+'</button>'
    +(F.paste?'<div class="field"><label for="ixt">Текст выписки</label><textarea id="ixt" class="inp" style="min-height:120px" data-f="text" placeholder="Вставь сюда текст выписки">'+esc(F.text)+'</textarea></div><button class="btn ghost" data-act="impparse">Разобрать текст</button>':'')}
@@ -2042,7 +2254,7 @@ const HINTS={
  chart:['Доходы и расходы','Сколько пришло и сколько ушло за каждый период.','Зелёный — доход, красный — расход. Период выбирается сверху.'],
  cats:['Куда уходят деньги','Траты по категориям: еда, такси, кафе.','Нажми на категорию, чтобы увидеть записи.'],
  habits:['Привычки','Три категории, на которые уходит больше всего за 30 дней.','Появится, когда наберётся хотя бы 10 трат.'],
- hist:['Выписка Kaspi','Можно загрузить выписку из Kaspi, и прошлые траты появятся сами.','Скачай выписку в Kaspi (PDF) и выбери файл. Файл никуда не отправляется.'],
+ hist:['Выписка из банка','Загрузи выписку, и прошлые траты появятся сами.','Подходят Kaspi (PDF), а также CSV, Excel, OFX, QIF, MT940 и CAMT.053 из других банков. Файл читается только на телефоне.'],
  debt:['Долги и рассрочки','Кредиты и рассрочки в одном месте.','Добавь сумму платежа и остаток. Видно, когда всё закроется.'],
  treasure:['Итоги','Сколько ты получил и потратил за всё время.'],
  records:['Рекорды','Месяцы, когда ты тратил больше всего и меньше всего.'],
@@ -2194,7 +2406,7 @@ const TOURS=[
  {tab:'plan',sel:'#app .hidebtn',t:'Лишний блок можно {y скрыть}: он уедет вниз. Вернуть — одним нажатием.'},
  {tab:'plan',sel:'#app .qm',t:'Непонятно, что за блок? Нажми {y ?}.'},
  {tab:'hero',sel:'#tabbar .tab[data-v="hero"]',t:'{y Герой} растёт, когда ты записываешь траты. Тут же настройки.'},
- {tab:'wallet',sel:'#t-acc',t:'Есть выписка Kaspi? Загрузи, и прошлые траты появятся сами.',btn:'Загрузить выписку'},
+ {tab:'wallet',sel:'#t-acc',t:'Есть выписка из банка? Загрузи, и прошлые траты появятся сами.',btn:'Загрузить выписку'},
  {tab:'home',t:'Готово! Начни с первой траты.'}];
 function maybeTour(){if(S.onboarded&&!S.tourSeen&&UI.tour==null&&UI.intro==null&&!UI.sheet&&!UI.pendingLvl)startTour()}
 function startTour(){UI.sheet=null;UI.confirm=null;renderSheet();UI.tour=0;tourGo()}
@@ -2328,8 +2540,9 @@ function act(a,el){const v=el.dataset.v;
   try{const r=el.getBoundingClientRect();UI.fxOrg={x:r.left+r.width/2,y:r.top+r.height/2}}catch(e){UI.fxOrg=null}
   switch(a){
     case 'imp':{const a=S.accounts.find(x=>x.id===S.lastAcc)||S.accounts[0];UI.form={text:'',acc:a.id,step:1,tx:true,inc:true,map:{},rows:null,plan:null,err:'',paste:false,busy:false};openSheet('imp');break}
-    case 'impparse':{const F=UI.form;const rows=parseKaspi(F.text);if(!rows.length){F.err='Не нашёл операций. Скопируй таблицу из выписки Kaspi целиком и вставь сюда.';return renderSheet()}
+    case 'impparse':{const F=UI.form;const rows=detectAndParse(F.text).rows;if(!rows.length){F.err='Не нашёл операций. Скопируй таблицу из выписки целиком и вставь сюда.';return renderSheet()}
       F.err='';F.rows=rows;F.plan=planImport(rows,F);F.step=2;renderSheet();break}
+    case 'impfx':toast('Обновляю курсы…');fetchRates(true).then(ok=>{const F=UI.form;if(F&&F.rows){F.plan=planImport(F.rows,F)}toast(ok?'Курсы обновлены':'Не удалось обновить курсы');renderSheet()});break;
     case 'imppaste':UI.form.paste=!UI.form.paste;renderSheet();break;
     case 'imptoggle':{const F=UI.form;F[v]=!F[v];F.plan=planImport(F.rows,F);renderSheet();break}
     case 'impback':UI.form.step=1;renderSheet();break;
